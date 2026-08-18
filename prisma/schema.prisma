@@ -1,0 +1,94 @@
+// Datenmodell für die Commander-Pairing-App.
+// Siehe SPEC.md für die fachlichen Regeln.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Ein Spieler der Liga/des Clubs. Persistent über alle Abende hinweg.
+model Player {
+  id        String   @id @default(cuid())
+  name      String
+  /// Aktueller Gesamt-Liga-Punktestand (Saison). Wird nach jeder Modus-B-
+  /// Runde um die eingetragenen pointsAwarded erhöht. Modus A ändert dies nie.
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  assignments TableAssignment[]
+
+  @@map("players")
+}
+
+/// Ein Spielabend. mode unterscheidet Modus A (Casual) von Modus B (Liga).
+/// Modus-A-Abende dienen nur der Anzeige/aktuellen Zuteilung und fließen
+/// bewusst nicht in Saison-Statistiken oder Rematch-Vermeidung ein
+/// (siehe SPEC.md Abschnitt 4 und 9).
+model Evening {
+  id         String    @id @default(cuid())
+  mode       EveningMode
+  date       DateTime  @default(now())
+  /// Gesetzt, sobald der Abend abgeschlossen ist (keine weiteren Runden mehr).
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  rounds Round[]
+
+  @@map("evenings")
+}
+
+enum EveningMode {
+  CASUAL // Modus A
+  LEAGUE // Modus B
+}
+
+/// Eine Runde innerhalb eines Abends (bei Modus B bis zu 3, bei Modus A genau 1).
+model Round {
+  id        String   @id @default(cuid())
+  eveningId String
+  evening   Evening  @relation(fields: [eveningId], references: [id], onDelete: Cascade)
+  number    Int
+  createdAt DateTime @default(now())
+
+  tables Table[]
+
+  @@unique([eveningId, number])
+  @@map("rounds")
+}
+
+/// Ein einzelner Tisch (Pod) innerhalb einer Runde.
+model Table {
+  id          String   @id @default(cuid())
+  roundId     String
+  round       Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  /// Fortlaufende Tischnummer innerhalb der Runde (1, 2, 3, ...) — nur für die Anzeige.
+  tableNumber Int
+  /// Tischgröße gemäß Pairing-Algorithmus (3, 4 oder 5).
+  size        Int
+
+  assignments TableAssignment[]
+
+  @@unique([roundId, tableNumber])
+  @@map("tables")
+}
+
+/// Zuordnung eines Spielers zu einem Tisch, inkl. (bei Modus B) erzieltem
+/// Punktestand für diese Runde.
+model TableAssignment {
+  id       String @id @default(cuid())
+  tableId  String
+  table    Table  @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id])
+
+  /// null, solange das Ergebnis noch nicht eingetragen wurde. Bei Modus A
+  /// bleibt dieses Feld immer null.
+  pointsAwarded Int?
+
+  @@unique([tableId, playerId])
+  @@map("table_assignments")
+}

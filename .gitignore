@@ -1,0 +1,20 @@
+# Next.js
+.next/
+out/
+build/
+
+# Dependencies
+node_modules/
+
+# Env / Secrets
+.env
+.env.local
+.env.*.local
+
+# SQLite (lokale Entwicklungs-DB)
+*.db
+*.db-journal
+
+# Misc
+.DS_Store
+*.log
