@@ -61,26 +61,26 @@ export default function PlayerRow({ player }: { player: Player }) {
 
   return (
     <tr className="border-b border-black/5 dark:border-white/5">
-      <td className="py-1 pr-2">
+      <td className="py-2 pr-3">
         <input
           type="text"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           onBlur={() => save()}
-          className="w-32 rounded border border-black/20 px-2 py-1 dark:border-white/20"
+          className="min-h-9 w-32 rounded border border-black/20 px-3 py-2 dark:border-white/20"
         />
       </td>
-      <td className="py-1 pr-2">
+      <td className="py-2 pr-3">
         <input
           type="text"
           value={lastName}
           placeholder="(optional)"
           onChange={(e) => setLastName(e.target.value)}
           onBlur={() => save()}
-          className="w-32 rounded border border-black/20 px-2 py-1 dark:border-white/20"
+          className="min-h-9 w-32 rounded border border-black/20 px-3 py-2 dark:border-white/20"
         />
       </td>
-      <td className="py-1 pr-2">
+      <td className="py-2 pr-3">
         <input
           type="number"
           value={points}
@@ -88,10 +88,10 @@ export default function PlayerRow({ player }: { player: Player }) {
             setPoints(e.target.value);
             save({ points: e.target.value });
           }}
-          className="w-20 rounded border border-black/20 px-2 py-1 dark:border-white/20"
+          className="min-h-9 w-20 rounded border border-black/20 px-3 py-2 dark:border-white/20"
         />
       </td>
-      <td className="py-1 pr-2">
+      <td className="py-2 pr-3">
         <select
           value={skillLevel}
           onChange={(e) => {
@@ -99,7 +99,7 @@ export default function PlayerRow({ player }: { player: Player }) {
             setSkillLevel(value);
             save({ skillLevel: value });
           }}
-          className="w-14 rounded border border-black/20 px-1 py-1 dark:border-white/20"
+          className="min-h-9 w-14 rounded border border-black/20 px-2 py-2 dark:border-white/20"
         >
           {SKILL_LEVEL_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -108,10 +108,10 @@ export default function PlayerRow({ player }: { player: Player }) {
           ))}
         </select>
       </td>
-      <td className="py-1 pr-2 text-xs opacity-70">
+      <td className="py-2 pr-3 text-xs opacity-70">
         {player.assignmentCount} Abend(e)
       </td>
-      <td className="py-1 pr-2 text-xs">
+      <td className="py-2 pr-3 text-xs">
         <span
           className={`transition-opacity ${
             justSaved ? "opacity-100 text-green-600" : "opacity-0"
@@ -123,12 +123,12 @@ export default function PlayerRow({ player }: { player: Player }) {
           <span className="opacity-50">Speichere…</span>
         )}
       </td>
-      <td className="py-1 align-middle">
+      <td className="py-2 align-middle">
         {player.assignmentCount === 0 ? (
           <button
             type="button"
             onClick={handleDelete}
-            className="text-xs text-red-600 underline"
+            className="flex min-h-9 items-center text-xs text-red-600 underline"
           >
             Löschen
           </button>

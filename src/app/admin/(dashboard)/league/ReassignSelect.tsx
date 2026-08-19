@@ -30,7 +30,7 @@ export default function ReassignSelect({
           reassignTable(formData);
         });
       }}
-      className="rounded border border-black/20 bg-transparent px-1 py-0.5 text-xs dark:border-white/20"
+      className="min-h-9 rounded border border-black/20 bg-transparent px-2 py-2 text-xs dark:border-white/20"
     >
       {tables.map((t) => (
         <option key={t.id} value={t.id}>

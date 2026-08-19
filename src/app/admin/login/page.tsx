@@ -18,7 +18,7 @@ export default async function LoginPage({
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? "Unbekannter Fehler.") : null;
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
+    <div className="mx-auto flex w-full min-h-screen max-w-sm flex-col justify-center gap-8 px-4">
       <h1 className="text-xl font-semibold">Organisator-Login</h1>
       <p className="text-sm opacity-70">
         Kein Passwort mehr nötig — fordere einen Login-Link per Email an und
@@ -29,7 +29,7 @@ export default async function LoginPage({
         <input type="hidden" name="next" value={next ?? "/admin"} />
         <button
           type="submit"
-          className="rounded bg-foreground px-3 py-2 text-sm font-medium text-background"
+          className="min-h-9 rounded bg-foreground px-4 py-2 text-sm font-medium text-background"
         >
           Login-Link anfordern
         </button>

@@ -143,7 +143,7 @@ export default function ImportClient({
   }
 
   return (
-    <section className="flex max-w-3xl flex-col gap-3 border-t border-black/10 pt-6 dark:border-white/10">
+    <section className="flex max-w-3xl flex-col gap-4 border-t border-black/10 pt-6 dark:border-white/10">
       <h2 className="text-sm font-medium">
         Rangliste aus Text importieren (Modus B)
       </h2>
@@ -157,13 +157,13 @@ export default function ImportClient({
         onChange={(e) => setText(e.target.value)}
         rows={8}
         placeholder="| # | Spieler | F | Total | R1 | R2 | ... |"
-        className="w-full rounded border border-black/20 p-2 font-mono text-xs dark:border-white/20"
+        className="w-full rounded border border-black/20 p-3 font-mono text-xs dark:border-white/20"
       />
       <button
         type="button"
         onClick={preview}
         disabled={!text.trim() || loading}
-        className="w-fit rounded border border-black/20 px-3 py-1.5 text-sm dark:border-white/20 disabled:opacity-40"
+        className="min-h-9 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
       >
         {loading ? "Verarbeite…" : "Vorschau anzeigen"}
       </button>
@@ -179,21 +179,21 @@ export default function ImportClient({
       )}
 
       {matches && matches.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-black/10 text-left dark:border-white/10">
-                <th className="py-1 pr-2">Import</th>
-                <th className="py-1 pr-2">Total</th>
-                <th className="py-1 pr-2">Aktion</th>
+                <th className="py-2 pr-3">Import</th>
+                <th className="py-2 pr-3">Total</th>
+                <th className="py-2 pr-3">Aktion</th>
               </tr>
             </thead>
             <tbody>
               {matches.map((m, i) => (
                 <tr key={i} className="border-b border-black/5 dark:border-white/5">
-                  <td className="py-1 pr-2">{m.importName}</td>
-                  <td className="py-1 pr-2">{m.total}</td>
-                  <td className="py-1 pr-2">
+                  <td className="py-2 pr-3">{m.importName}</td>
+                  <td className="py-2 pr-3">{m.total}</td>
+                  <td className="py-2 pr-3">
                     {m.matchType === "exact" && (
                       <span>
                         Aktualisiert:{" "}
@@ -246,7 +246,7 @@ export default function ImportClient({
                             updateResolution(i, { action: "update", playerId: value });
                           }
                         }}
-                        className="rounded border border-black/20 bg-transparent px-1 py-0.5 text-xs dark:border-white/20"
+                        className="min-h-9 rounded border border-black/20 bg-transparent px-2 py-2 text-xs dark:border-white/20"
                       >
                         <option value="__skip__">Überspringen</option>
                         <option value="__new__">Als neuen Spieler anlegen</option>
@@ -266,7 +266,7 @@ export default function ImportClient({
             type="button"
             onClick={apply}
             disabled={loading}
-            className="w-fit rounded bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-40"
+            className="min-h-9 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
           >
             Import bestätigen
           </button>

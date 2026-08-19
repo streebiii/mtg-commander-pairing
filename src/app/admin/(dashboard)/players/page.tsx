@@ -14,45 +14,45 @@ export default async function PlayersPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <h1 className="text-xl font-semibold">Spielerverwaltung</h1>
 
-      <section className="flex flex-col gap-2">
+      <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium">Neuen Spieler anlegen</h2>
-        <form action={createPlayer} className="flex flex-wrap items-end gap-2">
-          <label className="flex w-full flex-col gap-1 text-sm sm:w-auto">
+        <form action={createPlayer} className="flex flex-wrap items-end gap-3">
+          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
             Vorname
             <input
               type="text"
               name="firstName"
               required
-              className="w-full rounded border border-black/20 px-2 py-1 dark:border-white/20 sm:w-auto"
+              className="min-h-9 w-full rounded border border-black/20 px-3 py-2 dark:border-white/20 sm:w-auto"
             />
           </label>
-          <label className="flex w-full flex-col gap-1 text-sm sm:w-auto">
+          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
             Nachname (optional)
             <input
               type="text"
               name="lastName"
-              className="w-full rounded border border-black/20 px-2 py-1 dark:border-white/20 sm:w-auto"
+              className="min-h-9 w-full rounded border border-black/20 px-3 py-2 dark:border-white/20 sm:w-auto"
             />
           </label>
-          <label className="flex w-full flex-col gap-1 text-sm sm:w-auto">
+          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
             Punktestand (Start)
             <input
               type="number"
               name="points"
               defaultValue={0}
               required
-              className="w-full rounded border border-black/20 px-2 py-1 dark:border-white/20 sm:w-28"
+              className="min-h-9 w-full rounded border border-black/20 px-3 py-2 dark:border-white/20 sm:w-28"
             />
           </label>
-          <label className="flex w-full flex-col gap-1 text-sm sm:w-auto">
+          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
             Skill (0-3)
             <select
               name="skillLevel"
               defaultValue={0}
-              className="w-full rounded border border-black/20 px-2 py-1 dark:border-white/20 sm:w-48"
+              className="min-h-9 w-full rounded border border-black/20 px-3 py-2 dark:border-white/20 sm:w-48"
             >
               {SKILL_LEVEL_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -63,7 +63,7 @@ export default async function PlayersPage() {
           </label>
           <button
             type="submit"
-            className="w-full rounded bg-foreground px-3 py-1.5 text-sm font-medium text-background sm:w-auto"
+            className="min-h-9 w-full rounded bg-foreground px-4 py-2 text-sm font-medium text-background sm:w-auto"
           >
             Anlegen
           </button>
@@ -76,7 +76,7 @@ export default async function PlayersPage() {
         </p>
       </section>
 
-      <section className="flex flex-col gap-2">
+      <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium">
           Bestehende Spieler ({players.length})
         </h2>
@@ -90,13 +90,13 @@ export default async function PlayersPage() {
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-black/10 text-left dark:border-white/10">
-                <th className="py-1 pr-2">Vorname</th>
-                <th className="py-1 pr-2">Nachname</th>
-                <th className="py-1 pr-2">Punkte</th>
-                <th className="py-1 pr-2">Skill</th>
-                <th className="py-1 pr-2">Abende</th>
-                <th className="py-1 pr-2"></th>
-                <th className="py-1"></th>
+                <th className="py-2 pr-3">Vorname</th>
+                <th className="py-2 pr-3">Nachname</th>
+                <th className="py-2 pr-3">Punkte</th>
+                <th className="py-2 pr-3">Skill</th>
+                <th className="py-2 pr-3">Abende</th>
+                <th className="py-2 pr-3"></th>
+                <th className="py-2"></th>
               </tr>
             </thead>
             <tbody>

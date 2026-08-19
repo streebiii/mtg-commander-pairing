@@ -44,7 +44,7 @@ export default async function LeaguePage() {
       select: { id: true, firstName: true, lastName: true, points: true },
     });
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-xl font-semibold">Modus B — Liga-Abend</h1>
           <p className="text-sm opacity-70">
@@ -52,7 +52,7 @@ export default async function LeaguePage() {
             Abend (siehe SPEC.md Abschnitt 5).
           </p>
         </div>
-        <form action={startEvening} className="flex flex-col gap-3">
+        <form action={startEvening} className="flex flex-col gap-4">
           <h2 className="text-sm font-medium">
             Anwesende Spieler auswählen
           </h2>
@@ -60,16 +60,16 @@ export default async function LeaguePage() {
             {players.map((p) => (
               <label
                 key={p.id}
-                className="flex items-center gap-1 rounded border border-black/20 px-2 py-1 text-sm dark:border-white/20"
+                className="flex min-h-9 items-center gap-1.5 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
               >
-                <input type="checkbox" name="playerIds" value={p.id} />
+                <input type="checkbox" name="playerIds" value={p.id} className="h-4 w-4" />
                 {formatPlayerName(p)} ({p.points})
               </label>
             ))}
           </div>
           <button
             type="submit"
-            className="w-fit rounded bg-foreground px-3 py-1.5 text-sm font-medium text-background"
+            className="min-h-9 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background"
           >
             Abend starten — Runde 1 berechnen
           </button>
@@ -117,9 +117,9 @@ export default async function LeaguePage() {
                 <div className="mb-2 text-sm font-semibold">
                   Tisch {table.tableNumber} ({table.size} Spieler)
                 </div>
-                <ul className="flex flex-col gap-2">
+                <ul className="flex flex-col gap-2.5">
                   {table.assignments.map((a) => (
-                    <li key={a.id} className="flex items-center gap-2 text-sm">
+                    <li key={a.id} className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="w-20 truncate">
                         {formatPlayerName(a.player)}
                       </span>
@@ -128,7 +128,7 @@ export default async function LeaguePage() {
                         name={`points_${a.id}`}
                         defaultValue={a.pointsAwarded ?? ""}
                         placeholder="Pkt."
-                        className="w-16 rounded border border-black/20 px-1 py-0.5 dark:border-white/20"
+                        className="min-h-9 w-16 rounded border border-black/20 px-2 py-2 dark:border-white/20"
                       />
                       {round.number === evening.rounds.length && (
                         <ReassignSelect
@@ -145,7 +145,7 @@ export default async function LeaguePage() {
           </div>
           <button
             type="submit"
-            className="w-fit rounded border border-black/20 px-3 py-1.5 text-sm dark:border-white/20"
+            className="min-h-9 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
           >
             Ergebnisse Runde {round.number} speichern
           </button>
@@ -160,7 +160,7 @@ export default async function LeaguePage() {
             <button
               type="submit"
               disabled={!lastRoundComplete}
-              className="rounded bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-40"
+              className="min-h-9 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
             >
               Nächste Runde starten
             </button>
@@ -171,7 +171,7 @@ export default async function LeaguePage() {
           <button
             type="submit"
             disabled={!lastRoundComplete}
-            className="rounded border border-black/20 px-3 py-1.5 text-sm dark:border-white/20 disabled:opacity-40"
+            className="min-h-9 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
           >
             Abend beenden
           </button>

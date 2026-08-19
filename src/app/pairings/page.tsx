@@ -52,16 +52,16 @@ export default async function PublicPairingsPage() {
       ) : (
         <>
           <p className="text-sm opacity-70">Runde {round.number}</p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-5">
             {round.tables.map((table) => (
               <div
                 key={table.id}
-                className="w-full rounded border border-black/20 p-4 dark:border-white/20 sm:w-56"
+                className="w-full rounded border border-black/20 p-5 dark:border-white/20 sm:w-56"
               >
-                <div className="mb-2 text-lg font-semibold">
+                <div className="mb-3 text-lg font-semibold">
                   Tisch {table.tableNumber}
                 </div>
-                <ul className="flex flex-col gap-1 text-sm">
+                <ul className="flex flex-col gap-1.5 text-sm">
                   {table.assignments.map((a) => (
                     <li key={a.id}>{formatPlayerName(a.player)}</li>
                   ))}
