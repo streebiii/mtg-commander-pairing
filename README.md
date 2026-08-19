@@ -6,13 +6,13 @@ Spezifikation und [DEPLOYMENT.md](./DEPLOYMENT.md) fürs Deployment.
 
 ## Lokale Entwicklung
 
-Voraussetzungen: Node.js 22+, Docker (für die lokale MariaDB).
+Voraussetzungen: Node.js 22+, Docker (für die lokale Postgres-Datenbank).
 
 ```bash
 # 1. Abhängigkeiten installieren
 npm install
 
-# 2. Lokale MariaDB-Datenbank starten
+# 2. Lokale Postgres-Datenbank starten
 docker compose up -d
 
 # 3. .env anlegen (falls noch nicht vorhanden) — siehe .env.example
@@ -42,5 +42,5 @@ npm test
 
 ## Deployment
 
-Siehe [DEPLOYMENT.md](./DEPLOYMENT.md) — Hybrid aus Vercel (App) und
-cyon.ch (Datenbank + Email).
+Siehe [DEPLOYMENT.md](./DEPLOYMENT.md) — Hybrid aus Vercel (App +
+Datenbank) und cyon.ch (nur Email).

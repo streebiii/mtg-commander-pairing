@@ -3,46 +3,40 @@
 cyon.ch kann keine dauerhaft laufende Node.js-App aus dem Internet
 erreichbar machen (nur CLI-Nutzung von Node/npm, siehe
 [cyon-Support](https://www.cyon.ch/support/a/npm)). Deshalb läuft die
-App selbst auf **Vercel** (kostenlos, für Next.js gebaut), während
-**Datenbank (MariaDB)** und **Email-Versand (SMTP)** über dein
-bestehendes cyon-Hosting laufen.
+App auf **Vercel** (kostenlos, für Next.js gebaut). Die **Datenbank**
+läuft ebenfalls auf Vercel (**Vercel Postgres**) — cyons Datenbanken
+lassen sich nur per IP-Whitelist fürs ganze Konto öffnen (betrifft dann
+auch andere Projekte auf demselben cyon-Konto), Vercel Postgres braucht
+das nicht. cyon wird nur noch für den **Email-Versand (SMTP)** genutzt.
 
 ## Voraussetzungen
 
 - Ein GitHub-Repository für dieses Projekt (Vercel deployt aus Git).
 - Ein Vercel-Account (kostenlos), verbunden mit GitHub.
-- Bei cyon: eine MariaDB-Datenbank ([Datenbank erstellen](https://www.cyon.ch/support/a/datenbank-erstellen))
-  und ein SMTP-fähiges Email-Postfach.
-- **Wichtig, vor dem Deployment prüfen**: ob deine cyon-Datenbank von
-  ausserhalb (also von Vercel aus) erreichbar ist. Shared-Hosting
-  beschränkt das teilweise auf bestimmte IP-Adressen oder erfordert eine
-  Freigabe im cyon-Kundencenter. Falls externe Verbindungen nicht
-  möglich sind, beim cyon-Support nachfragen, wie das freigeschaltet
-  wird.
+- Bei cyon: ein Email-Postfach mit SMTP-Zugang.
 
-## 1. Datenbank bei cyon anlegen
+## 1. Vercel-Projekt erstellen + Postgres-Datenbank hinzufügen
 
-1. Im cyon-Kundencenter eine neue MariaDB-Datenbank erstellen.
-2. Host, Port, Datenbankname, Benutzername und Passwort notieren.
-3. Daraus die Verbindungs-URL bauen:
-   ```
-   mysql://BENUTZER:PASSWORT@HOST:PORT/DATENBANKNAME
-   ```
+1. [vercel.com/new](https://vercel.com/new) → GitHub-Repo importieren.
+2. Im Projekt: **Storage → Create Database → Postgres** auswählen,
+   Region wählen (idealerweise nahe Europa), erstellen.
+3. Vercel trägt `DATABASE_URL` (und ein paar verwandte Variablen)
+   automatisch als Environment-Variable ein — das musst du nicht von
+   Hand kopieren.
 
-## 2. Environment-Variablen in Vercel setzen
+## 2. Restliche Environment-Variablen in Vercel setzen
 
-Im Vercel-Projekt unter **Settings → Environment Variables**:
+Im Vercel-Projekt unter **Settings → Environment Variables** ergänzen:
 
 | Variable | Wert |
 |---|---|
-| `DATABASE_URL` | die cyon-MariaDB-URL von oben |
 | `SESSION_SECRET` | zufälliger String, z.B. `openssl rand -base64 32` |
 | `ADMIN_EMAIL` | die Email-Adresse, an die Login-Links gehen sollen |
-| `SMTP_HOST` | dein cyon-SMTP-Host |
-| `SMTP_PORT` | meist `587` |
-| `SMTP_USER` | dein cyon-Email-Benutzername |
-| `SMTP_PASSWORD` | dein cyon-Email-Passwort |
-| `SMTP_FROM` | Absenderadresse (kann gleich wie `SMTP_USER` sein) |
+| `SMTP_HOST` | `mail.cyon.ch` |
+| `SMTP_PORT` | `465` |
+| `SMTP_USER` | deine cyon-Email-Adresse |
+| `SMTP_PASSWORD` | dein cyon-Postfach-Passwort |
+| `SMTP_FROM` | Absenderadresse (muss zur cyon-Domain gehören) |
 
 `APP_URL` muss i.d.R. **nicht** gesetzt werden — Vercel liefert die
 Basis-URL automatisch über `VERCEL_URL`. Nur bei einer eigenen Domain
@@ -50,51 +44,51 @@ explizit setzen (siehe `.env.example`).
 
 ## 3. Migrationen anwenden
 
-Vor dem ersten Deployment (und nach jeder Schema-Änderung) einmalig lokal
-gegen die cyon-Datenbank ausführen (Migrationen selbst laufen nicht
-automatisch auf Vercel, da Vercel-Builds keinen dauerhaften Zugriff auf
-eine Migrations-Historie brauchen):
+Die von Vercel erzeugte `DATABASE_URL` aus Schritt 1 lokal kopieren
+(Settings → Environment Variables → `DATABASE_URL` → anzeigen), dann
+einmalig vor dem ersten produktiven Einsatz (und nach jeder
+Schema-Änderung):
 
 ```bash
-DATABASE_URL="mysql://BENUTZER:PASSWORT@HOST:PORT/DATENBANKNAME" npx prisma migrate deploy
+DATABASE_URL="<die-vercel-postgres-url>" npx prisma migrate deploy
 ```
 
 ## 4. Deployment
 
-1. Repository zu GitHub pushen.
-2. In Vercel: "Add New Project" → GitHub-Repo auswählen → Environment
-   Variables aus Schritt 2 eintragen → Deploy.
-3. Danach ist die App unter der von Vercel vergebenen `*.vercel.app`-URL
-   erreichbar (Organisator-Bereich unter `/admin`, öffentliche Ansicht
-   unter `/pairings`).
+Jeder Push auf `main` löst automatisch ein neues Vercel-Deployment aus.
+Die App ist danach unter der `*.vercel.app`-URL erreichbar
+(Organisator-Bereich unter `/admin`, öffentliche Ansicht unter
+`/pairings`).
 
-Für eine eigene Domain: in Vercel unter **Settings → Domains** hinzufügen
-und beim Domain-Registrar die von Vercel angegebenen DNS-Einträge setzen.
+Für eine eigene Domain: in Vercel unter **Settings → Domains**
+hinzufügen und beim Domain-Registrar die von Vercel angegebenen
+DNS-Einträge setzen.
 
 ## Updates einspielen
 
-Jeder Push auf den `main`-Branch löst automatisch ein neues
-Vercel-Deployment aus. Bei Schema-Änderungen vorher wie in Schritt 3
-`prisma migrate deploy` gegen die cyon-Datenbank laufen lassen.
+Jeder Push auf `main` deployt automatisch neu. Bei Schema-Änderungen
+vorher wie in Schritt 3 `prisma migrate deploy` laufen lassen.
 
 ## Backup
 
-Regelmässige Backups der MariaDB-Datenbank über das cyon-Kundencenter
-einrichten (cyon erstellt i.d.R. tägliche Backups automatisch, siehe
-[cyon-Support: Datenbank exportieren](https://www.cyon.ch/support/a/datenbank-exportieren)).
-Zusätzlich manuell exportierbar:
+Vercel Postgres erstellt automatische Backups (Details im Vercel-
+Dashboard unter Storage → dein Postgres-Store → Backups). Zusätzlich
+manuell exportierbar mit der `DATABASE_URL` aus Schritt 3:
 
 ```bash
-mysqldump -h HOST -u BENUTZER -p DATENBANKNAME > backup-$(date +%F).sql
+pg_dump "$DATABASE_URL" > backup-$(date +%F).sql
 ```
 
 ## Sicherheit
 
-- **Zugriff auf dein cyon-Konto selbst** (Kundencenter-Login, SSH/FTP)
-  liegt ausserhalb dessen, was diese App absichern kann — falls cyon
-  2FA für das Kundencenter anbietet, aktivier es dort direkt.
+- **Zugriff auf dein cyon-Konto selbst** (Kundencenter-Login) liegt
+  ausserhalb dessen, was diese App absichern kann — falls cyon 2FA fürs
+  Kundencenter anbietet, aktivier es dort direkt.
 - Die App selbst schützt vor unautorisiertem Zugriff über die Webseite
   durch: passwortlosen Email-Login (Abschnitt 2 in SPEC.md),
   Rate-Limiting auf Login-Link-Anfragen, Sicherheits-HTTP-Header (siehe
   `next.config.ts`), und Prisma-parametrisierte Datenbankzugriffe
   (kein SQL-Injection-Risiko durch String-Konkatenation).
+- Vercel Postgres ist nicht per IP eingeschränkt, aber nur mit den in
+  Schritt 1 generierten, langen Zugangsdaten erreichbar — diese niemals
+  ausserhalb der Vercel-Environment-Variablen speichern oder teilen.

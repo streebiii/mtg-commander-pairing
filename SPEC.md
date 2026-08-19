@@ -25,10 +25,13 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
 - **Öffentliche Lese-Ansicht**: separate URL ohne Login, zeigt nur die
   aktuellen Tischzuteilungen des laufenden Abends (z. B. für einen Bildschirm
   vor Ort oder zum Teilen mit den Spielern). Keine Bearbeitungsmöglichkeit.
-- **Hosting — Hybrid**: die App läuft auf Vercel (Node.js-fähig), die
-  Datenbank (MariaDB) und der Email-Versand (SMTP) laufen über das
-  bestehende cyon.ch-Hosting des Auftraggebers — cyon selbst kann keine
-  dauerhaft laufende Node.js-App hosten (siehe DEPLOYMENT.md).
+- **Hosting — Hybrid**: die App UND die Datenbank (Vercel Postgres)
+  laufen auf Vercel (Node.js-fähig) — cyon.ch selbst kann keine dauerhaft
+  laufende Node.js-App hosten, und cyons Datenbanken lassen sich nur per
+  kontoweitem IP-Whitelisting öffnen (hätte auch andere Projekte auf
+  demselben cyon-Konto betroffen). Nur der **Email-Versand (SMTP)** läuft
+  weiterhin über das bestehende cyon.ch-Hosting des Auftraggebers (siehe
+  DEPLOYMENT.md).
 - **Sicherheitshärtung**: Sicherheits-HTTP-Header (siehe `next.config.ts`),
   Rate-Limiting auf den Login-Link-Versand, Prisma-parametrisierte
   Datenbankzugriffe (kein SQL-Injection-Risiko), keine Secrets im
@@ -241,12 +244,13 @@ Ziel-Tisches zusammen gespielt hat. Die Tischgrößenverteilung selbst
 
 ## 10. Offene technische Fragen (vor Deployment zu klären)
 
-- Umgesetzt als Hybrid-Deployment (App auf Vercel, Datenbank + Email über
-  cyon.ch), siehe [DEPLOYMENT.md](./DEPLOYMENT.md).
-- **Noch zu prüfen**: ob die cyon-MariaDB-Datenbank von ausserhalb (also
-  von Vercel aus) erreichbar ist, oder ob dafür beim cyon-Support eine
-  Freigabe nötig ist (Details in DEPLOYMENT.md).
-- Lokale Entwicklung läuft gegen eine MariaDB in Docker
+- Umgesetzt als Hybrid-Deployment (App + Datenbank auf Vercel, nur Email
+  über cyon.ch), siehe [DEPLOYMENT.md](./DEPLOYMENT.md). Ursprünglich war
+  die Datenbank ebenfalls bei cyon geplant, das scheiterte aber am
+  kontoweiten IP-Whitelisting für externen DB-Zugriff (hätte auch andere
+  cyon-Projekte des Auftraggebers betroffen) — Vercel Postgres braucht
+  kein IP-Whitelisting und ist direkt im selben Dashboard eingerichtet.
+- Lokale Entwicklung läuft gegen ein PostgreSQL in Docker
   (`docker-compose.yml`), identisch zur Produktions-Datenbank-Engine.
 - Eigene Domain (statt `*.vercel.app`) ist optional und kann jederzeit
   nachträglich in Vercel eingerichtet werden.

@@ -1,5 +1,5 @@
-# Lokale Entwicklungs-Datenbank (MariaDB), damit lokal gegen dieselbe
-# Datenbank-Engine wie in Produktion (cyon-Hosting) entwickelt wird.
+# Lokale Entwicklungs-Datenbank (PostgreSQL), damit lokal gegen dieselbe
+# Datenbank-Engine wie in Produktion (Vercel Postgres) entwickelt wird.
 #
 # Die App selbst läuft NICHT hier — sie wird auf Vercel deployt (siehe
 # DEPLOYMENT.md). Dieser Compose-File startet nur die Datenbank für
@@ -10,19 +10,17 @@
 # Daten löschen (z.B. für einen sauberen Neustart): docker compose down -v
 services:
   db:
-    image: mariadb:11
+    image: postgres:16
     environment:
-      MARIADB_ROOT_PASSWORD: dev-root-password
-      MARIADB_DATABASE: pairing_dev
-      MARIADB_USER: pairing
-      MARIADB_PASSWORD: dev-password
+      POSTGRES_DB: pairing_dev
+      POSTGRES_USER: pairing
+      POSTGRES_PASSWORD: dev-password
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - pairing-db-data:/var/lib/mysql
-      - ./docker/mariadb-init:/docker-entrypoint-initdb.d:ro
+      - pairing-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD-SHELL", "pg_isready -U pairing -d pairing_dev"]
       interval: 5s
       timeout: 5s
       retries: 10
