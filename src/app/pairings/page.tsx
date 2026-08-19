@@ -41,7 +41,7 @@ export default async function PublicPairingsPage() {
   const round = evening?.rounds[0];
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
       <h1 className="text-2xl font-semibold">Aktuelle Pairings</h1>
 
       {!round ? (
@@ -56,7 +56,7 @@ export default async function PublicPairingsPage() {
             {round.tables.map((table) => (
               <div
                 key={table.id}
-                className="w-56 rounded border border-black/20 p-4 dark:border-white/20"
+                className="w-full rounded border border-black/20 p-4 dark:border-white/20 sm:w-56"
               >
                 <div className="mb-2 text-lg font-semibold">
                   Tisch {table.tableNumber}

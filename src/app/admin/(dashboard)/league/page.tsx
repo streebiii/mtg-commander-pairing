@@ -100,7 +100,7 @@ export default async function LeaguePage() {
         return (
         <form key={round.id} action={submitRoundResults} className="flex flex-col gap-3">
           <input type="hidden" name="roundId" value={round.id} />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-sm font-medium">
               Runde {round.number} — Punkte pro Spieler eintragen
             </h2>
@@ -112,7 +112,7 @@ export default async function LeaguePage() {
             {round.tables.map((table) => (
               <div
                 key={table.id}
-                className="w-64 rounded border border-black/20 p-3 dark:border-white/20"
+                className="w-full rounded border border-black/20 p-3 dark:border-white/20 sm:w-64"
               >
                 <div className="mb-2 text-sm font-semibold">
                   Tisch {table.tableNumber} ({table.size} Spieler)
@@ -153,7 +153,7 @@ export default async function LeaguePage() {
         );
       })}
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         {lastRound.number < MAX_ROUNDS && (
           <form action={startNextRound}>
             <input type="hidden" name="eveningId" value={evening.id} />

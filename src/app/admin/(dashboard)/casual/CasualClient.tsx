@@ -362,7 +362,7 @@ export default function CasualClient({
             {tables.map((table) => (
               <div
                 key={table.tableNumber}
-                className="w-48 rounded border border-black/20 p-3 dark:border-white/20"
+                className="w-full rounded border border-black/20 p-3 dark:border-white/20 sm:w-48"
               >
                 <div className="mb-2 text-sm font-semibold">
                   Tisch {table.tableNumber} ({table.size} Spieler)

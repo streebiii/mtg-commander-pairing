@@ -20,39 +20,39 @@ export default async function PlayersPage() {
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Neuen Spieler anlegen</h2>
         <form action={createPlayer} className="flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex w-full flex-col gap-1 text-sm sm:w-auto">
             Vorname
             <input
               type="text"
               name="firstName"
               required
-              className="rounded border border-black/20 px-2 py-1 dark:border-white/20"
+              className="w-full rounded border border-black/20 px-2 py-1 dark:border-white/20 sm:w-auto"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex w-full flex-col gap-1 text-sm sm:w-auto">
             Nachname (optional)
             <input
               type="text"
               name="lastName"
-              className="rounded border border-black/20 px-2 py-1 dark:border-white/20"
+              className="w-full rounded border border-black/20 px-2 py-1 dark:border-white/20 sm:w-auto"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex w-full flex-col gap-1 text-sm sm:w-auto">
             Punktestand (Start)
             <input
               type="number"
               name="points"
               defaultValue={0}
               required
-              className="w-28 rounded border border-black/20 px-2 py-1 dark:border-white/20"
+              className="w-full rounded border border-black/20 px-2 py-1 dark:border-white/20 sm:w-28"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex w-full flex-col gap-1 text-sm sm:w-auto">
             Skill (0-3)
             <select
               name="skillLevel"
               defaultValue={0}
-              className="w-48 rounded border border-black/20 px-2 py-1 dark:border-white/20"
+              className="w-full rounded border border-black/20 px-2 py-1 dark:border-white/20 sm:w-48"
             >
               {SKILL_LEVEL_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -63,7 +63,7 @@ export default async function PlayersPage() {
           </label>
           <button
             type="submit"
-            className="rounded bg-foreground px-3 py-1.5 text-sm font-medium text-background"
+            className="w-full rounded bg-foreground px-3 py-1.5 text-sm font-medium text-background sm:w-auto"
           >
             Anlegen
           </button>
@@ -84,34 +84,38 @@ export default async function PlayersPage() {
           Änderungen werden automatisch gespeichert, sobald du ein Feld
           verlässt bzw. eine Auswahl änderst.
         </p>
-        <table className="w-full max-w-3xl text-sm">
-          <thead>
-            <tr className="border-b border-black/10 text-left dark:border-white/10">
-              <th className="py-1 pr-2">Vorname</th>
-              <th className="py-1 pr-2">Nachname</th>
-              <th className="py-1 pr-2">Punkte</th>
-              <th className="py-1 pr-2">Skill</th>
-              <th className="py-1 pr-2">Abende</th>
-              <th className="py-1 pr-2"></th>
-              <th className="py-1"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {players.map((player) => (
-              <PlayerRow
-                key={player.id}
-                player={{
-                  id: player.id,
-                  firstName: player.firstName,
-                  lastName: player.lastName,
-                  points: player.points,
-                  skillLevel: player.skillLevel,
-                  assignmentCount: player._count.assignments,
-                }}
-              />
-            ))}
-          </tbody>
-        </table>
+        {/* Auf schmalen Bildschirmen (Handy) horizontal scrollbar, statt
+            Spalten einfach abzuschneiden. */}
+        <div className="w-full max-w-3xl overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="border-b border-black/10 text-left dark:border-white/10">
+                <th className="py-1 pr-2">Vorname</th>
+                <th className="py-1 pr-2">Nachname</th>
+                <th className="py-1 pr-2">Punkte</th>
+                <th className="py-1 pr-2">Skill</th>
+                <th className="py-1 pr-2">Abende</th>
+                <th className="py-1 pr-2"></th>
+                <th className="py-1"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {players.map((player) => (
+                <PlayerRow
+                  key={player.id}
+                  player={{
+                    id: player.id,
+                    firstName: player.firstName,
+                    lastName: player.lastName,
+                    points: player.points,
+                    skillLevel: player.skillLevel,
+                    assignmentCount: player._count.assignments,
+                  }}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <ImportClient
