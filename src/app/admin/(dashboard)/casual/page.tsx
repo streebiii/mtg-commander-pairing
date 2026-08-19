@@ -1,13 +1,15 @@
 import { prisma } from "@/lib/prisma";
+import { formatPlayerName } from "@/lib/players";
 import CasualClient from "./CasualClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function CasualPage() {
-  const players = await prisma.player.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
+  const rawPlayers = await prisma.player.findMany({
+    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+    select: { id: true, firstName: true, lastName: true },
   });
+  const players = rawPlayers.map((p) => ({ id: p.id, name: formatPlayerName(p) }));
 
   return (
     <div className="flex flex-col gap-4">

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import { assignCasualRound } from "@/lib/pairing/casualAssignment";
 import { PairingError } from "@/lib/pairing/errors";
+import { formatPlayerName } from "@/lib/players";
 
 /**
  * Berechnet eine Modus-A-Tischzuteilung (Casual, keine Rangliste, keine
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
 
   const players = await prisma.player.findMany({
     where: { id: { in: playerIds as string[] } },
-    select: { id: true, name: true },
+    select: { id: true, firstName: true, lastName: true },
   });
 
   if (players.length !== playerIds.length) {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
       players.map((p) => p.id),
       sizes,
     );
-    const nameById = new Map(players.map((p) => [p.id, p.name]));
+    const nameById = new Map(players.map((p) => [p.id, formatPlayerName(p)]));
 
     return NextResponse.json({
       tables: tables.map((table, i) => ({

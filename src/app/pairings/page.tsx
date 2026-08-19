@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { formatPlayerName } from "@/lib/players";
 
 // Öffentliche, ungeschützte Lese-Ansicht der aktuellen Tischzuteilung
 // (siehe SPEC.md Abschnitt 2). Kein Login nötig — gedacht zum Anzeigen auf
@@ -25,7 +26,10 @@ export default async function PublicPairingsPage() {
             include: {
               assignments: {
                 include: { player: true },
-                orderBy: { player: { name: "asc" } },
+                orderBy: [
+                  { player: { firstName: "asc" } },
+                  { player: { lastName: "asc" } },
+                ],
               },
             },
           },
@@ -59,7 +63,7 @@ export default async function PublicPairingsPage() {
                 </div>
                 <ul className="flex flex-col gap-1 text-sm">
                   {table.assignments.map((a) => (
-                    <li key={a.id}>{a.player.name}</li>
+                    <li key={a.id}>{formatPlayerName(a.player)}</li>
                   ))}
                 </ul>
               </div>

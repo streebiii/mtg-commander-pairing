@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { createPlayer, deletePlayer, updatePlayer } from "./actions";
+import ImportClient from "./ImportClient";
 
 // Admin-Seiten lesen immer den aktuellen DB-Stand, kein statisches Caching.
 export const dynamic = "force-dynamic";
@@ -18,11 +19,19 @@ export default async function PlayersPage() {
         <h2 className="text-sm font-medium">Neuen Spieler anlegen</h2>
         <form action={createPlayer} className="flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-sm">
-            Name
+            Vorname
             <input
               type="text"
-              name="name"
+              name="firstName"
               required
+              className="rounded border border-black/20 px-2 py-1 dark:border-white/20"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Nachname (optional)
+            <input
+              type="text"
+              name="lastName"
               className="rounded border border-black/20 px-2 py-1 dark:border-white/20"
             />
           </label>
@@ -44,8 +53,8 @@ export default async function PlayersPage() {
           </button>
         </form>
         <p className="text-xs opacity-70">
-          Hier trägst du die aktuelle Saison-Rangliste (Name + Punktestand)
-          einmalig manuell ein (siehe SPEC.md Abschnitt 7).
+          Hier trägst du die aktuelle Saison-Rangliste einmalig manuell ein
+          (siehe SPEC.md Abschnitt 7) — oder nutzt den Text-Import unten.
         </p>
       </section>
 
@@ -56,7 +65,8 @@ export default async function PlayersPage() {
         <table className="w-full max-w-2xl text-sm">
           <thead>
             <tr className="border-b border-black/10 text-left dark:border-white/10">
-              <th className="py-1 pr-2">Name</th>
+              <th className="py-1 pr-2">Vorname</th>
+              <th className="py-1 pr-2">Nachname</th>
               <th className="py-1 pr-2">Punkte</th>
               <th className="py-1 pr-2">Abende</th>
               <th className="py-1"></th>
@@ -76,16 +86,26 @@ export default async function PlayersPage() {
                     <input type="hidden" name="id" value={player.id} />
                     <input
                       type="text"
-                      name="name"
-                      defaultValue={player.name}
-                      className="w-40 rounded border border-black/20 px-2 py-1 dark:border-white/20"
+                      name="firstName"
+                      defaultValue={player.firstName}
+                      className="w-32 rounded border border-black/20 px-2 py-1 dark:border-white/20"
+                    />
+                    <input
+                      type="text"
+                      name="lastName"
+                      defaultValue={player.lastName ?? ""}
+                      placeholder="(optional)"
+                      className="w-32 rounded border border-black/20 px-2 py-1 dark:border-white/20"
                     />
                     <input
                       type="number"
                       name="points"
                       defaultValue={player.points}
-                      className="w-24 rounded border border-black/20 px-2 py-1 dark:border-white/20"
+                      className="w-20 rounded border border-black/20 px-2 py-1 dark:border-white/20"
                     />
+                    <span className="w-16 text-xs opacity-70">
+                      {player._count.assignments} Abend(e)
+                    </span>
                     <button
                       type="submit"
                       className="rounded border border-black/20 px-2 py-1 text-xs dark:border-white/20"
@@ -93,10 +113,6 @@ export default async function PlayersPage() {
                       Speichern
                     </button>
                   </form>
-                </td>
-                <td className="py-1 pr-2 align-middle">{player.points}</td>
-                <td className="py-1 pr-2 align-middle">
-                  {player._count.assignments}
                 </td>
                 <td className="py-1 align-middle">
                   {player._count.assignments === 0 ? (
@@ -110,7 +126,10 @@ export default async function PlayersPage() {
                       </button>
                     </form>
                   ) : (
-                    <span className="text-xs opacity-50" title="Spieler hat bereits an Abenden teilgenommen">
+                    <span
+                      className="text-xs opacity-50"
+                      title="Spieler hat bereits an Abenden teilgenommen"
+                    >
                       —
                     </span>
                   )}
@@ -120,6 +139,15 @@ export default async function PlayersPage() {
           </tbody>
         </table>
       </section>
+
+      <ImportClient
+        existingPlayers={players.map((p) => ({
+          id: p.id,
+          firstName: p.firstName,
+          lastName: p.lastName,
+          points: p.points,
+        }))}
+      />
     </div>
   );
 }

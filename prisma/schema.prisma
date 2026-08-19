@@ -13,7 +13,10 @@ datasource db {
 /// Ein Spieler der Liga/des Clubs. Persistent über alle Abende hinweg.
 model Player {
   id        String   @id @default(cuid())
-  name      String
+  firstName String
+  /// Optional, da der Textimport der Liga-Rangliste manchmal nur einen
+  /// Vornamen oder eine Initiale liefert (z.B. "Tyrone", "Marc S.").
+  lastName  String?
   /// Aktueller Gesamt-Liga-Punktestand (Saison). Wird nach jeder Modus-B-
   /// Runde um die eingetragenen pointsAwarded erhöht. Modus A ändert dies nie.
   points    Int      @default(0)

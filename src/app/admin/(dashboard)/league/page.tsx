@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { formatPlayerName } from "@/lib/players";
 import {
   finishEvening,
   startEvening,
@@ -24,7 +25,10 @@ export default async function LeaguePage() {
             include: {
               assignments: {
                 include: { player: true },
-                orderBy: { player: { name: "asc" } },
+                orderBy: [
+                  { player: { firstName: "asc" } },
+                  { player: { lastName: "asc" } },
+                ],
               },
             },
           },
@@ -36,7 +40,7 @@ export default async function LeaguePage() {
   if (!evening) {
     const players = await prisma.player.findMany({
       orderBy: { points: "desc" },
-      select: { id: true, name: true, points: true },
+      select: { id: true, firstName: true, lastName: true, points: true },
     });
     return (
       <div className="flex flex-col gap-4">
@@ -58,7 +62,7 @@ export default async function LeaguePage() {
                 className="flex items-center gap-1 rounded border border-black/20 px-2 py-1 text-sm dark:border-white/20"
               >
                 <input type="checkbox" name="playerIds" value={p.id} />
-                {p.name} ({p.points})
+                {formatPlayerName(p)} ({p.points})
               </label>
             ))}
           </div>
@@ -105,7 +109,9 @@ export default async function LeaguePage() {
                 <ul className="flex flex-col gap-2">
                   {table.assignments.map((a) => (
                     <li key={a.id} className="flex items-center gap-2 text-sm">
-                      <span className="w-20 truncate">{a.player.name}</span>
+                      <span className="w-20 truncate">
+                        {formatPlayerName(a.player)}
+                      </span>
                       <input
                         type="number"
                         name={`points_${a.id}`}

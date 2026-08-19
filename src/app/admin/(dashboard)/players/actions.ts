@@ -4,26 +4,33 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 export async function createPlayer(formData: FormData) {
-  const name = String(formData.get("name") ?? "").trim();
+  const firstName = String(formData.get("firstName") ?? "").trim();
+  const lastName = String(formData.get("lastName") ?? "").trim();
   const pointsRaw = String(formData.get("points") ?? "0").trim();
   const points = Number.parseInt(pointsRaw, 10);
 
-  if (!name) return;
+  if (!firstName) return;
   if (!Number.isFinite(points)) return;
 
-  await prisma.player.create({ data: { name, points } });
+  await prisma.player.create({
+    data: { firstName, lastName: lastName || null, points },
+  });
   revalidatePath("/admin/players");
 }
 
 export async function updatePlayer(formData: FormData) {
   const id = String(formData.get("id") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const firstName = String(formData.get("firstName") ?? "").trim();
+  const lastName = String(formData.get("lastName") ?? "").trim();
   const pointsRaw = String(formData.get("points") ?? "").trim();
   const points = Number.parseInt(pointsRaw, 10);
 
-  if (!id || !name || !Number.isFinite(points)) return;
+  if (!id || !firstName || !Number.isFinite(points)) return;
 
-  await prisma.player.update({ where: { id }, data: { name, points } });
+  await prisma.player.update({
+    where: { id },
+    data: { firstName, lastName: lastName || null, points },
+  });
   revalidatePath("/admin/players");
 }
 
