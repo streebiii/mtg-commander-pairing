@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { SKILL_LEVEL_OPTIONS, skillLevelShortLabel } from "@/lib/players";
 
 interface PlayerOption {
   id: string;
@@ -21,10 +22,6 @@ interface TableResult {
 }
 
 type Mode = "random" | "skill";
-
-function skillLabel(skillLevel: number): string {
-  return skillLevel > 0 ? `Skill ${skillLevel}` : "Skill ?";
-}
 
 export default function CasualClient({
   players: initialPlayers,
@@ -168,7 +165,7 @@ export default function CasualClient({
                 checked={selected.has(p.id)}
                 onChange={() => toggle(p.id)}
               />
-              {p.name} <span className="opacity-60">({skillLabel(p.skillLevel)})</span>
+              {p.name} <span className="opacity-60">({skillLevelShortLabel(p.skillLevel)})</span>
             </label>
           ))}
         </div>
@@ -193,18 +190,17 @@ export default function CasualClient({
             />
           </label>
           <label className="flex flex-col gap-1 text-xs">
-            Skill (0-5)
+            Skill (0-3)
             <select
               value={newSkill}
               onChange={(e) => setNewSkill(Number(e.target.value))}
-              className="w-24 rounded border border-black/20 px-2 py-1 text-sm dark:border-white/20"
+              className="w-44 rounded border border-black/20 px-2 py-1 text-sm dark:border-white/20"
             >
-              <option value={0}>0 – unbekannt</option>
-              <option value={1}>1</option>
-              <option value={2}>2</option>
-              <option value={3}>3</option>
-              <option value={4}>4</option>
-              <option value={5}>5</option>
+              {SKILL_LEVEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </label>
           <button
@@ -286,7 +282,7 @@ export default function CasualClient({
                         >
                           {p.name}{" "}
                           <span className="opacity-60">
-                            ({skillLabel(p.skillLevel)})
+                            ({skillLevelShortLabel(p.skillLevel)})
                           </span>
                         </button>
                       </li>

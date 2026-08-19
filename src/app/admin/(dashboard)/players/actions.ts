@@ -2,21 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-
-/** Parst und validiert das Skill-Level-Feld (0-5, 0 = unbekannt). */
-function parseSkillLevel(formData: FormData): number | null {
-  const raw = String(formData.get("skillLevel") ?? "0").trim();
-  const value = Number.parseInt(raw, 10);
-  if (!Number.isFinite(value) || value < 0 || value > 5) return null;
-  return value;
-}
+import { parseSkillLevel } from "@/lib/players";
 
 export async function createPlayer(formData: FormData) {
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
   const pointsRaw = String(formData.get("points") ?? "0").trim();
   const points = Number.parseInt(pointsRaw, 10);
-  const skillLevel = parseSkillLevel(formData);
+  const skillLevel = parseSkillLevel(formData.get("skillLevel"));
 
   if (!firstName) return;
   if (!Number.isFinite(points)) return;
@@ -34,7 +27,7 @@ export async function updatePlayer(formData: FormData) {
   const lastName = String(formData.get("lastName") ?? "").trim();
   const pointsRaw = String(formData.get("points") ?? "").trim();
   const points = Number.parseInt(pointsRaw, 10);
-  const skillLevel = parseSkillLevel(formData);
+  const skillLevel = parseSkillLevel(formData.get("skillLevel"));
 
   if (!id || !firstName || !Number.isFinite(points)) return;
   if (skillLevel === null) return;

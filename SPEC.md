@@ -93,13 +93,13 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
   Modus B (Abschnitt 5.1), aber mit der Skill-Einstufung der Spieler
   (Abschnitt 6) statt Liga-Punkten als Sortier-Kriterium, inkl. Zufalls-
   Rauschen (±1 Skill-Stufe — kleiner als bei der Liga, da die Skala nur
-  0-5 umfasst), damit nicht stur die exakt gleich starken Spieler
+  0-3 umfasst), damit nicht stur die exakt gleich starken Spieler
   zusammen landen.
   - Unbewertete Spieler (Skill = 0, "weiß ich nicht") werden für die
     Berechnung so behandelt, als hätten sie den Mittelwert der bewerteten
-    anwesenden Spieler (bzw. 2.5, falls niemand bewertet ist) — sie
-    landen dadurch tendenziell in der Mitte statt automatisch am
-    schwächsten Tisch.
+    anwesenden Spieler (bzw. den Skalen-Mittelwert 2, falls niemand
+    bewertet ist) — sie landen dadurch tendenziell in der Mitte statt
+    automatisch am schwächsten Tisch.
   - Weiterhin keine Persistenz, kein Verlauf, keine Rematch-Vermeidung
     (Modus A bleibt Einzelrunde).
   - Die Skill-Werte sind nur im Organisator-Bereich sichtbar (Auswahl-
@@ -178,11 +178,15 @@ Ziel-Tisches zusammen gespielt hat. Die Tischgrößenverteilung selbst
   markieren/auswählen.
 - Enthält je Spieler den aktuellen Gesamt-Liga-Punktestand (wird durch
   Ergebniserfassung in Modus B fortgeschrieben).
-- Enthält je Spieler eine optionale **Skill-Einstufung** (0-5, 0 = "weiß
-  ich nicht"/unbewertet, 1 = blutiger Anfänger, 5 = langjähriger
-  Commander/Magic-Spieler). Komplett unabhängig vom Liga-Punktestand,
-  wird ausschließlich für den skill-balancierten Modus A verwendet
-  (Abschnitt 4.1). Editierbar an derselben Stelle wie Name/Punkte.
+- Enthält je Spieler eine optionale **Skill-Einstufung** (0-3):
+  - 0 = "weiß ich nicht" / unbewertet
+  - 1 = Anfänger
+  - 2 = Medium
+  - 3 = erfahrener Spieler (mehrjährig)
+
+  Komplett unabhängig vom Liga-Punktestand, wird ausschließlich für den
+  skill-balancierten Modus A verwendet (Abschnitt 4.1). Editierbar an
+  derselben Stelle wie Name/Punkte.
 
 ## 7. Datenimport zu Beginn
 

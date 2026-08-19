@@ -2,14 +2,16 @@ import { groupByValueWithJitter } from "./rankGrouping";
 
 /**
  * Zufalls-Rauschen (in Skill-Stufen) für die Sortierung beim
- * skill-balancierten Modus A. Kleiner als der Liga-Jitter, da die
- * Skill-Skala nur 0-5 statt eines offenen Punktebereichs umfasst.
+ * skill-balancierten Modus A. Die Skill-Skala umfasst nur 0-3
+ * (siehe SPEC.md Abschnitt 6), ein Rauschen von ±1 lässt benachbarte
+ * Stufen also schon spürbar variieren, ohne z.B. Anfänger und erfahrene
+ * Spieler zu mischen.
  */
 export const SKILL_JITTER = 1;
 
 export interface SkillRatedPlayer {
   id: string;
-  /** 0 = unbekannt/nicht eingestuft, 1-5 = Skill-Einstufung. */
+  /** 0 = unbekannt/nicht eingestuft, 1-3 = Skill-Einstufung. */
   skillLevel: number;
 }
 
@@ -20,8 +22,9 @@ export interface SkillRatedPlayer {
  * SPEC.md Abschnitt 5.1), nur mit Skill-Level statt Liga-Punkten als
  * Sortier-Kriterium. Unbewertete Spieler (skillLevel = 0) werden dabei so
  * behandelt, als hätten sie den Mittelwert der bewerteten Spieler (bzw.
- * 2.5, falls niemand bewertet ist) — sie landen tendenziell in der Mitte
- * statt automatisch am schwächsten Tisch (siehe SPEC.md Abschnitt 4.1).
+ * den Skalen-Mittelwert 2, falls niemand bewertet ist) — sie landen
+ * tendenziell in der Mitte statt automatisch am schwächsten Tisch (siehe
+ * SPEC.md Abschnitt 4.1).
  *
  * Keine Rematch-Vermeidung nötig: Modus A ist immer eine Einzelrunde ohne
  * Verlauf (siehe SPEC.md Abschnitt 4).
@@ -40,7 +43,7 @@ export function assignSkillBalancedCasualRound(
   const meanSkill =
     rated.length > 0
       ? rated.reduce((sum, p) => sum + p.skillLevel, 0) / rated.length
-      : 2.5;
+      : 2;
 
   const entities = players.map((p) => ({
     id: p.id,

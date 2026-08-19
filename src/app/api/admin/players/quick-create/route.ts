@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { formatPlayerName } from "@/lib/players";
+import { formatPlayerName, parseSkillLevel, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from "@/lib/players";
 
 /**
  * Legt schnell einen neuen Spieler an — gedacht für die Spielerauswahl in
@@ -12,15 +12,14 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const firstName = typeof body?.firstName === "string" ? body.firstName.trim() : "";
   const lastName = typeof body?.lastName === "string" ? body.lastName.trim() : "";
-  const skillLevelRaw = body?.skillLevel;
-  const skillLevel = Number.isInteger(skillLevelRaw) ? skillLevelRaw : 0;
+  const skillLevel = parseSkillLevel(body?.skillLevel ?? 0);
 
   if (!firstName) {
     return NextResponse.json({ error: "Vorname fehlt" }, { status: 400 });
   }
-  if (skillLevel < 0 || skillLevel > 5) {
+  if (skillLevel === null) {
     return NextResponse.json(
-      { error: "Skill muss zwischen 0 und 5 liegen" },
+      { error: `Skill muss zwischen ${SKILL_LEVEL_MIN} und ${SKILL_LEVEL_MAX} liegen` },
       { status: 400 },
     );
   }

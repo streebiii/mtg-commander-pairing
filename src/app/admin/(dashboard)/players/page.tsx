@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { SKILL_LEVEL_OPTIONS } from "@/lib/players";
 import { createPlayer, deletePlayer, updatePlayer } from "./actions";
 import ImportClient from "./ImportClient";
 
@@ -46,18 +47,17 @@ export default async function PlayersPage() {
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            Skill (0-5)
+            Skill (0-3)
             <select
               name="skillLevel"
               defaultValue={0}
-              className="w-28 rounded border border-black/20 px-2 py-1 dark:border-white/20"
+              className="w-48 rounded border border-black/20 px-2 py-1 dark:border-white/20"
             >
-              <option value={0}>0 – unbekannt</option>
-              <option value={1}>1 – Anfänger</option>
-              <option value={2}>2</option>
-              <option value={3}>3</option>
-              <option value={4}>4</option>
-              <option value={5}>5 – sehr erfahren</option>
+              {SKILL_LEVEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </label>
           <button
@@ -124,14 +124,13 @@ export default async function PlayersPage() {
                     <select
                       name="skillLevel"
                       defaultValue={player.skillLevel}
-                      className="w-16 rounded border border-black/20 px-1 py-1 dark:border-white/20"
+                      className="w-14 rounded border border-black/20 px-1 py-1 dark:border-white/20"
                     >
-                      <option value={0}>0</option>
-                      <option value={1}>1</option>
-                      <option value={2}>2</option>
-                      <option value={3}>3</option>
-                      <option value={4}>4</option>
-                      <option value={5}>5</option>
+                      {SKILL_LEVEL_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.value}
+                        </option>
+                      ))}
                     </select>
                     <span className="w-16 text-xs opacity-70">
                       {player._count.assignments} Abend(e)
