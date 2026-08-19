@@ -7,6 +7,7 @@ import {
   submitRoundResults,
 } from "./actions";
 import ReassignSelect from "./ReassignSelect";
+import RegenerateButton from "./RegenerateButton";
 
 export const dynamic = "force-dynamic";
 
@@ -91,12 +92,22 @@ export default async function LeaguePage() {
         </p>
       </div>
 
-      {evening.rounds.map((round) => (
+      {evening.rounds.map((round) => {
+        const isLastRound = round.number === evening.rounds.length;
+        const roundHasNoResults = round.tables.every((t) =>
+          t.assignments.every((a) => a.pointsAwarded === null),
+        );
+        return (
         <form key={round.id} action={submitRoundResults} className="flex flex-col gap-3">
           <input type="hidden" name="roundId" value={round.id} />
-          <h2 className="text-sm font-medium">
-            Runde {round.number} — Punkte pro Spieler eintragen
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-sm font-medium">
+              Runde {round.number} — Punkte pro Spieler eintragen
+            </h2>
+            {isLastRound && roundHasNoResults && (
+              <RegenerateButton roundId={round.id} roundNumber={round.number} />
+            )}
+          </div>
           <div className="flex flex-wrap gap-4">
             {round.tables.map((table) => (
               <div
@@ -139,7 +150,8 @@ export default async function LeaguePage() {
             Ergebnisse Runde {round.number} speichern
           </button>
         </form>
-      ))}
+        );
+      })}
 
       <div className="flex gap-3">
         {lastRound.number < MAX_ROUNDS && (

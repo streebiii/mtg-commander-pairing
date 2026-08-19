@@ -112,12 +112,27 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
 
 ### 5.1 Sortier-/Gruppierungsregel für die Tischzuteilung
 
-Spieler werden nach Punktestand absteigend sortiert. Danach werden sie
-gemäß der berechneten Tischgrößen (Abschnitt 3) in aufeinanderfolgende
-Blöcke eingeteilt (Spieler 1–4 an Tisch 1, 5–8 an Tisch 2 usw., je nach
+Spieler werden nach Punktestand absteigend sortiert, wobei ein kleines
+Zufalls-Rauschen (`RANK_JITTER_POINTS`, aktuell ±3 Punkte) auf den
+Punktestand addiert wird, bevor sortiert wird. Danach werden sie gemäß
+der berechneten Tischgrößen (Abschnitt 3) in aufeinanderfolgende Blöcke
+eingeteilt (Spieler 1–4 an Tisch 1, 5–8 an Tisch 2 usw., je nach
 Tischgröße) — analog zu einer Swiss-Pairing-Gruppierung nach Rang. Bei
-Punktegleichstand am Blockrand wird zufällig entschieden, wer in welchem
+Punktegleichstand (oder durch das Rauschen entstandenem Beinahe-
+Gleichstand) am Blockrand wird zufällig entschieden, wer in welchem
 Block landet.
+
+Das Rauschen sorgt dafür, dass benachbarte Ränge sich gelegentlich die
+Plätze tauschen — es spielen also nicht jeden Abend zwangsläufig exakt
+dieselben Spieler 1–4 zusammen, 5–8 zusammen usw., auch wenn sich die
+Punktestände zwischen den Abenden kaum ändern. Spieler mit großem
+Punkteabstand (mehr als ca. 2× das Rauschen) werden dabei nie
+miteinander gemischt — die grundsätzliche "stärkere Spieler spielen
+eher gegeneinander"-Logik bleibt erhalten.
+
+Der Organisator kann eine Runde außerdem jederzeit (solange noch keine
+Ergebnisse für sie eingetragen wurden) neu auswürfeln lassen ("Neu
+mischen"-Button), falls ihm der erste Vorschlag nicht zusagt.
 
 ### 5.2 Rematch-Vermeidung — Umsetzung
 

@@ -92,7 +92,10 @@ describe("assignLeagueRound", () => {
   });
 
   it("tauscht niemals Spieler mit unterschiedlichem Punktestand (Rang-Gruppierung bleibt erhalten)", () => {
-    const players = makePlayers([10, 9, 8, 7, 6, 5, 4]);
+    // Große Abstände (Vielfache von 100), damit das Zufalls-Rauschen
+    // (RANK_JITTER_POINTS) die Rang-Reihenfolge nicht durcheinanderbringt —
+    // dieser Test prüft gezielt Schritt 3 (Tausch-Logik), nicht Schritt 1.
+    const players = makePlayers([1000, 900, 800, 700, 600, 500, 400]);
     const sizes = computeTableSizes(players.length);
     const previousPairings = new Set(["p0|p1"]); // erzwingt einen Verbesserungsversuch
     const tables = assignLeagueRound(players, sizes, previousPairings);
@@ -103,8 +106,40 @@ describe("assignLeagueRound", () => {
     // gibt es aber gar keine Punktegleichheit, also darf sich nichts ändern.
     const fourTable = tables.find((t) => t.length === 4)!;
     expect(new Set(fourTable.map((id) => pointsById.get(id)))).toEqual(
-      new Set([10, 9, 8, 7]),
+      new Set([1000, 900, 800, 700]),
     );
+  });
+
+  it("nutzt RANK_JITTER_POINTS, um die Tischzuteilung von Abend zu Abend zu variieren", () => {
+    // Eng beieinanderliegende Punktestände (1 Punkt Abstand) sollen dank
+    // Jitter NICHT immer zur exakt gleichen Tischaufteilung führen.
+    const players = makePlayers([10, 9, 8, 7, 6, 5, 4, 3]); // N=8 -> [4,4]
+    const sizes = computeTableSizes(players.length);
+
+    const seenArrangements = new Set<string>();
+    for (let i = 0; i < 50; i++) {
+      const tables = assignLeagueRound(players, sizes);
+      const fourTable = tables.find((t) => t.length === 4)!;
+      seenArrangements.add([...fourTable].sort().join(","));
+    }
+
+    // Mit striktem Rang-Grouping (kein Jitter) gäbe es hier immer nur genau
+    // EINE mögliche Tischaufteilung (p0-p3 zusammen). Mit Jitter sollten
+    // über 50 Versuche mehrere unterschiedliche Aufteilungen auftauchen.
+    expect(seenArrangements.size).toBeGreaterThan(1);
+  });
+
+  it("mischt bei großem Punkteabstand nie über die Tischgrenze hinweg (Jitter bleibt begrenzt)", () => {
+    // Abstand von 100 Punkten ist weit größer als 2x RANK_JITTER_POINTS (6),
+    // die Top-4 dürfen also nie mit den unteren 3 gemischt werden.
+    const players = makePlayers([700, 600, 500, 400, 300, 200, 100]);
+    const sizes = computeTableSizes(players.length); // [4,3]
+
+    for (let i = 0; i < 50; i++) {
+      const tables = assignLeagueRound(players, sizes);
+      const fourTable = tables.find((t) => t.length === 4)!;
+      expect(new Set(fourTable)).toEqual(new Set(["p0", "p1", "p2", "p3"]));
+    }
   });
 });
 

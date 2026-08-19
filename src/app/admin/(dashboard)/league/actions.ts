@@ -146,6 +146,66 @@ export async function startNextRound(formData: FormData) {
   revalidatePath("/admin/league");
 }
 
+/**
+ * Würfelt die Tischzuteilung einer Runde neu aus (gleicher Spieler-Pool,
+ * neue Zufallsziehung inkl. Rang-Jitter, siehe SPEC.md Abschnitt 5.1).
+ * Nur für die jeweils letzte Runde eines Abends möglich, und nur solange
+ * noch keine Ergebnisse für sie eingetragen wurden — sonst würden bereits
+ * erfasste Punkte ihre Zuordnung verlieren.
+ */
+export async function regenerateRound(formData: FormData) {
+  const roundId = String(formData.get("roundId") ?? "");
+  if (!roundId) return;
+
+  const round = await prisma.round.findUnique({
+    where: { id: roundId },
+    include: {
+      evening: { include: { rounds: { orderBy: { number: "desc" }, take: 1 } } },
+      tables: { include: { assignments: true } },
+    },
+  });
+  if (!round) return;
+
+  const isLastRound = round.evening.rounds[0]?.id === round.id;
+  if (!isLastRound) return;
+
+  const anyResultEntered = round.tables.some((t) =>
+    t.assignments.some((a) => a.pointsAwarded !== null),
+  );
+  if (anyResultEntered) return;
+
+  const attendeeIds = round.tables.flatMap((t) =>
+    t.assignments.map((a) => a.playerId),
+  );
+  const players = await prisma.player.findMany({
+    where: { id: { in: attendeeIds } },
+    select: { id: true, points: true },
+  });
+
+  const sizes = computeTableSizes(players.length);
+  const previousPairings = await buildPreviousPairings(
+    round.eveningId,
+    round.number,
+  );
+  const tables = assignLeagueRound(players, sizes, previousPairings);
+
+  await prisma.$transaction([
+    prisma.table.deleteMany({ where: { roundId: round.id } }),
+    ...tables.map((tablePlayers, i) =>
+      prisma.table.create({
+        data: {
+          roundId: round.id,
+          tableNumber: i + 1,
+          size: tablePlayers.length,
+          assignments: { create: tablePlayers.map((playerId) => ({ playerId })) },
+        },
+      }),
+    ),
+  ]);
+
+  revalidatePath("/admin/league");
+}
+
 /** Verschiebt einen Spieler manuell an einen anderen Tisch derselben Runde. */
 export async function reassignTable(formData: FormData) {
   const assignmentId = String(formData.get("assignmentId") ?? "");

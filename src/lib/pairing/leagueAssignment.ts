@@ -6,6 +6,18 @@ export interface RankedPlayer {
   points: number;
 }
 
+/**
+ * Zufalls-Rauschen (in Punkten) für die Rang-Sortierung vor dem Pairing.
+ *
+ * Ohne dieses Rauschen würden bei stabilen Punkteständen über mehrere
+ * Abende hinweg praktisch immer dieselben Spieler an denselben Tischen
+ * landen (strikt Rang 1-4, 5-8, ...). Das Rauschen lässt benachbarte
+ * Ränge gelegentlich die Plätze tauschen, sodass sich die Zusammen-
+ * setzung von Abend zu Abend variiert — Spieler mit großem Punkte-
+ * abstand (mehr als dieser Wert) werden dabei nie gemischt.
+ */
+export const RANK_JITTER_POINTS = 3;
+
 /** Eindeutiger, ordnungsunabhängiger Schlüssel für ein Spielerpaar. */
 function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
@@ -34,8 +46,10 @@ function countRematches(table: string[], previousPairings: ReadonlySet<string>):
  * Weist Spieler den Tischen einer Modus-B-Runde zu.
  *
  * Vorgehen (siehe SPEC.md Abschnitt 5.1 und 5.2):
- * 1. Spieler nach Punkten absteigend sortieren; bei Punktegleichstand
- *    zufällige Reihenfolge.
+ * 1. Spieler nach Punkten absteigend sortieren, mit etwas Zufalls-Rauschen
+ *    (RANK_JITTER_POINTS), damit nicht immer exakt dieselben Spieler in
+ *    denselben Rang-Blöcken landen; bei Punktegleichstand zufällige
+ *    Reihenfolge.
  * 2. In aufeinanderfolgende Blöcke gemäß der übergebenen Tischgrößen
  *    einteilen (Rang-Gruppierung, analog Swiss-Pairing).
  * 3. Lokale Verbesserung: Spieler mit identischem Punktestand dürfen
@@ -48,6 +62,8 @@ function countRematches(table: string[], previousPairings: ReadonlySet<string>):
  *   Spieleranzahl entsprechen.
  * @param previousPairings Set von pairKey(a,b) für Spieler, die an diesem
  *   Abend in einer früheren Runde bereits am selben Tisch saßen.
+ * @param rankJitterPoints Override für RANK_JITTER_POINTS (v.a. für Tests
+ *   nützlich, um das Rauschen gezielt an- oder auszuschalten).
  * @returns Array von Tischen (jeweils ein Array von Spieler-IDs), in der
  *   gleichen Reihenfolge wie tableSizes.
  */
@@ -55,6 +71,7 @@ export function assignLeagueRound(
   players: readonly RankedPlayer[],
   tableSizes: readonly number[],
   previousPairings: ReadonlySet<string> = new Set(),
+  rankJitterPoints: number = RANK_JITTER_POINTS,
 ): string[][] {
   const totalSeats = tableSizes.reduce((a, b) => a + b, 0);
   if (totalSeats !== players.length) {
@@ -63,8 +80,16 @@ export function assignLeagueRound(
     );
   }
 
-  // Schritt 1: nach Punkten absteigend sortieren, Gleichstand zufällig.
-  const sorted = shuffle(players).sort((a, b) => b.points - a.points);
+  // Schritt 1: nach Punkten (+ Zufalls-Rauschen) absteigend sortieren.
+  // shuffle() zuerst, damit exakte Gleichstände (identischer Jitter-Wert
+  // kommt praktisch nie vor) trotzdem in zufälliger Reihenfolge bleiben.
+  const jitterOf = new Map(
+    players.map((p) => [p.id, (Math.random() * 2 - 1) * rankJitterPoints]),
+  );
+  const sorted = shuffle(players).sort(
+    (a, b) =>
+      b.points + jitterOf.get(b.id)! - (a.points + jitterOf.get(a.id)!),
+  );
 
   // Schritt 2: in Blöcke gemäß Tischgrößen einteilen (größte Tische zuerst,
   // für eine deterministische/lesbare Reihenfolge).
