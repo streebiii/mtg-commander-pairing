@@ -2,17 +2,20 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import { assignCasualRound } from "@/lib/pairing/casualAssignment";
+import { assignSkillBalancedCasualRound } from "@/lib/pairing/skillAssignment";
 import { PairingError } from "@/lib/pairing/errors";
 import { formatPlayerName } from "@/lib/players";
 
 /**
- * Berechnet eine Modus-A-Tischzuteilung (Casual, keine Rangliste, keine
- * Persistenz — siehe SPEC.md Abschnitt 4). Nimmt eine Liste von Spieler-IDs
- * entgegen und gibt die berechneten Tische mit Namen zurück.
+ * Berechnet eine Modus-A-Tischzuteilung (Casual, keine Persistenz — siehe
+ * SPEC.md Abschnitt 4). Zwei Untermodi (siehe Abschnitt 4.1):
+ * - "random" (Standard): rein zufällige Zuteilung.
+ * - "skill": nach Skill-Level balanciert, mit Zufallsfaktor.
  */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const playerIds: unknown = body?.playerIds;
+  const mode = body?.mode === "skill" ? "skill" : "random";
 
   if (!Array.isArray(playerIds) || playerIds.some((id) => typeof id !== "string")) {
     return NextResponse.json(
@@ -30,7 +33,7 @@ export async function POST(request: Request) {
 
   const players = await prisma.player.findMany({
     where: { id: { in: playerIds as string[] } },
-    select: { id: true, firstName: true, lastName: true },
+    select: { id: true, firstName: true, lastName: true, skillLevel: true },
   });
 
   if (players.length !== playerIds.length) {
@@ -42,17 +45,25 @@ export async function POST(request: Request) {
 
   try {
     const sizes = computeTableSizes(players.length);
-    const tables = assignCasualRound(
-      players.map((p) => p.id),
-      sizes,
-    );
+    const tables =
+      mode === "skill"
+        ? assignSkillBalancedCasualRound(players, sizes)
+        : assignCasualRound(
+            players.map((p) => p.id),
+            sizes,
+          );
     const nameById = new Map(players.map((p) => [p.id, formatPlayerName(p)]));
+    const skillById = new Map(players.map((p) => [p.id, p.skillLevel]));
 
     return NextResponse.json({
       tables: tables.map((table, i) => ({
         tableNumber: i + 1,
         size: table.length,
-        players: table.map((id) => ({ id, name: nameById.get(id) ?? "?" })),
+        players: table.map((id) => ({
+          id,
+          name: nameById.get(id) ?? "?",
+          skillLevel: skillById.get(id) ?? 0,
+        })),
       })),
     });
   } catch (err) {

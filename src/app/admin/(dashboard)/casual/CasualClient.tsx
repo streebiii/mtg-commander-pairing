@@ -5,22 +5,48 @@ import { useMemo, useState } from "react";
 interface PlayerOption {
   id: string;
   name: string;
+  skillLevel: number;
+}
+
+interface TableResultPlayer {
+  id: string;
+  name: string;
+  skillLevel: number;
 }
 
 interface TableResult {
   tableNumber: number;
   size: number;
-  players: PlayerOption[];
+  players: TableResultPlayer[];
 }
 
-export default function CasualClient({ players }: { players: PlayerOption[] }) {
+type Mode = "random" | "skill";
+
+function skillLabel(skillLevel: number): string {
+  return skillLevel > 0 ? `Skill ${skillLevel}` : "Skill ?";
+}
+
+export default function CasualClient({
+  players: initialPlayers,
+}: {
+  players: PlayerOption[];
+}) {
+  const [players, setPlayers] = useState<PlayerOption[]>(initialPlayers);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [mode, setMode] = useState<Mode>("random");
   const [tables, setTables] = useState<TableResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [swapPick, setSwapPick] = useState<{ table: number; player: string } | null>(
     null,
   );
+
+  // Formular zum schnellen Anlegen eines neuen Spielers direkt hier.
+  const [newFirstName, setNewFirstName] = useState("");
+  const [newLastName, setNewLastName] = useState("");
+  const [newSkill, setNewSkill] = useState(0);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const selectedCount = selected.size;
 
@@ -33,6 +59,44 @@ export default function CasualClient({ players }: { players: PlayerOption[] }) {
     });
   }
 
+  async function addPlayer() {
+    if (!newFirstName.trim()) return;
+    setAdding(true);
+    setAddError(null);
+    try {
+      const res = await fetch("/api/admin/players/quick-create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: newFirstName.trim(),
+          lastName: newLastName.trim() || null,
+          skillLevel: newSkill,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAddError(data.error ?? "Unbekannter Fehler");
+        return;
+      }
+      const newPlayer: PlayerOption = {
+        id: data.id,
+        name: data.name,
+        skillLevel: data.skillLevel,
+      };
+      setPlayers((prev) => [...prev, newPlayer]);
+      // Neu hinzugefügten Spieler direkt für die Auswahl vormerken — er ist
+      // ja gerade erst aufgetaucht und soll mitspielen.
+      setSelected((prev) => new Set(prev).add(newPlayer.id));
+      setNewFirstName("");
+      setNewLastName("");
+      setNewSkill(0);
+    } catch {
+      setAddError("Netzwerkfehler beim Anlegen");
+    } finally {
+      setAdding(false);
+    }
+  }
+
   async function computePairing() {
     setError(null);
     setLoading(true);
@@ -42,7 +106,7 @@ export default function CasualClient({ players }: { players: PlayerOption[] }) {
       const res = await fetch("/api/admin/casual/pair", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerIds: [...selected] }),
+        body: JSON.stringify({ playerIds: [...selected], mode }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -104,10 +168,80 @@ export default function CasualClient({ players }: { players: PlayerOption[] }) {
                 checked={selected.has(p.id)}
                 onChange={() => toggle(p.id)}
               />
-              {p.name}
+              {p.name} <span className="opacity-60">({skillLabel(p.skillLevel)})</span>
             </label>
           ))}
         </div>
+
+        <div className="mt-1 flex flex-wrap items-end gap-2 rounded border border-dashed border-black/20 p-2 dark:border-white/20">
+          <label className="flex flex-col gap-1 text-xs">
+            Vorname
+            <input
+              type="text"
+              value={newFirstName}
+              onChange={(e) => setNewFirstName(e.target.value)}
+              className="w-28 rounded border border-black/20 px-2 py-1 text-sm dark:border-white/20"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs">
+            Nachname (optional)
+            <input
+              type="text"
+              value={newLastName}
+              onChange={(e) => setNewLastName(e.target.value)}
+              className="w-28 rounded border border-black/20 px-2 py-1 text-sm dark:border-white/20"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs">
+            Skill (0-5)
+            <select
+              value={newSkill}
+              onChange={(e) => setNewSkill(Number(e.target.value))}
+              className="w-24 rounded border border-black/20 px-2 py-1 text-sm dark:border-white/20"
+            >
+              <option value={0}>0 – unbekannt</option>
+              <option value={1}>1</option>
+              <option value={2}>2</option>
+              <option value={3}>3</option>
+              <option value={4}>4</option>
+              <option value={5}>5</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={addPlayer}
+            disabled={!newFirstName.trim() || adding}
+            className="rounded border border-black/20 px-3 py-1.5 text-sm dark:border-white/20 disabled:opacity-40"
+          >
+            {adding ? "Lege an…" : "+ Spieler hinzufügen"}
+          </button>
+        </div>
+        {addError && <p className="text-sm text-red-600">{addError}</p>}
+
+        <fieldset className="mt-1 flex items-center gap-4 text-sm">
+          <legend className="mb-1 text-xs font-medium opacity-70">
+            Zuteilungsart
+          </legend>
+          <label className="flex items-center gap-1">
+            <input
+              type="radio"
+              name="mode"
+              checked={mode === "random"}
+              onChange={() => setMode("random")}
+            />
+            Zufällig
+          </label>
+          <label className="flex items-center gap-1">
+            <input
+              type="radio"
+              name="mode"
+              checked={mode === "skill"}
+              onChange={() => setMode("skill")}
+            />
+            Nach Skill balanciert
+          </label>
+        </fieldset>
+
         <button
           type="button"
           disabled={selectedCount < 3 || loading}
@@ -150,7 +284,10 @@ export default function CasualClient({ players }: { players: PlayerOption[] }) {
                               : "border-black/10 dark:border-white/10"
                           }`}
                         >
-                          {p.name}
+                          {p.name}{" "}
+                          <span className="opacity-60">
+                            ({skillLabel(p.skillLevel)})
+                          </span>
                         </button>
                       </li>
                     );

@@ -45,6 +45,21 @@ export default async function PlayersPage() {
               className="w-28 rounded border border-black/20 px-2 py-1 dark:border-white/20"
             />
           </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Skill (0-5)
+            <select
+              name="skillLevel"
+              defaultValue={0}
+              className="w-28 rounded border border-black/20 px-2 py-1 dark:border-white/20"
+            >
+              <option value={0}>0 – unbekannt</option>
+              <option value={1}>1 – Anfänger</option>
+              <option value={2}>2</option>
+              <option value={3}>3</option>
+              <option value={4}>4</option>
+              <option value={5}>5 – sehr erfahren</option>
+            </select>
+          </label>
           <button
             type="submit"
             className="rounded bg-foreground px-3 py-1.5 text-sm font-medium text-background"
@@ -54,7 +69,9 @@ export default async function PlayersPage() {
         </form>
         <p className="text-xs opacity-70">
           Hier trägst du die aktuelle Saison-Rangliste einmalig manuell ein
-          (siehe SPEC.md Abschnitt 7) — oder nutzt den Text-Import unten.
+          (siehe SPEC.md Abschnitt 7) — oder nutzt den Text-Import unten. Die
+          Skill-Einstufung ist unabhängig davon und wird nur für den
+          skill-balancierten Modus A verwendet (siehe SPEC.md Abschnitt 4.1).
         </p>
       </section>
 
@@ -68,6 +85,7 @@ export default async function PlayersPage() {
               <th className="py-1 pr-2">Vorname</th>
               <th className="py-1 pr-2">Nachname</th>
               <th className="py-1 pr-2">Punkte</th>
+              <th className="py-1 pr-2">Skill</th>
               <th className="py-1 pr-2">Abende</th>
               <th className="py-1"></th>
             </tr>
@@ -103,6 +121,18 @@ export default async function PlayersPage() {
                       defaultValue={player.points}
                       className="w-20 rounded border border-black/20 px-2 py-1 dark:border-white/20"
                     />
+                    <select
+                      name="skillLevel"
+                      defaultValue={player.skillLevel}
+                      className="w-16 rounded border border-black/20 px-1 py-1 dark:border-white/20"
+                    >
+                      <option value={0}>0</option>
+                      <option value={1}>1</option>
+                      <option value={2}>2</option>
+                      <option value={3}>3</option>
+                      <option value={4}>4</option>
+                      <option value={5}>5</option>
+                    </select>
                     <span className="w-16 text-xs opacity-70">
                       {player._count.assignments} Abend(e)
                     </span>

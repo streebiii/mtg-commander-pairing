@@ -20,6 +20,11 @@ model Player {
   /// Aktueller Gesamt-Liga-Punktestand (Saison). Wird nach jeder Modus-B-
   /// Runde um die eingetragenen pointsAwarded erhöht. Modus A ändert dies nie.
   points    Int      @default(0)
+  /// Subjektive Skill-Einstufung 0-5 (0 = unbekannt, 1 = blutiger Anfänger,
+  /// 5 = langjähriger Commander/Magic-Spieler). Nur für die skill-
+  /// balancierte Gruppierung in Modus A verwendet (siehe SPEC.md
+  /// Abschnitt 4.1), fließt nie in die Liga-Rangliste (Modus B) ein.
+  skillLevel Int     @default(0)
   createdAt DateTime @default(now())
 
   assignments TableAssignment[]

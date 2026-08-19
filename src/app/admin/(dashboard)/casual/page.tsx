@@ -7,9 +7,13 @@ export const dynamic = "force-dynamic";
 export default async function CasualPage() {
   const rawPlayers = await prisma.player.findMany({
     orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
-    select: { id: true, firstName: true, lastName: true },
+    select: { id: true, firstName: true, lastName: true, skillLevel: true },
   });
-  const players = rawPlayers.map((p) => ({ id: p.id, name: formatPlayerName(p) }));
+  const players = rawPlayers.map((p) => ({
+    id: p.id,
+    name: formatPlayerName(p),
+    skillLevel: p.skillLevel,
+  }));
 
   return (
     <div className="flex flex-col gap-4">

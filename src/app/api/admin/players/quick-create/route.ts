@@ -1,0 +1,39 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { formatPlayerName } from "@/lib/players";
+
+/**
+ * Legt schnell einen neuen Spieler an — gedacht für die Spielerauswahl in
+ * Modus A, wenn jemand auftaucht, der noch nicht in der Datenbank ist.
+ * Punktestand startet bei 0 (Liga-Punkte sind für Modus A irrelevant und
+ * können später in der Spielerverwaltung nachgepflegt werden).
+ */
+export async function POST(request: Request) {
+  const body = await request.json().catch(() => null);
+  const firstName = typeof body?.firstName === "string" ? body.firstName.trim() : "";
+  const lastName = typeof body?.lastName === "string" ? body.lastName.trim() : "";
+  const skillLevelRaw = body?.skillLevel;
+  const skillLevel = Number.isInteger(skillLevelRaw) ? skillLevelRaw : 0;
+
+  if (!firstName) {
+    return NextResponse.json({ error: "Vorname fehlt" }, { status: 400 });
+  }
+  if (skillLevel < 0 || skillLevel > 5) {
+    return NextResponse.json(
+      { error: "Skill muss zwischen 0 und 5 liegen" },
+      { status: 400 },
+    );
+  }
+
+  const player = await prisma.player.create({
+    data: { firstName, lastName: lastName || null, skillLevel, points: 0 },
+  });
+
+  return NextResponse.json({
+    id: player.id,
+    firstName: player.firstName,
+    lastName: player.lastName,
+    skillLevel: player.skillLevel,
+    name: formatPlayerName(player),
+  });
+}

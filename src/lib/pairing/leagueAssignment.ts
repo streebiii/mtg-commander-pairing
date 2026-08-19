@@ -1,5 +1,4 @@
-import { shuffle } from "./shuffle";
-import { PairingError } from "./errors";
+import { groupByValueWithJitter } from "./rankGrouping";
 
 export interface RankedPlayer {
   id: string;
@@ -73,33 +72,15 @@ export function assignLeagueRound(
   previousPairings: ReadonlySet<string> = new Set(),
   rankJitterPoints: number = RANK_JITTER_POINTS,
 ): string[][] {
-  const totalSeats = tableSizes.reduce((a, b) => a + b, 0);
-  if (totalSeats !== players.length) {
-    throw new PairingError(
-      `Tischgrößen (Summe ${totalSeats}) passen nicht zur Spieleranzahl (${players.length})`,
-    );
-  }
-
-  // Schritt 1: nach Punkten (+ Zufalls-Rauschen) absteigend sortieren.
-  // shuffle() zuerst, damit exakte Gleichstände (identischer Jitter-Wert
-  // kommt praktisch nie vor) trotzdem in zufälliger Reihenfolge bleiben.
-  const jitterOf = new Map(
-    players.map((p) => [p.id, (Math.random() * 2 - 1) * rankJitterPoints]),
+  // Schritt 1+2: nach Punkten (+ Zufalls-Rauschen) absteigend sortieren und
+  // in Blöcke gemäß Tischgrößen einteilen (gemeinsamer Kern, siehe
+  // rankGrouping.ts — derselbe Mechanismus wie beim skill-balancierten
+  // Modus A, nur mit Punkten statt Skill als Sortier-Wert).
+  const tables = groupByValueWithJitter(
+    players.map((p) => ({ id: p.id, value: p.points })),
+    tableSizes,
+    rankJitterPoints,
   );
-  const sorted = shuffle(players).sort(
-    (a, b) =>
-      b.points + jitterOf.get(b.id)! - (a.points + jitterOf.get(a.id)!),
-  );
-
-  // Schritt 2: in Blöcke gemäß Tischgrößen einteilen (größte Tische zuerst,
-  // für eine deterministische/lesbare Reihenfolge).
-  const orderedSizes = [...tableSizes].sort((a, b) => b - a);
-  const tables: string[][] = [];
-  let cursor = 0;
-  for (const size of orderedSizes) {
-    tables.push(sorted.slice(cursor, cursor + size).map((p) => p.id));
-    cursor += size;
-  }
 
   // Schritt 3: lokale Verbesserung durch Tausch punktegleicher Spieler.
   if (previousPairings.size > 0) {

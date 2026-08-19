@@ -78,6 +78,34 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
   lockere Spieleabende ohne Bezug zur Liga-Rangliste.
 - Organisator kann die zufällige Zuteilung manuell anpassen (Spieler
   zwischen Tischen tauschen) vor der Anzeige/Veröffentlichung.
+- Bei der Spielerauswahl kann direkt ein neuer Spieler angelegt werden
+  (Vorname, optional Nachname, optional Skill-Einstufung), falls jemand
+  auftaucht, der noch nicht in der Datenbank ist — ohne dafür extra in die
+  Spielerverwaltung wechseln zu müssen. Punktestand startet dabei bei 0.
+
+### 4.1 Zuteilungsart: Zufällig vs. skill-balanciert
+
+Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
+
+- **Zufällig** (Standard): wie oben beschrieben, keine Berücksichtigung von
+  Skill-Level.
+- **Nach Skill balanciert**: nutzt dieselbe Rang-Gruppierungs-Logik wie
+  Modus B (Abschnitt 5.1), aber mit der Skill-Einstufung der Spieler
+  (Abschnitt 6) statt Liga-Punkten als Sortier-Kriterium, inkl. Zufalls-
+  Rauschen (±1 Skill-Stufe — kleiner als bei der Liga, da die Skala nur
+  0-5 umfasst), damit nicht stur die exakt gleich starken Spieler
+  zusammen landen.
+  - Unbewertete Spieler (Skill = 0, "weiß ich nicht") werden für die
+    Berechnung so behandelt, als hätten sie den Mittelwert der bewerteten
+    anwesenden Spieler (bzw. 2.5, falls niemand bewertet ist) — sie
+    landen dadurch tendenziell in der Mitte statt automatisch am
+    schwächsten Tisch.
+  - Weiterhin keine Persistenz, kein Verlauf, keine Rematch-Vermeidung
+    (Modus A bleibt Einzelrunde).
+  - Die Skill-Werte sind nur im Organisator-Bereich sichtbar (Auswahl-
+    Liste und Ergebnis-Tische) — die öffentliche Lese-Ansicht zeigt
+    ohnehin ausschließlich Modus-B-Abende (Abschnitt 8), Skill-Level
+    tauchen dort also nie auf.
 
 ## 5. Modus B — Liga-Rangliste-Pairing
 
@@ -145,10 +173,16 @@ Ziel-Tisches zusammen gespielt hat. Die Tischgrößenverteilung selbst
 
 ## 6. Spielerverwaltung
 
-- Persistente Spielerdatenbank: Spieler einmalig anlegen (Name), bei jedem
-  Abend nur noch als „anwesend“ markieren/auswählen.
+- Persistente Spielerdatenbank: Spieler einmalig anlegen (Vorname,
+  optional Nachname), bei jedem Abend nur noch als „anwesend“
+  markieren/auswählen.
 - Enthält je Spieler den aktuellen Gesamt-Liga-Punktestand (wird durch
   Ergebniserfassung in Modus B fortgeschrieben).
+- Enthält je Spieler eine optionale **Skill-Einstufung** (0-5, 0 = "weiß
+  ich nicht"/unbewertet, 1 = blutiger Anfänger, 5 = langjähriger
+  Commander/Magic-Spieler). Komplett unabhängig vom Liga-Punktestand,
+  wird ausschließlich für den skill-balancierten Modus A verwendet
+  (Abschnitt 4.1). Editierbar an derselben Stelle wie Name/Punkte.
 
 ## 7. Datenimport zu Beginn
 
