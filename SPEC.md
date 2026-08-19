@@ -68,8 +68,20 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
 
 ## 4. Modus A — Casual-Rechner + Zuteilung
 
-- Eingabe: Anzahl anwesender Spieler (oder Auswahl aus der
-  Spielerdatenbank).
+- **Spielerauswahl** (mobil-optimiert, tap-freundlich):
+  - Suchfeld filtert die Spielerliste live (Substring-Match auf
+    Vorname+Nachname).
+  - Bereits ausgewählte Spieler bleiben in einer festen "Ausgewählt
+    (n)"-Sektion oben sichtbar (auch während gesucht wird) — ein Tap dort
+    hebt die Auswahl wieder auf.
+  - Neuen Spieler anlegen geht auf zwei Wegen: ein fester Button "+ Neuen
+    Spieler erfassen" oben an der Liste (öffnet ein kleines Formular:
+    Vorname, optional Nachname, optional Skill-Einstufung), oder — wenn
+    die Suche 0 Treffer findet — eine Inline-Option "'{Suchtext}' als
+    neuen Spieler anlegen" direkt unter dem Suchfeld (Text wird naiv in
+    Vorname/Nachname gesplittet). Beide legen den Spieler sofort an und
+    wählen ihn automatisch aus. Punktestand startet dabei immer bei 0
+    (Liga-Punkte sind für Modus A irrelevant).
 - Ausgabe: Tischverteilung (Anzahl & Größe der Tische) gemäß Algorithmus
   aus Abschnitt 3, plus zufällige Zuteilung der konkreten Spieler auf die
   Tische.
@@ -78,10 +90,6 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
   lockere Spieleabende ohne Bezug zur Liga-Rangliste.
 - Organisator kann die zufällige Zuteilung manuell anpassen (Spieler
   zwischen Tischen tauschen) vor der Anzeige/Veröffentlichung.
-- Bei der Spielerauswahl kann direkt ein neuer Spieler angelegt werden
-  (Vorname, optional Nachname, optional Skill-Einstufung), falls jemand
-  auftaucht, der noch nicht in der Datenbank ist — ohne dafür extra in die
-  Spielerverwaltung wechseln zu müssen. Punktestand startet dabei bei 0.
 
 ### 4.1 Zuteilungsart: Zufällig vs. skill-balanciert
 
@@ -187,6 +195,10 @@ Ziel-Tisches zusammen gespielt hat. Die Tischgrößenverteilung selbst
   Komplett unabhängig vom Liga-Punktestand, wird ausschließlich für den
   skill-balancierten Modus A verwendet (Abschnitt 4.1). Editierbar an
   derselben Stelle wie Name/Punkte.
+- **Auto-Save**: alle Felder (Vorname, Nachname, Punkte, Skill) speichern
+  automatisch — Zahl/Auswahlfelder sofort bei Änderung, Textfelder beim
+  Verlassen des Feldes (Blur). Kein expliziter "Speichern"-Klick nötig,
+  kurzes visuelles Feedback ("✓ Gespeichert") bestätigt den Vorgang.
 
 ## 7. Datenimport zu Beginn
 

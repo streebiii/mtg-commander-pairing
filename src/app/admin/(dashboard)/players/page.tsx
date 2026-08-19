@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { SKILL_LEVEL_OPTIONS } from "@/lib/players";
-import { createPlayer, deletePlayer, updatePlayer } from "./actions";
+import { createPlayer } from "./actions";
 import ImportClient from "./ImportClient";
+import PlayerRow from "./PlayerRow";
 
 // Admin-Seiten lesen immer den aktuellen DB-Stand, kein statisches Caching.
 export const dynamic = "force-dynamic";
@@ -79,7 +80,11 @@ export default async function PlayersPage() {
         <h2 className="text-sm font-medium">
           Bestehende Spieler ({players.length})
         </h2>
-        <table className="w-full max-w-2xl text-sm">
+        <p className="text-xs opacity-70">
+          Änderungen werden automatisch gespeichert, sobald du ein Feld
+          verlässt bzw. eine Auswahl änderst.
+        </p>
+        <table className="w-full max-w-3xl text-sm">
           <thead>
             <tr className="border-b border-black/10 text-left dark:border-white/10">
               <th className="py-1 pr-2">Vorname</th>
@@ -87,83 +92,23 @@ export default async function PlayersPage() {
               <th className="py-1 pr-2">Punkte</th>
               <th className="py-1 pr-2">Skill</th>
               <th className="py-1 pr-2">Abende</th>
+              <th className="py-1 pr-2"></th>
               <th className="py-1"></th>
             </tr>
           </thead>
           <tbody>
             {players.map((player) => (
-              <tr
+              <PlayerRow
                 key={player.id}
-                className="border-b border-black/5 dark:border-white/5"
-              >
-                <td className="py-1 pr-2">
-                  <form
-                    action={updatePlayer}
-                    className="flex items-center gap-2"
-                  >
-                    <input type="hidden" name="id" value={player.id} />
-                    <input
-                      type="text"
-                      name="firstName"
-                      defaultValue={player.firstName}
-                      className="w-32 rounded border border-black/20 px-2 py-1 dark:border-white/20"
-                    />
-                    <input
-                      type="text"
-                      name="lastName"
-                      defaultValue={player.lastName ?? ""}
-                      placeholder="(optional)"
-                      className="w-32 rounded border border-black/20 px-2 py-1 dark:border-white/20"
-                    />
-                    <input
-                      type="number"
-                      name="points"
-                      defaultValue={player.points}
-                      className="w-20 rounded border border-black/20 px-2 py-1 dark:border-white/20"
-                    />
-                    <select
-                      name="skillLevel"
-                      defaultValue={player.skillLevel}
-                      className="w-14 rounded border border-black/20 px-1 py-1 dark:border-white/20"
-                    >
-                      {SKILL_LEVEL_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.value}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="w-16 text-xs opacity-70">
-                      {player._count.assignments} Abend(e)
-                    </span>
-                    <button
-                      type="submit"
-                      className="rounded border border-black/20 px-2 py-1 text-xs dark:border-white/20"
-                    >
-                      Speichern
-                    </button>
-                  </form>
-                </td>
-                <td className="py-1 align-middle">
-                  {player._count.assignments === 0 ? (
-                    <form action={deletePlayer}>
-                      <input type="hidden" name="id" value={player.id} />
-                      <button
-                        type="submit"
-                        className="text-xs text-red-600 underline"
-                      >
-                        Löschen
-                      </button>
-                    </form>
-                  ) : (
-                    <span
-                      className="text-xs opacity-50"
-                      title="Spieler hat bereits an Abenden teilgenommen"
-                    >
-                      —
-                    </span>
-                  )}
-                </td>
-              </tr>
+                player={{
+                  id: player.id,
+                  firstName: player.firstName,
+                  lastName: player.lastName,
+                  points: player.points,
+                  skillLevel: player.skillLevel,
+                  assignmentCount: player._count.assignments,
+                }}
+              />
             ))}
           </tbody>
         </table>
