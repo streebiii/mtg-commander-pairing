@@ -1,8 +1,9 @@
-// Minimaler Passwortschutz für den Organisator-Bereich (/admin).
-// Kein Multi-User, keine Rollen — ein gemeinsames Passwort reicht
-// (siehe SPEC.md Abschnitt 2). Die Session wird als signiertes Cookie
-// gespeichert, damit weder eine Datenbank-Session-Tabelle noch eine
-// externe Auth-Library nötig ist.
+// Passwortloser Email-Login für den Organisator-Bereich (/admin).
+// Kein Multi-User, keine Rollen — ein Login-Link per Email genügt (siehe
+// SPEC.md Abschnitt 2). Das eigentliche Ausstellen/Einlösen des
+// Einmal-Tokens steht in src/lib/loginToken.ts; hier nur die Session
+// nach erfolgreichem Login — als signiertes Cookie, damit keine
+// zusätzliche Session-Tabelle/externe Auth-Library nötig ist.
 
 export const SESSION_COOKIE_NAME = "admin_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 Tage
@@ -50,17 +51,6 @@ function constantTimeEqual(a: string, b: string): boolean {
     diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return diff === 0;
-}
-
-/** Vergleicht das eingegebene Passwort mit ADMIN_PASSWORD. */
-export function verifyPassword(input: string): boolean {
-  const expected = process.env.ADMIN_PASSWORD;
-  if (!expected) {
-    throw new Error(
-      "ADMIN_PASSWORD ist nicht gesetzt (siehe .env.example).",
-    );
-  }
-  return constantTimeEqual(input, expected);
 }
 
 /** Erzeugt ein signiertes Session-Token für das Cookie. */

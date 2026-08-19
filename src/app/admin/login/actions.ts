@@ -2,26 +2,40 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  SESSION_COOKIE_NAME,
-  SESSION_COOKIE_OPTIONS,
-  createSessionToken,
-  verifyPassword,
-} from "@/lib/auth";
+import { SESSION_COOKIE_NAME } from "@/lib/auth";
+import { createLoginToken, isRateLimited } from "@/lib/loginToken";
+import { sendLoginLinkEmail } from "@/lib/email";
+import { getBaseUrl } from "@/lib/url";
 
-export async function loginAction(formData: FormData) {
-  const password = String(formData.get("password") ?? "");
+/**
+ * Fordert einen neuen Login-Link an: erzeugt einen Einmal-Token und
+ * verschickt ihn per Email an die fest konfigurierte ADMIN_EMAIL-Adresse
+ * (siehe SPEC.md Abschnitt 2). Kein Passwort mehr — die Email-Zustellung
+ * selbst ist der einzige Faktor.
+ */
+export async function requestLoginLink(formData: FormData) {
   const next = String(formData.get("next") ?? "/admin");
 
-  if (!verifyPassword(password)) {
-    redirect(`/admin/login?next=${encodeURIComponent(next)}&error=1`);
+  if (await isRateLimited()) {
+    redirect(
+      `/admin/login?next=${encodeURIComponent(next)}&error=rate_limited`,
+    );
   }
 
-  const token = await createSessionToken();
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, token, SESSION_COOKIE_OPTIONS);
+  let sendFailed = false;
+  try {
+    const rawToken = await createLoginToken();
+    const link = `${getBaseUrl()}/admin/verify?token=${rawToken}&next=${encodeURIComponent(next)}`;
+    await sendLoginLinkEmail(link);
+  } catch (err) {
+    console.error("Login-Link konnte nicht verschickt werden:", err);
+    sendFailed = true;
+  }
 
-  redirect(next.startsWith("/admin") ? next : "/admin");
+  if (sendFailed) {
+    redirect(`/admin/login?next=${encodeURIComponent(next)}&error=send_failed`);
+  }
+  redirect(`/admin/login?next=${encodeURIComponent(next)}&sent=1`);
 }
 
 export async function logoutAction() {

@@ -12,16 +12,29 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
 
 - **Single-User (Organisator)**: eine Person verwaltet Spieler, Abende,
   Pairings und Ergebnisse. Kein Multi-User, keine Rollen/Rechte.
-- **Zugriffsschutz**: einfacher Passwort-/PIN-Schutz für den
-  Organisator-Bereich (Anlegen, Bearbeiten, Ergebnisse eintragen).
+- **Zugriffsschutz — passwortloser Email-Login**: kein Passwort mehr.
+  Der Organisator klickt "Login-Link anfordern", bekommt eine Email mit
+  einem Einmal-Link an eine fest konfigurierte Adresse (`ADMIN_EMAIL`)
+  und ist nach dem Klick eingeloggt. Der Link ist 10 Minuten gültig und
+  nur einmal verwendbar (Einlösen markiert ihn in der Datenbank als
+  verbraucht). Rate-Limiting verhindert das wiederholte Anfordern von
+  Links (max. 3 pro 15 Minuten). Der eigentliche Login-Faktor ist damit
+  "Zugriff auf das Email-Postfach" — kein zweiter Faktor im klassischen
+  Sinn, aber ausreichend für eine Single-User-Anwendung, sofern das
+  Postfach selbst gut geschützt ist (idealerweise mit eigener 2FA).
 - **Öffentliche Lese-Ansicht**: separate URL ohne Login, zeigt nur die
   aktuellen Tischzuteilungen des laufenden Abends (z. B. für einen Bildschirm
   vor Ort oder zum Teilen mit den Spielern). Keine Bearbeitungsmöglichkeit.
-- **Hosting**: auf einem bestehenden eigenen Server des Auftraggebers.
-  Details zur Server-Umgebung (OS, Docker-Verfügbarkeit, Node-Version o. Ä.)
-  sind noch nicht bekannt und werden vor dem Deployment geklärt. Für die
-  Entwicklung wird eine möglichst portable Lösung (z. B. Docker-Container)
-  angestrebt, um die Abhängigkeit von Server-Details gering zu halten.
+- **Hosting — Hybrid**: die App läuft auf Vercel (Node.js-fähig), die
+  Datenbank (MariaDB) und der Email-Versand (SMTP) laufen über das
+  bestehende cyon.ch-Hosting des Auftraggebers — cyon selbst kann keine
+  dauerhaft laufende Node.js-App hosten (siehe DEPLOYMENT.md).
+- **Sicherheitshärtung**: Sicherheits-HTTP-Header (siehe `next.config.ts`),
+  Rate-Limiting auf den Login-Link-Versand, Prisma-parametrisierte
+  Datenbankzugriffe (kein SQL-Injection-Risiko), keine Secrets im
+  Client-Bundle. Der Zugriffsschutz auf das Hosting-Konto selbst
+  (cyon-Kundencenter-Login, SSH) liegt ausserhalb der App und damit
+  ausserhalb dessen, was Code hier absichern kann.
 
 ## 3. Tischgrößen-Algorithmus (gemeinsame Basis für beide Modi)
 
@@ -228,9 +241,12 @@ Ziel-Tisches zusammen gespielt hat. Die Tischgrößenverteilung selbst
 
 ## 10. Offene technische Fragen (vor Deployment zu klären)
 
-- Umgesetzt als Docker-Container (Next.js + SQLite), siehe
-  [DEPLOYMENT.md](./DEPLOYMENT.md) — das macht die App unabhängig von der
-  genauen Server-Umgebung, solange Docker installiert ist.
-- Weiterhin offen: ob auf dem Server bereits Docker läuft, und ob/wie ein
-  Reverse Proxy mit eigener Domain/HTTPS davor gesetzt wird (bewusst nicht
-  Teil dieses Setups, siehe DEPLOYMENT.md).
+- Umgesetzt als Hybrid-Deployment (App auf Vercel, Datenbank + Email über
+  cyon.ch), siehe [DEPLOYMENT.md](./DEPLOYMENT.md).
+- **Noch zu prüfen**: ob die cyon-MariaDB-Datenbank von ausserhalb (also
+  von Vercel aus) erreichbar ist, oder ob dafür beim cyon-Support eine
+  Freigabe nötig ist (Details in DEPLOYMENT.md).
+- Lokale Entwicklung läuft gegen eine MariaDB in Docker
+  (`docker-compose.yml`), identisch zur Produktions-Datenbank-Engine.
+- Eigene Domain (statt `*.vercel.app`) ist optional und kann jederzeit
+  nachträglich in Vercel eingerichtet werden.

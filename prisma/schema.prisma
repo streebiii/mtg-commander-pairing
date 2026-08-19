@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -99,4 +99,26 @@ model TableAssignment {
 
   @@unique([tableId, playerId])
   @@map("table_assignments")
+}
+
+/// Einmal-Token für den passwortlosen Email-Login (siehe SPEC.md
+/// Abschnitt 2). Es gibt keine Benutzerkonten — jeder gültige,
+/// unverbrauchte Token innerhalb seiner Gültigkeit loggt als der eine
+/// Organisator ein.
+model LoginToken {
+  id String @id @default(cuid())
+
+  /// SHA-256-Hash des tatsächlichen Tokens. Nur der rohe Token steht im
+  /// Email-Link, niemals im Klartext in der Datenbank — falls die DB je
+  /// ausgelesen würde, ließen sich daraus keine gültigen Links ableiten.
+  tokenHash String @unique
+
+  expiresAt DateTime
+  /// null, solange der Token noch nicht eingelöst wurde. Ein Token ist
+  /// nach einmaligem Einlösen ungültig (Replay-Schutz).
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt])
+  @@map("login_tokens")
 }

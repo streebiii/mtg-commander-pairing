@@ -1,19 +1,30 @@
+# Lokale Entwicklungs-Datenbank (MariaDB), damit lokal gegen dieselbe
+# Datenbank-Engine wie in Produktion (cyon-Hosting) entwickelt wird.
+#
+# Die App selbst läuft NICHT hier — sie wird auf Vercel deployt (siehe
+# DEPLOYMENT.md). Dieser Compose-File startet nur die Datenbank für
+# `npm run dev`.
+#
+# Start:  docker compose up -d
+# Stop:   docker compose down
+# Daten löschen (z.B. für einen sauberen Neustart): docker compose down -v
 services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
+  db:
+    image: mariadb:11
     environment:
-      # Unbedingt vor dem ersten Start durch eigene, geheime Werte ersetzen
-      # (z.B. über eine .env-Datei neben dieser docker-compose.yml, die
-      # docker compose automatisch einliest).
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?bitte ADMIN_PASSWORD setzen}
-      SESSION_SECRET: ${SESSION_SECRET:?bitte SESSION_SECRET setzen}
+      MARIADB_ROOT_PASSWORD: dev-root-password
+      MARIADB_DATABASE: pairing_dev
+      MARIADB_USER: pairing
+      MARIADB_PASSWORD: dev-password
+    ports:
+      - "3306:3306"
     volumes:
-      # Persistiert die SQLite-Datenbankdatei außerhalb des Containers, damit
-      # Spieler, Abende und Verlauf einen Neustart/Update überleben.
-      - pairing-data:/data
-    restart: unless-stopped
+      - pairing-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
-  pairing-data:
+  pairing-db-data:

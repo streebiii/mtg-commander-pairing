@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Commander Pairing League
 
-## Getting Started
+Next.js-App zur Organisation von 4-Spieler-Commander-Pairing-Abenden
+(Casual & Liga). Siehe [SPEC.md](./SPEC.md) für die vollständige
+Spezifikation und [DEPLOYMENT.md](./DEPLOYMENT.md) fürs Deployment.
 
-First, run the development server:
+## Lokale Entwicklung
+
+Voraussetzungen: Node.js 22+, Docker (für die lokale MariaDB).
 
 ```bash
+# 1. Abhängigkeiten installieren
+npm install
+
+# 2. Lokale MariaDB-Datenbank starten
+docker compose up -d
+
+# 3. .env anlegen (falls noch nicht vorhanden) — siehe .env.example
+cp .env.example .env
+# SESSION_SECRET selbst generieren: openssl rand -base64 32
+
+# 4. Datenbank-Schema anwenden
+npx prisma migrate dev
+
+# 5. Dev-Server starten
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Die App läuft dann unter [http://localhost:3000](http://localhost:3000)
+(Organisator-Bereich unter `/admin`, öffentliche Ansicht unter
+`/pairings`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Login lokal ohne echten SMTP-Versand: `SMTP_*`-Variablen in `.env` leer
+lassen, dann landet der Login-Link nur im Server-Log (nicht in einer
+echten Email) — siehe Konsolen-Ausgabe beim Anfordern des Links.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Tests
 
-## Learn More
+```bash
+npm test
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Siehe [DEPLOYMENT.md](./DEPLOYMENT.md) — Hybrid aus Vercel (App) und
+cyon.ch (Datenbank + Email).

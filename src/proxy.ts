@@ -1,13 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 
-// Schützt den kompletten /admin-Bereich mit einem Passwort-Cookie.
-// Die öffentliche Lese-Ansicht (z.B. /pairings) bleibt bewusst ungeschützt
-// (siehe SPEC.md Abschnitt 2).
+// Schützt den kompletten /admin-Bereich mit dem Session-Cookie, das nach
+// erfolgreichem Email-Login gesetzt wird. Die öffentliche Lese-Ansicht
+// (z.B. /pairings) bleibt bewusst ungeschützt (siehe SPEC.md Abschnitt 2).
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname === "/admin/login") {
+  // /admin/login (Link anfordern) und /admin/verify (Link einlösen) sind
+  // der Login-Mechanismus selbst — hier ist naturgemäß noch keine Session
+  // vorhanden.
+  if (pathname === "/admin/login" || pathname === "/admin/verify") {
     return NextResponse.next();
   }
 
