@@ -3,7 +3,7 @@ import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 
 // Schützt den kompletten /admin-Bereich mit dem Session-Cookie, das nach
 // erfolgreichem Email-Login gesetzt wird. Die öffentliche Lese-Ansicht
-// (z.B. /pairings) bleibt bewusst ungeschützt (siehe SPEC.md Abschnitt 2).
+// ("/") bleibt bewusst ungeschützt (siehe SPEC.md Abschnitt 2).
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 

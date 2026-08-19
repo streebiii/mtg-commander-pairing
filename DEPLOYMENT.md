@@ -57,8 +57,8 @@ DATABASE_URL="<die-vercel-postgres-url>" npx prisma migrate deploy
 
 Jeder Push auf `main` löst automatisch ein neues Vercel-Deployment aus.
 Die App ist danach unter der `*.vercel.app`-URL erreichbar
-(Organisator-Bereich unter `/admin`, öffentliche Ansicht unter
-`/pairings`).
+(öffentliche Pairing-Ansicht direkt auf `/`, Organisator-Bereich unter
+`/admin`).
 
 Für eine eigene Domain: in Vercel unter **Settings → Domains**
 hinzufügen und beim Domain-Registrar die von Vercel angegebenen

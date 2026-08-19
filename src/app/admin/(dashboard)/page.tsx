@@ -14,7 +14,7 @@ export default function AdminDashboard() {
         <Link className="flex min-h-9 items-center underline" href="/admin/league">
           Modus B — Liga-Abend
         </Link>
-        <Link className="flex min-h-9 items-center underline" href="/pairings">
+        <Link className="flex min-h-9 items-center underline" href="/">
           Öffentliche Pairing-Ansicht (ohne Login)
         </Link>
       </div>
