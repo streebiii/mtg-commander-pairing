@@ -6,6 +6,7 @@ import {
   startNextRound,
   submitRoundResults,
 } from "./actions";
+import DiscardEveningButton from "./DiscardEveningButton";
 import ImportClient from "./ImportClient";
 import LeaguePlayerRow from "./LeaguePlayerRow";
 import ReassignSelect from "./ReassignSelect";
@@ -137,6 +138,11 @@ export default async function LeaguePage() {
   const lastRoundComplete = lastRound.tables.every((t) =>
     t.assignments.every((a) => a.pointsAwarded !== null),
   );
+  // Solange nirgends ein Ergebnis steht, lässt sich der Abend komplett
+  // verwerfen — sonst käme man aus einem Fehlstart nicht mehr heraus.
+  const noResultsAtAll = evening.rounds.every((r) =>
+    r.tables.every((t) => t.assignments.every((a) => a.pointsAwarded === null)),
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -231,6 +237,7 @@ export default async function LeaguePage() {
             Abend beenden
           </button>
         </form>
+        {noResultsAtAll && <DiscardEveningButton eveningId={evening.id} />}
       </div>
       {!lastRoundComplete && (
         <p className="text-xs opacity-70">

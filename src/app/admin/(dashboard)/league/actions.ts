@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import { assignLeagueRound } from "@/lib/pairing/leagueAssignment";
 import { buildPreviousPairings } from "@/lib/pairing/leagueHistory";
+import { clearCasualPairing } from "@/lib/casualPairing";
 
 const MAX_ROUNDS = 3;
 
@@ -78,7 +79,12 @@ export async function startEvening(formData: FormData) {
   });
   await createRoundInDb(evening.id, 1, tables);
 
+  // Öffentlich wird immer nur eines gezeigt — eine offene Casual-Zuteilung
+  // würde den Liga-Abend sonst verdecken (siehe SPEC.md Abschnitt 4).
+  await clearCasualPairing();
+
   revalidatePath("/admin/league");
+  revalidatePath("/");
 }
 
 /** Speichert die Rundenergebnisse (Punkte pro Spieler) und schreibt die
@@ -241,6 +247,35 @@ export async function reassignTable(formData: FormData) {
     data: { tableId: newTableId },
   });
   revalidatePath("/admin/league");
+}
+
+/**
+ * Verwirft einen Liga-Abend vollständig, solange noch keine Ergebnisse
+ * eingetragen wurden. Gedacht für versehentlich gestartete Abende: ohne
+ * diesen Weg liesse sich ein solcher Abend gar nicht mehr loswerden, denn
+ * "Abend beenden" verlangt vollständige Ergebnisse — und solange er läuft,
+ * sind die beteiligten Spieler nicht löschbar (siehe SPEC.md Abschnitt 6.2).
+ *
+ * Sobald irgendein Ergebnis erfasst ist, wird bewusst nichts gelöscht: dann
+ * hängen bereits fortgeschriebene Liga-Punkte daran.
+ */
+export async function discardEvening(formData: FormData) {
+  const eveningId = String(formData.get("eveningId") ?? "");
+  if (!eveningId) return;
+
+  const enteredResults = await prisma.tableAssignment.count({
+    where: {
+      pointsAwarded: { not: null },
+      table: { round: { eveningId } },
+    },
+  });
+  if (enteredResults > 0) return;
+
+  // Rounds/Tables/Assignments hängen per onDelete: Cascade daran.
+  await prisma.evening.delete({ where: { id: eveningId } });
+
+  revalidatePath("/admin/league");
+  revalidatePath("/");
 }
 
 /** Beendet den aktuellen Liga-Abend (keine weiteren Runden mehr möglich). */

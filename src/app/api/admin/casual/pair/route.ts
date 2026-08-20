@@ -1,4 +1,6 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { saveCasualPairing } from "@/lib/casualPairing";
 import { prisma } from "@/lib/prisma";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import { assignCasualRound } from "@/lib/pairing/casualAssignment";
@@ -54,6 +56,14 @@ export async function POST(request: Request) {
           );
     const nameById = new Map(players.map((p) => [p.id, formatPlayerName(p)]));
     const skillById = new Map(players.map((p) => [p.id, p.skillLevel]));
+
+    // Sofort als aktuelle Zuteilung übernehmen, damit die öffentliche
+    // Lese-Ansicht dieselben Tische zeigt (siehe SPEC.md Abschnitt 4).
+    // Ersetzt eine eventuell vorhandene frühere Zuteilung vollständig.
+    await saveCasualPairing(
+      tables.map((table, i) => ({ tableNumber: i + 1, playerIds: table })),
+    );
+    revalidatePath("/");
 
     return NextResponse.json({
       tables: tables.map((table, i) => ({
