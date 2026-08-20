@@ -1,9 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_COOKIE_OPTIONS,
+  createSessionToken,
+  verifySessionToken,
+} from "@/lib/auth";
 
 // Schützt den kompletten /admin-Bereich mit dem Session-Cookie, das nach
 // erfolgreichem Email-Login gesetzt wird. Die öffentliche Lese-Ansicht
 // ("/") bleibt bewusst ungeschützt (siehe SPEC.md Abschnitt 2).
+//
+// Bei jedem gültigen Aufruf wird das Cookie frisch ausgestellt — die
+// Gültigkeit ist dadurch gleitend und läuft immer ab der letzten Nutzung
+// (siehe SESSION_MAX_AGE_SECONDS in src/lib/auth.ts). Ein durchgehend
+// genutzter Spielabend kann damit beliebig lang sein.
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -28,7 +38,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  // Gültige Sitzung: Cookie neu ausstellen, damit die Frist ab jetzt neu
+  // läuft. Das Signieren ist ein HMAC über wenige Bytes und fällt gegenüber
+  // dem Rendern der Seite nicht ins Gewicht.
+  const response = NextResponse.next();
+  response.cookies.set(
+    SESSION_COOKIE_NAME,
+    await createSessionToken(),
+    SESSION_COOKIE_OPTIONS,
+  );
+  return response;
 }
 
 export const config = {

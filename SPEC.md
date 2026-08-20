@@ -21,10 +21,18 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   und ist nach dem Klick eingeloggt. Der Link ist 10 Minuten gültig und
   nur einmal verwendbar (Einlösen markiert ihn in der Datenbank als
   verbraucht). Rate-Limiting verhindert das wiederholte Anfordern von
-  Links (max. 3 pro 15 Minuten). Der eigentliche Login-Faktor ist damit
+  Links (max. 5 pro 10 Minuten). Der eigentliche Login-Faktor ist damit
   "Zugriff auf das Email-Postfach" — kein zweiter Faktor im klassischen
   Sinn, aber ausreichend für eine Single-User-Anwendung, sofern das
   Postfach selbst gut geschützt ist (idealerweise mit eigener 2FA).
+- **Sitzungsdauer**: nach dem Login gilt ein signiertes Cookie mit
+  **gleitender** Gültigkeit von 7 Tagen. Bei jedem Aufruf im
+  Organisator-Bereich wird es frisch ausgestellt (siehe `src/proxy.ts`),
+  die Frist läuft also immer ab der letzten Nutzung — ein durchgehend
+  genutzter Spielabend kann beliebig lang sein. Die öffentliche
+  Lese-Ansicht verlängert nichts, sie ist ja ungeschützt. Ein Abmelden ist
+  bewusst nicht vorgesehen; eine Sitzung endet durch Ablauf oder durch
+  Löschen der Browserdaten.
 - **Öffentliche Lese-Ansicht**: separate URL ohne Login, zeigt nur die
   aktuellen Tischzuteilungen des laufenden Abends (z. B. für einen Bildschirm
   vor Ort oder zum Teilen mit den Spielern). Keine Bearbeitungsmöglichkeit.

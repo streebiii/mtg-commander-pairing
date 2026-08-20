@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
 const TOKEN_TTL_MS = 10 * 60 * 1000; // 10 Minuten
 
 /** Rate-Limit gegen Missbrauch/Email-Spam beim Anfordern von Login-Links. */
-const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 Minuten
-const RATE_LIMIT_MAX_REQUESTS = 3;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 Minuten
+const RATE_LIMIT_MAX_REQUESTS = 5;
 
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
