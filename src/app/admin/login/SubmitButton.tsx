@@ -7,7 +7,7 @@ import { useFormStatus } from "react-dom";
  * Client-Komponente innerhalb des <form> sein, weil useFormStatus den
  * Status des umgebenden Formulars liest. Das Deaktivieren während des
  * Versands verhindert nebenbei, dass man sich per Doppelklick selbst ins
- * Rate-Limit befördert (max. 3 Anfragen pro 15 Minuten, SPEC.md Abschnitt 2).
+ * Rate-Limit befördert (max. 5 Anfragen pro 10 Minuten, SPEC.md Abschnitt 2).
  */
 export default function SubmitButton() {
   const { pending } = useFormStatus();

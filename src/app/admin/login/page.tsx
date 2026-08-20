@@ -3,7 +3,7 @@ import SubmitButton from "./SubmitButton";
 
 const ERROR_MESSAGES: Record<string, string> = {
   rate_limited:
-    "Zu viele Login-Link-Anfragen. Bitte warte 15 Minuten und versuch es erneut.",
+    "Zu viele Login-Link-Anfragen. Bitte warte 10 Minuten und versuch es erneut.",
   send_failed:
     "Der Login-Link konnte nicht verschickt werden. Bitte später erneut versuchen.",
   invalid_token:

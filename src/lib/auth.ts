@@ -6,7 +6,14 @@
 // zusätzliche Session-Tabelle/externe Auth-Library nötig ist.
 
 export const SESSION_COOKIE_NAME = "admin_session";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 Tage
+/**
+ * Inaktivitäts-Fenster einer Sitzung. Die Frist ist gleitend: bei jedem
+ * Aufruf im Organisator-Bereich stellt der Proxy das Cookie frisch aus
+ * (siehe src/proxy.ts), sie läuft also immer ab der letzten Nutzung. Ein
+ * durchgehend genutzter Spielabend kann damit beliebig lang sein; die
+ * 7 Tage greifen erst, wenn die App gar nicht angefasst wird.
+ */
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 Tage Inaktivität
 
 function getSessionSecret(): string {
   const secret = process.env.SESSION_SECRET;
