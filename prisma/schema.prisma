@@ -12,33 +12,34 @@ datasource db {
 
 /// Ein Spieler der Liga/des Clubs. Persistent über alle Abende hinweg.
 model Player {
-  id        String   @id @default(cuid())
-  firstName String
+  id           String    @id @default(cuid())
+  firstName    String
   /// Optional, da der Textimport der Liga-Rangliste manchmal nur einen
   /// Vornamen oder eine Initiale liefert (z.B. "Tyrone", "Marc S.").
-  lastName  String?
+  lastName     String?
   /// Aktueller Gesamt-Liga-Punktestand (Saison). Wird nach jeder Modus-B-
   /// Runde um die eingetragenen pointsAwarded erhöht. Modus A ändert dies nie.
-  points    Int      @default(0)
+  points       Int       @default(0)
   /// Subjektive Skill-Einstufung 0-5 (0 = unbekannt, 1 = blutiger Anfänger,
   /// 5 = langjähriger Commander/Magic-Spieler). Nur für die skill-
   /// balancierte Gruppierung in Modus A verwendet (siehe SPEC.md
   /// Abschnitt 4.1), fließt nie in die Liga-Rangliste (Modus B) ein.
-  skillLevel Int     @default(0)
+  skillLevel   Int       @default(0)
   /// Nimmt der Spieler an der Liga (Modus B) teil? Rein zukunftsgerichtete
   /// Filterung der Auswahlliste für neue Liga-Abende — bestehende Abende/
   /// Ergebnisse bleiben davon unberührt. Neu angelegte Spieler starten mit
   /// false (müssen im Liga-Tab manuell aktiviert werden); bei der Migration
   /// wurden alle bis dahin bestehenden Spieler auf true gesetzt.
-  leagueActive Boolean @default(false)
+  leagueActive Boolean   @default(false)
   /// Gesetzt, wenn der Spieler aus der Oberfläche entfernt wurde, aber
   /// wegen bestehender Abend-Historie nicht hart gelöscht werden konnte
   /// (siehe SPEC.md Abschnitt 6). Archivierte Spieler tauchen in keiner
   /// Liste mehr auf; ihre Tischzuteilungen und Ergebnisse bleiben intakt.
-  archivedAt DateTime?
-  createdAt DateTime @default(now())
+  archivedAt   DateTime?
+  createdAt    DateTime  @default(now())
 
   assignments TableAssignment[]
+  casualSeat  CasualSeat?
 
   @@map("players")
 }
@@ -48,12 +49,12 @@ model Player {
 /// bewusst nicht in Saison-Statistiken oder Rematch-Vermeidung ein
 /// (siehe SPEC.md Abschnitt 4 und 9).
 model Evening {
-  id         String    @id @default(cuid())
+  id         String      @id @default(cuid())
   mode       EveningMode
-  date       DateTime  @default(now())
+  date       DateTime    @default(now())
   /// Gesetzt, sobald der Abend abgeschlossen ist (keine weiteren Runden mehr).
   finishedAt DateTime?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime    @default(now())
 
   rounds Round[]
 
@@ -81,9 +82,9 @@ model Round {
 
 /// Ein einzelner Tisch (Pod) innerhalb einer Runde.
 model Table {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   roundId     String
-  round       Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  round       Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
   /// Fortlaufende Tischnummer innerhalb der Runde (1, 2, 3, ...) — nur für die Anzeige.
   tableNumber Int
   /// Tischgröße gemäß Pairing-Algorithmus (3, 4 oder 5).
@@ -110,6 +111,31 @@ model TableAssignment {
 
   @@unique([tableId, playerId])
   @@map("table_assignments")
+}
+
+/// Die *eine* aktuell gültige Casual-Tischzuteilung (siehe SPEC.md
+/// Abschnitt 4). Bewusst getrennt von Evening/Round/Table der Liga:
+///
+/// - Es gibt immer nur die aktuelle Zuteilung. Neu berechnen ersetzt sie,
+///   Zurücksetzen löscht sie — kein Verlauf, keine Altlasten.
+/// - Sie zählt nicht als Abend-Teilnahme und blockiert deshalb auch nicht
+///   das harte Löschen eines Spielers (siehe Abschnitt 6.2).
+/// - Sie existiert nur, damit die öffentliche Lese-Ansicht die Tische
+///   zeigen kann; ohne sie sähe sie niemand ausser dem Organisator.
+model CasualSeat {
+  id          String @id @default(cuid())
+  /// Fortlaufende Tischnummer (1, 2, 3, ...) — nur für die Anzeige.
+  tableNumber Int
+  playerId    String
+  /// Cascade: wird ein Spieler geloescht, verschwindet auch sein Platz.
+  /// Die Casual-Zuteilung ist fluechtig und darf ein Loeschen nie blockieren.
+  player      Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([playerId])
+  @@index([tableNumber])
+  @@map("casual_seats")
 }
 
 /// Einmal-Token für den passwortlosen Email-Login (siehe SPEC.md

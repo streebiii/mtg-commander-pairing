@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { SKILL_LEVELS } from "@/lib/players";
+import { persistCasualPairing, resetCasualPairing } from "./actions";
 
 interface PlayerOption {
   id: string;
@@ -163,20 +164,36 @@ export default function CasualClient({
       setSwapPick(null);
       return;
     }
+    if (!tables) return;
+
     // Tausche die beiden Spieler zwischen (oder innerhalb) der Tische.
-    setTables((prev) => {
-      if (!prev) return prev;
-      const next = prev.map((t) => ({ ...t, players: [...t.players] }));
-      const tableA = next.find((t) => t.tableNumber === swapPick.table)!;
-      const tableB = next.find((t) => t.tableNumber === tableNumber)!;
-      const indexA = tableA.players.findIndex((p) => p.id === swapPick.player);
-      const indexB = tableB.players.findIndex((p) => p.id === playerId);
-      const tmp = tableA.players[indexA];
-      tableA.players[indexA] = tableB.players[indexB];
-      tableB.players[indexB] = tmp;
-      return next;
-    });
+    const next = tables.map((t) => ({ ...t, players: [...t.players] }));
+    const tableA = next.find((t) => t.tableNumber === swapPick.table)!;
+    const tableB = next.find((t) => t.tableNumber === tableNumber)!;
+    const indexA = tableA.players.findIndex((p) => p.id === swapPick.player);
+    const indexB = tableB.players.findIndex((p) => p.id === playerId);
+    const tmp = tableA.players[indexA];
+    tableA.players[indexA] = tableB.players[indexB];
+    tableB.players[indexB] = tmp;
+
+    setTables(next);
     setSwapPick(null);
+
+    // Auch öffentlich übernehmen, damit die Lese-Ansicht dasselbe zeigt.
+    void persistCasualPairing(
+      next.map((t) => ({
+        tableNumber: t.tableNumber,
+        playerIds: t.players.map((p) => p.id),
+      })),
+    );
+  }
+
+  /** Verwirft die Zuteilung. Die Spielerauswahl bleibt bewusst stehen. */
+  function handleReset() {
+    setTables(null);
+    setSwapPick(null);
+    setError(null);
+    void resetCasualPairing();
   }
 
   const selectedPlayers = useMemo(
@@ -356,9 +373,23 @@ export default function CasualClient({
 
       {tables && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium">
-            Tischzuteilung — klicke zwei Spieler an, um sie zu tauschen
-          </h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-sm font-medium">
+              Tischzuteilung — klicke zwei Spieler an, um sie zu tauschen
+            </h2>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
+            >
+              Zurücksetzen
+            </button>
+          </div>
+          <p className="text-xs opacity-70">
+            Diese Zuteilung ist auf der öffentlichen Pairing-Seite sichtbar.
+            &quot;Zurücksetzen&quot; nimmt sie dort wieder weg; deine
+            Spielerauswahl bleibt erhalten.
+          </p>
           <div className="flex flex-wrap gap-4">
             {tables.map((table) => (
               <div

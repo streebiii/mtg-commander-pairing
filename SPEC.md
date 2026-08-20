@@ -113,10 +113,13 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
   aus Abschnitt 3, plus zufällige Zuteilung der konkreten Spieler auf die
   Tische.
 - **Einzelrunde**: keine Mehrrunden-Logik, keine Rematch-Vermeidung.
-- **Keine Ergebnis-/Punkteerfassung**, keine Verlaufsspeicherung — rein für
-  lockere Spieleabende ohne Bezug zur Liga-Rangliste.
-- Organisator kann die zufällige Zuteilung manuell anpassen (Spieler
-  zwischen Tischen tauschen) vor der Anzeige/Veröffentlichung.
+- **Keine Ergebnis-/Punkteerfassung, kein Verlauf** — rein für lockere
+  Spieleabende ohne Bezug zur Liga-Rangliste.
+- Organisator kann die Zuteilung manuell anpassen (Spieler zwischen Tischen
+  tauschen); die Änderung wird sofort übernommen.
+- **Neu auswürfeln**: erneutes "Tische berechnen" ersetzt die Zuteilung.
+- **Zurücksetzen**: verwirft die Zuteilung. Die Spielerauswahl bleibt
+  bestehen, die öffentliche Ansicht ist danach wieder leer.
 
 ### 4.1 Zuteilungsart: Zufällig vs. skill-balanciert
 
@@ -139,6 +142,24 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
   - Die Skill-Werte werden in der Spielerauswahl und in den berechneten
     Tischen bewusst **nicht** angezeigt — sie fliessen nur in die
     Berechnung ein. Wo sie sichtbar sind, steht in Abschnitt 6.1.
+
+### 4.2 Speicherung und öffentliche Anzeige
+
+Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
+
+- Es existiert immer nur **die eine aktuelle** Zuteilung (`CasualSeat`).
+  Neu berechnen ersetzt sie vollständig, Zurücksetzen löscht sie.
+- Sie liegt bewusst in einer eigenen Tabelle, getrennt von den
+  Liga-Abenden (`Evening`/`Round`/`Table`). Dadurch zählt sie **nicht** als
+  Abend-Teilnahme und blockiert nie das harte Löschen eines Spielers
+  (Abschnitt 6.2). Wird ein Spieler gelöscht, verschwindet sein Platz per
+  Cascade mit.
+- Gespeichert wird ausschliesslich, damit die öffentliche Lese-Ansicht die
+  Tische zeigen kann — ohne das sähe sie niemand ausser dem Organisator.
+- Öffentlich wird immer nur **eines von beidem** gezeigt: existiert eine
+  Casual-Zuteilung, hat sie Vorrang; sonst der laufende Liga-Abend. Das
+  Starten eines Liga-Abends verwirft eine offene Casual-Zuteilung, damit
+  die Regel nicht aufweichen kann.
 
 ## 5. Liga — Rangliste-Pairing
 
@@ -163,6 +184,13 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
      weichen Rematch-Vermeidung (Abschnitt 5.2).
   5. Bis zu 3 Runden pro Abend, flexibel — nach jeder Runde entscheidet der
      Organisator, ob eine weitere Runde gepaart wird.
+- **Abend verwerfen**: solange kein einziges Ergebnis erfasst ist, lässt
+  sich ein Abend komplett verwerfen. Ohne das käme man aus einem
+  versehentlichen Start nicht mehr heraus — "Abend beenden" verlangt
+  vollständige Ergebnisse, und solange der Abend läuft, sind die
+  beteiligten Spieler nicht löschbar (Abschnitt 6.2). Sobald Ergebnisse
+  erfasst sind, ist Verwerfen gesperrt: dann hängen bereits
+  fortgeschriebene Liga-Punkte daran.
 - **Tie-Break bei Punktegleichstand**: zufällige Reihenfolge.
 - **Rematch-Vermeidung**: weiches Kriterium, gilt nur **innerhalb desselben
   Abends** (nicht saisonübergreifend). Priorität bleibt die
@@ -302,7 +330,8 @@ bestätigt den Vorgang. Gilt für beide Tabs.
 - Keine saisonübergreifende Rematch-Vermeidung.
 - Keine Sonderbehandlung für „zu wenige Spieler" (< 3 anwesend) — tritt
   laut Auftraggeber nicht auf.
-- Casual speichert keine Ergebnisse/Punkte und keinen Verlauf.
+- Casual speichert keine Ergebnisse/Punkte und keinen Verlauf — nur die
+  eine aktuelle Zuteilung für die öffentliche Anzeige (Abschnitt 4.2).
 
 ## 10. Offene technische Fragen (vor Deployment zu klären)
 
