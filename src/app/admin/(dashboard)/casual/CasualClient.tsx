@@ -70,9 +70,11 @@ export default function CasualClient({
     null,
   );
 
-  // "Neuen Spieler erfassen" ist als letzte Option in der Such-Ergebnisliste
-  // verankert (nicht mehr als separater Button oben) und öffnet dort ein
-  // kleines Formular (Vorname/Nachname/Elo).
+  // "Neuen Spieler erfassen" ist ein fester Trigger direkt unter dem
+  // Suchfeld (siehe SPEC.md Abschnitt 4) — bewusst NICHT am Ende der
+  // Ergebnisliste, sonst rutscht er mit wachsender Spielerliste ausser
+  // Reichweite (siehe Bugfix). Öffnet ein kleines Formular
+  // (Vorname/Nachname/Elo), vorbefüllt mit dem bisher getippten Suchtext.
   const [showAddForm, setShowAddForm] = useState(false);
   const [newFirstName, setNewFirstName] = useState("");
   const [newLastName, setNewLastName] = useState("");
@@ -232,9 +234,74 @@ export default function CasualClient({
           />
         </label>
 
-        {/* Ergebnisliste der Suche — "Neuen Spieler erfassen" ist von Anfang
-            an als letzte Option verankert, unabhängig davon, ob es Treffer
-            gibt oder der Suchtext leer ist. */}
+        {/* Fester Trigger direkt unter dem Suchfeld — bleibt immer an
+            derselben Stelle erreichbar, unabhängig von der Länge der
+            darunter angezeigten Ergebnisliste. */}
+        {!showAddForm && (
+          <button
+            type="button"
+            onClick={openAddForm}
+            className="flex min-h-11 w-fit items-center rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20"
+          >
+            {search.trim()
+              ? `+ „${search.trim()}“ als neuen Spieler anlegen`
+              : "+ Neuen Spieler erfassen"}
+          </button>
+        )}
+
+        {showAddForm && (
+          <div className="flex flex-wrap items-end gap-3 rounded border border-dashed border-black/20 p-3 dark:border-white/20">
+            <label className="flex flex-col gap-1.5 text-xs">
+              Vorname
+              <input
+                type="text"
+                value={newFirstName}
+                onChange={(e) => setNewFirstName(e.target.value)}
+                className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-xs">
+              Nachname (optional)
+              <input
+                type="text"
+                value={newLastName}
+                onChange={(e) => setNewLastName(e.target.value)}
+                className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-xs">
+              Elo (0-3)
+              <select
+                value={newSkill}
+                onChange={(e) => setNewSkill(Number(e.target.value))}
+                className="min-h-9 w-44 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+              >
+                {SKILL_LEVEL_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={handleAddFormSubmit}
+              disabled={!newFirstName.trim() || adding}
+              className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+            >
+              {adding ? "Lege an…" : "Anlegen"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAddForm(false)}
+              className="min-h-11 rounded border border-transparent px-4 py-2 text-sm opacity-70"
+            >
+              Abbrechen
+            </button>
+          </div>
+        )}
+        {addError && <p className="text-sm text-red-600">{addError}</p>}
+
         <div className="flex max-w-2xl flex-col gap-1.5">
           {searchResults.map((p) => (
             <button
@@ -247,71 +314,6 @@ export default function CasualClient({
               <span className="opacity-60">{skillLevelShortLabel(p.skillLevel)}</span>
             </button>
           ))}
-
-          {!showAddForm && (
-            <button
-              type="button"
-              onClick={openAddForm}
-              className="flex min-h-11 items-center rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20"
-            >
-              {search.trim()
-                ? `+ „${search.trim()}“ als neuen Spieler anlegen`
-                : "+ Neuen Spieler erfassen"}
-            </button>
-          )}
-
-          {showAddForm && (
-            <div className="flex flex-wrap items-end gap-3 rounded border border-dashed border-black/20 p-3 dark:border-white/20">
-              <label className="flex flex-col gap-1.5 text-xs">
-                Vorname
-                <input
-                  type="text"
-                  value={newFirstName}
-                  onChange={(e) => setNewFirstName(e.target.value)}
-                  className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5 text-xs">
-                Nachname (optional)
-                <input
-                  type="text"
-                  value={newLastName}
-                  onChange={(e) => setNewLastName(e.target.value)}
-                  className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5 text-xs">
-                Elo (0-3)
-                <select
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(Number(e.target.value))}
-                  className="min-h-9 w-44 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-                >
-                  {SKILL_LEVEL_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="button"
-                onClick={handleAddFormSubmit}
-                disabled={!newFirstName.trim() || adding}
-                className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
-              >
-                {adding ? "Lege an…" : "Anlegen"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="min-h-11 rounded border border-transparent px-4 py-2 text-sm opacity-70"
-              >
-                Abbrechen
-              </button>
-            </div>
-          )}
-          {addError && <p className="text-sm text-red-600">{addError}</p>}
         </div>
 
         <fieldset className="mt-1 flex flex-wrap items-center gap-4 text-sm">

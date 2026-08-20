@@ -25,6 +25,12 @@ model Player {
   /// balancierte Gruppierung in Modus A verwendet (siehe SPEC.md
   /// Abschnitt 4.1), fließt nie in die Liga-Rangliste (Modus B) ein.
   skillLevel Int     @default(0)
+  /// Nimmt der Spieler an der Liga (Modus B) teil? Rein zukunftsgerichtete
+  /// Filterung der Auswahlliste für neue Liga-Abende — bestehende Abende/
+  /// Ergebnisse bleiben davon unberührt. Neu angelegte Spieler starten mit
+  /// false (müssen im Liga-Tab manuell aktiviert werden); bei der Migration
+  /// wurden alle bis dahin bestehenden Spieler auf true gesetzt.
+  leagueActive Boolean @default(false)
   createdAt DateTime @default(now())
 
   assignments TableAssignment[]

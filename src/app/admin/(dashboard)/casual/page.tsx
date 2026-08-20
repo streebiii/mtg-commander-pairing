@@ -18,7 +18,7 @@ export default async function CasualPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold">Modus A — Casual-Rechner + Zuteilung</h1>
+        <h1 className="text-xl font-semibold">Casual</h1>
         <p className="text-sm opacity-70">
           Reine Anzahl-basierte Tischzuteilung ohne Rangliste. Einzelrunde,
           keine Punkte-/Ergebniserfassung, kein Verlauf (siehe SPEC.md

@@ -8,22 +8,21 @@ interface Player {
   id: string;
   firstName: string;
   lastName: string | null;
-  points: number;
   skillLevel: number;
   assignmentCount: number;
 }
 
 /**
- * Eine Spielerzeile mit Auto-Save: jede Änderung (Zahl/Auswahl sofort bei
+ * Eine Spielerzeile mit Auto-Save: jede Änderung (Auswahl sofort bei
  * Änderung, Text bei Verlassen des Feldes) speichert automatisch, ohne
  * expliziten "Speichern"-Klick. Kontrollierte Eingabefelder (statt
  * `defaultValue`) vermeiden dabei den Fehler, bei dem ein Wert nach einem
- * Server-Re-Render nicht mehr zuverlässig übernommen wurde.
+ * Server-Re-Render nicht mehr zuverlässig übernommen wurde. Liga-Punkte und
+ * -Teilnahme werden hier bewusst nicht verwaltet — das lebt im Liga-Tab.
  */
 export default function PlayerRow({ player }: { player: Player }) {
   const [firstName, setFirstName] = useState(player.firstName);
   const [lastName, setLastName] = useState(player.lastName ?? "");
-  const [points, setPoints] = useState(String(player.points));
   const [skillLevel, setSkillLevel] = useState(player.skillLevel);
   const [isPending, startTransition] = useTransition();
   const [justSaved, setJustSaved] = useState(false);
@@ -32,14 +31,12 @@ export default function PlayerRow({ player }: { player: Player }) {
   function save(overrides: Partial<{
     firstName: string;
     lastName: string;
-    points: string;
     skillLevel: number;
   }> = {}) {
     const fd = new FormData();
     fd.set("id", player.id);
     fd.set("firstName", overrides.firstName ?? firstName);
     fd.set("lastName", overrides.lastName ?? lastName);
-    fd.set("points", overrides.points ?? points);
     fd.set("skillLevel", String(overrides.skillLevel ?? skillLevel));
 
     startTransition(async () => {
@@ -78,17 +75,6 @@ export default function PlayerRow({ player }: { player: Player }) {
           onChange={(e) => setLastName(e.target.value)}
           onBlur={() => save()}
           className="min-h-9 w-32 rounded border border-black/20 px-3 py-2 dark:border-white/20"
-        />
-      </td>
-      <td className="py-2 pr-3">
-        <input
-          type="number"
-          value={points}
-          onChange={(e) => {
-            setPoints(e.target.value);
-            save({ points: e.target.value });
-          }}
-          className="min-h-9 w-20 rounded border border-black/20 px-3 py-2 dark:border-white/20"
         />
       </td>
       <td className="py-2 pr-3">

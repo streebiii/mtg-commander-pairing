@@ -38,7 +38,9 @@ function isResolution(value: unknown): value is Resolution {
  * Wendet die vom Organisator bestätigten Import-Entscheidungen an: setzt
  * den Punktestand bestehender Spieler auf den importierten Total-Wert
  * (kein Aufaddieren — der Import liefert bereits den aktuellen
- * Saison-Gesamtstand), oder legt neue Spieler an.
+ * Saison-Gesamtstand), oder legt neue Spieler an. Der Import stammt aus der
+ * Liga-Rangliste — betroffene Spieler werden dabei automatisch als
+ * Liga-teilnehmend (leagueActive) markiert.
  */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -59,7 +61,7 @@ export async function POST(request: Request) {
     if (resolution.action === "update") {
       await prisma.player.update({
         where: { id: resolution.playerId },
-        data: { points: resolution.total },
+        data: { points: resolution.total, leagueActive: true },
       });
       updated++;
     } else if (resolution.action === "create") {
@@ -68,6 +70,7 @@ export async function POST(request: Request) {
           firstName: resolution.firstName,
           lastName: resolution.lastName,
           points: resolution.total,
+          leagueActive: true,
         },
       });
       created++;

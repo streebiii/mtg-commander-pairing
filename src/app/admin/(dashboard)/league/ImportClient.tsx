@@ -145,12 +145,13 @@ export default function ImportClient({
   return (
     <section className="flex max-w-3xl flex-col gap-4 border-t border-black/10 pt-6 dark:border-white/10">
       <h2 className="text-sm font-medium">
-        Rangliste aus Text importieren (Modus B)
+        Rangliste aus Text importieren (Liga)
       </h2>
       <p className="text-xs opacity-70">
         Füge die Tabelle aus der Liga-Übersicht ein (Spalten &quot;Spieler&quot;
         und &quot;Total&quot; werden automatisch erkannt, egal wie viele
-        Runden-Spalten es gibt).
+        Runden-Spalten es gibt). Importierte Spieler werden dabei automatisch
+        als Liga-teilnehmend markiert.
       </p>
       <textarea
         value={text}

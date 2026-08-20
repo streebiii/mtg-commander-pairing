@@ -6,6 +6,8 @@ import {
   startNextRound,
   submitRoundResults,
 } from "./actions";
+import ImportClient from "./ImportClient";
+import LeaguePlayerRow from "./LeaguePlayerRow";
 import ReassignSelect from "./ReassignSelect";
 import RegenerateButton from "./RegenerateButton";
 
@@ -38,15 +40,57 @@ export default async function LeaguePage() {
     },
   });
 
+  // Alle Vereinsspieler für die Verwaltung (Punkte + Teilnahme-Flag) — nicht
+  // nur die aktuell teilnehmenden, damit man auch neue Spieler aktivieren
+  // kann (siehe SPEC.md Abschnitt 6).
+  const allPlayers = await prisma.player.findMany({
+    orderBy: [{ points: "desc" }, { firstName: "asc" }],
+    select: { id: true, firstName: true, lastName: true, points: true, leagueActive: true },
+  });
+
+  const managementSection = (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-sm font-medium">
+        Liga-Verwaltung ({allPlayers.length} Spieler)
+      </h2>
+      <p className="text-xs opacity-70">
+        Punktestand und Liga-Teilnahme pro Spieler — nur teilnehmende Spieler
+        erscheinen in der Auswahlliste für neue Liga-Abende. Änderungen
+        werden automatisch gespeichert.
+      </p>
+      <div className="w-full max-w-2xl overflow-x-auto">
+        <table className="w-full min-w-[420px] text-sm">
+          <thead>
+            <tr className="border-b border-black/10 text-left dark:border-white/10">
+              <th className="py-2 pr-3">Spieler</th>
+              <th className="py-2 pr-3">Punkte</th>
+              <th className="py-2 pr-3">Liga-Teilnahme</th>
+              <th className="py-2 pr-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {allPlayers.map((player) => (
+              <LeaguePlayerRow key={player.id} player={player} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ImportClient
+        existingPlayers={allPlayers.map((p) => ({
+          id: p.id,
+          firstName: p.firstName,
+          lastName: p.lastName,
+        }))}
+      />
+    </section>
+  );
+
   if (!evening) {
-    const players = await prisma.player.findMany({
-      orderBy: { points: "desc" },
-      select: { id: true, firstName: true, lastName: true, points: true },
-    });
+    const activePlayers = allPlayers.filter((p) => p.leagueActive);
     return (
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-8">
         <div>
-          <h1 className="text-xl font-semibold">Modus B — Liga-Abend</h1>
+          <h1 className="text-xl font-semibold">Liga</h1>
           <p className="text-sm opacity-70">
             Pairing anhand der Gesamt-Liga-Rangliste, bis zu 3 Runden pro
             Abend (siehe SPEC.md Abschnitt 5).
@@ -56,24 +100,34 @@ export default async function LeaguePage() {
           <h2 className="text-sm font-medium">
             Anwesende Spieler auswählen
           </h2>
-          <div className="flex max-w-2xl flex-wrap gap-2">
-            {players.map((p) => (
-              <label
-                key={p.id}
-                className="flex min-h-9 items-center gap-1.5 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-              >
-                <input type="checkbox" name="playerIds" value={p.id} className="h-4 w-4" />
-                {formatPlayerName(p)} ({p.points})
-              </label>
-            ))}
-          </div>
+          {activePlayers.length === 0 ? (
+            <p className="text-xs opacity-70">
+              Noch keine Spieler als Liga-teilnehmend markiert — aktiviere
+              zuerst welche unten in der Liga-Verwaltung.
+            </p>
+          ) : (
+            <div className="flex max-w-2xl flex-wrap gap-2">
+              {activePlayers.map((p) => (
+                <label
+                  key={p.id}
+                  className="flex min-h-9 items-center gap-1.5 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+                >
+                  <input type="checkbox" name="playerIds" value={p.id} className="h-4 w-4" />
+                  {formatPlayerName(p)} ({p.points})
+                </label>
+              ))}
+            </div>
+          )}
           <button
             type="submit"
-            className="min-h-11 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background"
+            disabled={activePlayers.length < 3}
+            className="min-h-11 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
           >
             Abend starten — Runde 1 berechnen
           </button>
         </form>
+
+        {managementSection}
       </div>
     );
   }
@@ -86,7 +140,7 @@ export default async function LeaguePage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-xl font-semibold">Modus B — Liga-Abend (laufend)</h1>
+        <h1 className="text-xl font-semibold">Liga (laufend)</h1>
         <p className="text-sm opacity-70">
           Gestartet am {evening.date.toLocaleString("de-CH")}
         </p>
@@ -183,6 +237,8 @@ export default async function LeaguePage() {
           nächste Runde startest oder den Abend beendest.
         </p>
       )}
+
+      {managementSection}
     </div>
   );
 }

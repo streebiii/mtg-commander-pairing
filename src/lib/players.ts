@@ -21,7 +21,7 @@ export const SKILL_LEVEL_MIN = 0;
 export const SKILL_LEVEL_MAX = 3;
 
 export const SKILL_LEVEL_LABELS: Record<number, string> = {
-  0: "0 – weiß ich nicht",
+  0: "0 – weiss ich nicht",
   1: "1 – Anfänger",
   2: "2 – Medium",
   3: "3 – erfahrener Spieler (mehrjährig)",

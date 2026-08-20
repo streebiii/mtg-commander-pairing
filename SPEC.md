@@ -12,6 +12,9 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
 
 - **Single-User (Organisator)**: eine Person verwaltet Spieler, Abende,
   Pairings und Ergebnisse. Kein Multi-User, keine Rollen/Rechte.
+- **Organisator-Navigation**: nach dem Login landet der Organisator auf
+  einem Dashboard (`/admin`) mit Links zu den drei Arbeitsbereichen. Die
+  Nav ist durchgängig vierteilig: Dashboard, Casual, Liga, Spieler.
 - **Zugriffsschutz — passwortloser Email-Login**: kein Passwort mehr.
   Der Organisator klickt "Login-Link anfordern", bekommt eine Email mit
   einem Einmal-Link an eine fest konfigurierte Adresse (`ADMIN_EMAIL`)
@@ -39,12 +42,12 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   (cyon-Kundencenter-Login, SSH) liegt ausserhalb der App und damit
   ausserhalb dessen, was Code hier absichern kann.
 
-## 3. Tischgrößen-Algorithmus (gemeinsame Basis für beide Modi)
+## 3. Tischgrössen-Algorithmus (gemeinsame Basis für beide Modi)
 
 Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
 
 **Priorität (überarbeitet — 5er-Tische sind absoluter Ausnahmefall):**
-1. **5er-Tische nur, wenn eine Aufteilung ausschließlich mit 3er- und
+1. **5er-Tische nur, wenn eine Aufteilung ausschliesslich mit 3er- und
    4er-Tischen für die gesamte Gruppe mathematisch unmöglich ist.** Da 3 und
    4 teilerfremd sind, lässt sich jede Spielerzahl N ≥ 6 immer als reine
    Kombination aus 3er- und 4er-Tischen darstellen (Frobenius-Zahl von 3
@@ -53,8 +56,8 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
    Lösung nicht existiert.
 2. Innerhalb der gültigen reinen 3er/4er-Kombinationen: so viele 4er-Tische
    wie möglich, Rest mit 3er-Tischen auffüllen (klassisches Prinzip
-   "möglichst wenige, möglichst große Tische").
-3. Gültige Tischgrößen sind grundsätzlich 3, 4, 5 — 5 aber wie oben nur im
+   "möglichst wenige, möglichst grosse Tische").
+3. Gültige Tischgrössen sind grundsätzlich 3, 4, 5 — 5 aber wie oben nur im
    Ausnahmefall N = 5.
 4. Der Fall "weniger als 3 Spieler anwesend" tritt laut Auftraggeber in der
    Praxis nicht auf und wird nicht gesondert behandelt (keine
@@ -82,7 +85,7 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
 > mehrere 3/4-Kombinationen möglich sind): **maximale Anzahl 4er-Tische
 > gewinnt**, da das automatisch auch die Gesamtzahl der Tische minimiert.
 
-## 4. Modus A — Casual-Rechner + Zuteilung
+## 4. Casual — Rechner + Zuteilung
 
 - **Spielerauswahl** (mobil-optimiert, tap-freundlich):
   - Suchfeld filtert die Spielerliste live (Substring-Match auf
@@ -97,8 +100,8 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
     neuen Spieler anlegen" direkt unter dem Suchfeld (Text wird naiv in
     Vorname/Nachname gesplittet). Beide legen den Spieler sofort an und
     wählen ihn automatisch aus. Punktestand startet dabei immer bei 0
-    (Liga-Punkte sind für Modus A irrelevant).
-- Ausgabe: Tischverteilung (Anzahl & Größe der Tische) gemäß Algorithmus
+    (Liga-Punkte sind für Casual irrelevant).
+- Ausgabe: Tischverteilung (Anzahl & Grösse der Tische) gemäss Algorithmus
   aus Abschnitt 3, plus zufällige Zuteilung der konkreten Spieler auf die
   Tische.
 - **Einzelrunde**: keine Mehrrunden-Logik, keine Rematch-Vermeidung.
@@ -114,24 +117,24 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
 - **Zufällig** (Standard): wie oben beschrieben, keine Berücksichtigung von
   Skill-Level.
 - **Nach Skill balanciert**: nutzt dieselbe Rang-Gruppierungs-Logik wie
-  Modus B (Abschnitt 5.1), aber mit der Skill-Einstufung der Spieler
+  die Liga (Abschnitt 5.1), aber mit der Skill-Einstufung der Spieler
   (Abschnitt 6) statt Liga-Punkten als Sortier-Kriterium, inkl. Zufalls-
   Rauschen (±1 Skill-Stufe — kleiner als bei der Liga, da die Skala nur
   0-3 umfasst), damit nicht stur die exakt gleich starken Spieler
   zusammen landen.
-  - Unbewertete Spieler (Skill = 0, "weiß ich nicht") werden für die
+  - Unbewertete Spieler (Skill = 0, "weiss ich nicht") werden für die
     Berechnung so behandelt, als hätten sie den Mittelwert der bewerteten
     anwesenden Spieler (bzw. den Skalen-Mittelwert 2, falls niemand
     bewertet ist) — sie landen dadurch tendenziell in der Mitte statt
     automatisch am schwächsten Tisch.
   - Weiterhin keine Persistenz, kein Verlauf, keine Rematch-Vermeidung
-    (Modus A bleibt Einzelrunde).
+    (Casual bleibt Einzelrunde).
   - Die Skill-Werte sind nur im Organisator-Bereich sichtbar (Auswahl-
     Liste und Ergebnis-Tische) — die öffentliche Lese-Ansicht zeigt
-    ohnehin ausschließlich Modus-B-Abende (Abschnitt 8), Skill-Level
+    ohnehin ausschliesslich Liga-Abende (Abschnitt 8), Skill-Level
     tauchen dort also nie auf.
 
-## 5. Modus B — Liga-Rangliste-Pairing
+## 5. Liga — Rangliste-Pairing
 
 - Kontext: bestehende Saison-Liga mit Achievement-basiertem Punktesystem
   (siehe https://mtgbl.ch/liga/commander/2026/achievements — 25
@@ -140,9 +143,10 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
   komplette Achievement-Sheet ab — der Organisator trägt nach jeder Runde
   nur die **Gesamtpunktsumme pro Spieler** ein.
 - **Ablauf pro Abend:**
-  1. Anwesende Spieler aus der Spielerdatenbank auswählen.
+  1. Anwesende Spieler aus den Liga-teilnehmenden Vereinsspielern auswählen
+     (siehe Abschnitt 6 — nicht jeder Vereinsspieler nimmt an der Liga teil).
   2. **Runde 1**: Sortierung nach aktuellem Gesamt-Liga-Punktestand
-     (Stand vor diesem Abend). Tischverteilung gemäß Algorithmus aus
+     (Stand vor diesem Abend). Tischverteilung gemäss Algorithmus aus
      Abschnitt 3, Spieler in Punktereihenfolge auf die Tische verteilt
      (übliche Pairing-Logik: nach Rang gruppieren/verteilen, siehe Abschnitt
      5.1 für Detailregel).
@@ -156,9 +160,9 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
 - **Tie-Break bei Punktegleichstand**: zufällige Reihenfolge.
 - **Rematch-Vermeidung**: weiches Kriterium, gilt nur **innerhalb desselben
   Abends** (nicht saisonübergreifend). Priorität bleibt die
-  Tischgrößenverteilung aus Abschnitt 3 — Rematch-Vermeidung darf diese
+  Tischgrössenverteilung aus Abschnitt 3 — Rematch-Vermeidung darf diese
   nicht verletzen, wird also nur angewendet, wenn mehrere Zuteilungen mit
-  gleicher Tischgrößen-Verteilung möglich sind.
+  gleicher Tischgrössen-Verteilung möglich sind.
 - Organisator kann jede vorgeschlagene Zuteilung manuell anpassen (Spieler
   zwischen Tischen tauschen).
 
@@ -166,10 +170,10 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
 
 Spieler werden nach Punktestand absteigend sortiert, wobei ein kleines
 Zufalls-Rauschen (`RANK_JITTER_POINTS`, aktuell ±3 Punkte) auf den
-Punktestand addiert wird, bevor sortiert wird. Danach werden sie gemäß
-der berechneten Tischgrößen (Abschnitt 3) in aufeinanderfolgende Blöcke
+Punktestand addiert wird, bevor sortiert wird. Danach werden sie gemäss
+der berechneten Tischgrössen (Abschnitt 3) in aufeinanderfolgende Blöcke
 eingeteilt (Spieler 1–4 an Tisch 1, 5–8 an Tisch 2 usw., je nach
-Tischgröße) — analog zu einer Swiss-Pairing-Gruppierung nach Rang. Bei
+Tischgrösse) — analog zu einer Swiss-Pairing-Gruppierung nach Rang. Bei
 Punktegleichstand (oder durch das Rauschen entstandenem Beinahe-
 Gleichstand) am Blockrand wird zufällig entschieden, wer in welchem
 Block landet.
@@ -177,12 +181,12 @@ Block landet.
 Das Rauschen sorgt dafür, dass benachbarte Ränge sich gelegentlich die
 Plätze tauschen — es spielen also nicht jeden Abend zwangsläufig exakt
 dieselben Spieler 1–4 zusammen, 5–8 zusammen usw., auch wenn sich die
-Punktestände zwischen den Abenden kaum ändern. Spieler mit großem
+Punktestände zwischen den Abenden kaum ändern. Spieler mit grossem
 Punkteabstand (mehr als ca. 2× das Rauschen) werden dabei nie
 miteinander gemischt — die grundsätzliche "stärkere Spieler spielen
 eher gegeneinander"-Logik bleibt erhalten.
 
-Der Organisator kann eine Runde außerdem jederzeit (solange noch keine
+Der Organisator kann eine Runde ausserdem jederzeit (solange noch keine
 Ergebnisse für sie eingetragen wurden) neu auswürfeln lassen ("Neu
 mischen"-Button), falls ihm der erste Vorschlag nicht zusagt.
 
@@ -192,29 +196,46 @@ Bei der Neupaarung für Runde 2/3 wird, wenn mehrere Spieler mit
 (näherungsweise) gleichem Punktestand für die Randposition eines
 Tisch-Blocks infrage kommen, derjenige bevorzugt, der in der/den
 vorherigen Runde(n) dieses Abends noch nicht mit den anderen Spielern des
-Ziel-Tisches zusammen gespielt hat. Die Tischgrößenverteilung selbst
+Ziel-Tisches zusammen gespielt hat. Die Tischgrössenverteilung selbst
 (Abschnitt 3) bleibt davon unberührt.
 
 ## 6. Spielerverwaltung
 
-- Persistente Spielerdatenbank: Spieler einmalig anlegen (Vorname,
-  optional Nachname), bei jedem Abend nur noch als „anwesend“
-  markieren/auswählen.
-- Enthält je Spieler den aktuellen Gesamt-Liga-Punktestand (wird durch
-  Ergebniserfassung in Modus B fortgeschrieben).
-- Enthält je Spieler eine optionale **Skill-Einstufung** (0-3):
-  - 0 = "weiß ich nicht" / unbewertet
-  - 1 = Anfänger
-  - 2 = Medium
-  - 3 = erfahrener Spieler (mehrjährig)
+Nicht jeder Vereinsspieler nimmt an der Liga teil — deshalb ist die
+Verwaltung auf zwei getrennte Tabs aufgeteilt:
 
-  Komplett unabhängig vom Liga-Punktestand, wird ausschließlich für den
-  skill-balancierten Modus A verwendet (Abschnitt 4.1). Editierbar an
-  derselben Stelle wie Name/Punkte.
-- **Auto-Save**: alle Felder (Vorname, Nachname, Punkte, Skill) speichern
-  automatisch — Zahl/Auswahlfelder sofort bei Änderung, Textfelder beim
-  Verlassen des Feldes (Blur). Kein expliziter "Speichern"-Klick nötig,
-  kurzes visuelles Feedback ("✓ Gespeichert") bestätigt den Vorgang.
+- **Spieler-Tab** (allgemeines Vereins-Roster):
+  - Persistente Spielerdatenbank: Spieler einmalig anlegen (Vorname,
+    optional Nachname).
+  - Enthält je Spieler eine optionale **Skill-Einstufung** (0-3), im
+    Organisator-UI als "Elo" bezeichnet (verdecktes Rating, siehe
+    `src/lib/players.ts`):
+    - 0 = "weiss ich nicht" / unbewertet
+    - 1 = Anfänger
+    - 2 = Medium
+    - 3 = erfahrener Spieler (mehrjährig)
+
+    Komplett unabhängig vom Liga-Punktestand, wird ausschliesslich für den
+    skill-balancierten Casual-Modus verwendet (Abschnitt 4.1).
+  - Neu angelegte Spieler nehmen noch **nicht** automatisch an der Liga
+    teil (siehe unten) — Liga-Punkte und -Teilnahme werden hier bewusst
+    nicht angezeigt/editiert.
+- **Liga-Tab** (Liga-Verwaltung, siehe Abschnitt 5):
+  - Enthält je Spieler den aktuellen Gesamt-Liga-Punktestand (wird durch
+    Ergebniserfassung in der Liga fortgeschrieben, hier aber auch manuell
+    editierbar) sowie eine **Liga-Teilnahme-Flag** (`leagueActive`).
+  - Die Teilnahme-Flag wirkt rein zukunftsgerichtet: sie filtert nur die
+    Auswahlliste beim Start eines neuen Liga-Abends — bestehende Abende
+    und Ergebnisse bleiben beim Deaktivieren unberührt.
+  - Neu im Spieler-Tab angelegte Spieler starten mit `leagueActive = false`
+    und müssen hier manuell aktiviert werden, bevor sie für einen
+    Liga-Abend auswählbar sind. Der Text-Import der Saison-Rangliste
+    (Abschnitt 7) markiert importierte Spieler automatisch als
+    Liga-teilnehmend.
+- **Auto-Save**: alle Felder speichern automatisch — Zahl-/Auswahlfelder
+  (inkl. Checkbox) sofort bei Änderung, Textfelder beim Verlassen des
+  Feldes (Blur). Kein expliziter "Speichern"-Klick nötig, kurzes visuelles
+  Feedback ("✓ Gespeichert") bestätigt den Vorgang. Gilt für beide Tabs.
 
 ## 7. Datenimport zu Beginn
 
@@ -231,7 +252,7 @@ Ziel-Tisches zusammen gespielt hat. Die Tischgrößenverteilung selbst
   **nicht** für saisonübergreifende Rematch-Vermeidung genutzt (siehe 5.2 —
   nur innerhalb desselben Abends).
 
-## 9. Ausdrücklich außerhalb des Scopes (v1)
+## 9. Ausdrücklich ausserhalb des Scopes (v1)
 
 - Kein Multi-User/Rollenmodell.
 - Keine Digitalisierung des vollständigen Achievement-Sheets (25 Punkte pro
@@ -240,7 +261,7 @@ Ziel-Tisches zusammen gespielt hat. Die Tischgrößenverteilung selbst
 - Keine saisonübergreifende Rematch-Vermeidung.
 - Keine Sonderbehandlung für „zu wenige Spieler" (< 3 anwesend) — tritt
   laut Auftraggeber nicht auf.
-- Modus A speichert keine Ergebnisse/Punkte und keinen Verlauf.
+- Casual speichert keine Ergebnisse/Punkte und keinen Verlauf.
 
 ## 10. Offene technische Fragen (vor Deployment zu klären)
 
