@@ -19,7 +19,7 @@ export default function SubmitButton() {
       aria-busy={pending}
       className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-60"
     >
-      {pending ? "Login-Link wird gesendet…" : "Login-Link anfordern"}
+      {pending ? "Code wird gesendet…" : "Login-Code anfordern"}
     </button>
   );
 }

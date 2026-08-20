@@ -15,16 +15,35 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
 - **Organisator-Navigation**: nach dem Login landet der Organisator auf
   einem Dashboard (`/admin`) mit Links zu den drei Arbeitsbereichen. Die
   Nav ist durchgängig vierteilig: Dashboard, Casual, Liga, Spieler.
-- **Zugriffsschutz — passwortloser Email-Login**: kein Passwort mehr.
-  Der Organisator klickt "Login-Link anfordern", bekommt eine Email mit
-  einem Einmal-Link an eine fest konfigurierte Adresse (`ADMIN_EMAIL`)
-  und ist nach dem Klick eingeloggt. Der Link ist 10 Minuten gültig und
-  nur einmal verwendbar (Einlösen markiert ihn in der Datenbank als
-  verbraucht). Rate-Limiting verhindert das wiederholte Anfordern von
-  Links (max. 5 pro 10 Minuten). Der eigentliche Login-Faktor ist damit
-  "Zugriff auf das Email-Postfach" — kein zweiter Faktor im klassischen
-  Sinn, aber ausreichend für eine Single-User-Anwendung, sofern das
-  Postfach selbst gut geschützt ist (idealerweise mit eigener 2FA).
+- **Zugriffsschutz — passwortloser Email-Login mit Zahlencode**: kein
+  Passwort. Der Organisator klickt "Login-Code anfordern" und bekommt einen
+  **sechsstelligen Zahlencode** an eine fest konfigurierte Adresse
+  (`ADMIN_EMAIL`). Den gibt er in der Eingabemaske ein, die direkt danach
+  erscheint. Der Code ist 10 Minuten gültig und nur einmal verwendbar
+  (Einlösen markiert ihn in der Datenbank als verbraucht).
+
+  Bewusst ein Code statt eines Links: ein Link öffnet sich je nach
+  Mail-Programm im dortigen In-App-Browser, wo das Session-Cookie dann
+  landet — und im eigentlichen Browser ist man weiterhin ausgeloggt. Der
+  Code wird dagegen in genau dem Browser eingegeben, in dem der Login
+  gestartet wurde.
+
+  **Schutz gegen Durchprobieren**: ein sechsstelliger Code hat nur eine
+  Million Möglichkeiten, verglichen mit den 256 Bit des früheren Links
+  verschwindend wenig. Deshalb sind pro ausgestelltem Code höchstens
+  **5 Fehlversuche** erlaubt; danach ist er verbrannt und es braucht einen
+  neuen. Jeder Fehlversuch belastet alle offenen Codes, da zu einem falsch
+  geratenen Code kein Datensatz existiert, den man belasten könnte.
+  Zusätzlich begrenzt das Rate-Limit das Anfordern selbst (max. 5 pro
+  10 Minuten).
+
+  Der eigentliche Login-Faktor ist damit "Zugriff auf das Email-Postfach" —
+  kein zweiter Faktor im klassischen Sinn, aber ausreichend für eine
+  Single-User-Anwendung, sofern das Postfach selbst gut geschützt ist
+  (idealerweise mit eigener 2FA).
+- **Bestehende Sitzung**: wer `/admin/login` mit gültigem Cookie aufruft,
+  wird direkt weitergeleitet — es wird also keine überflüssige Email
+  ausgelöst.
 - **Sitzungsdauer**: nach dem Login gilt ein signiertes Cookie mit
   **gleitender** Gültigkeit von 7 Tagen. Bei jedem Aufruf im
   Organisator-Bereich wird es frisch ausgestellt (siehe `src/proxy.ts`),
@@ -44,7 +63,7 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   weiterhin über das bestehende cyon.ch-Hosting des Auftraggebers (siehe
   DEPLOYMENT.md).
 - **Sicherheitshärtung**: Sicherheits-HTTP-Header (siehe `next.config.ts`),
-  Rate-Limiting auf den Login-Link-Versand, Prisma-parametrisierte
+  Rate-Limiting auf den Login-Code-Versand, Prisma-parametrisierte
   Datenbankzugriffe (kein SQL-Injection-Risiko), keine Secrets im
   Client-Bundle. Der Zugriffsschutz auf das Hosting-Konto selbst
   (cyon-Kundencenter-Login, SSH) liegt ausserhalb der App und damit

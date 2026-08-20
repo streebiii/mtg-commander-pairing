@@ -138,24 +138,34 @@ model CasualSeat {
   @@map("casual_seats")
 }
 
-/// Einmal-Token für den passwortlosen Email-Login (siehe SPEC.md
+/// Einmal-Code für den passwortlosen Email-Login (siehe SPEC.md
 /// Abschnitt 2). Es gibt keine Benutzerkonten — jeder gültige,
-/// unverbrauchte Token innerhalb seiner Gültigkeit loggt als der eine
+/// unverbrauchte Code innerhalb seiner Gültigkeit loggt als der eine
 /// Organisator ein.
 model LoginToken {
   id String @id @default(cuid())
 
-  /// SHA-256-Hash des tatsächlichen Tokens. Nur der rohe Token steht im
-  /// Email-Link, niemals im Klartext in der Datenbank — falls die DB je
-  /// ausgelesen würde, ließen sich daraus keine gültigen Links ableiten.
-  tokenHash String @unique
+  /// SHA-256-Hash des sechsstelligen Codes. Nur der Code selbst steht in
+  /// der Email, niemals im Klartext in der Datenbank — falls die DB je
+  /// ausgelesen würde, liessen sich daraus keine gültigen Codes ableiten.
+  /// Bewusst nicht unique: zwei gleichzeitig gültige Codes könnten
+  /// theoretisch dieselben sechs Ziffern haben.
+  tokenHash String
+
+  /// Zahl der Fehlversuche, seit dieser Code ausgestellt wurde. Ein
+  /// sechsstelliger Code hat nur eine Million Möglichkeiten — ohne diese
+  /// Bremse wäre er in Minuten durchprobiert. Bei jedem Fehlversuch wird
+  /// der Zähler aller offenen Codes erhöht; ab MAX_CODE_ATTEMPTS gilt der
+  /// Code als verbrannt (siehe src/lib/loginToken.ts).
+  attempts Int @default(0)
 
   expiresAt DateTime
-  /// null, solange der Token noch nicht eingelöst wurde. Ein Token ist
+  /// null, solange der Code noch nicht eingelöst wurde. Ein Code ist
   /// nach einmaligem Einlösen ungültig (Replay-Schutz).
   usedAt    DateTime?
   createdAt DateTime  @default(now())
 
+  @@index([tokenHash])
   @@index([createdAt])
   @@map("login_tokens")
 }
