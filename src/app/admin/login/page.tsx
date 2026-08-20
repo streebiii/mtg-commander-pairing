@@ -29,7 +29,7 @@ export default async function LoginPage({
         <input type="hidden" name="next" value={next ?? "/admin"} />
         <button
           type="submit"
-          className="min-h-9 rounded bg-foreground px-4 py-2 text-sm font-medium text-background"
+          className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background"
         >
           Login-Link anfordern
         </button>

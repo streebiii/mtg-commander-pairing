@@ -26,7 +26,7 @@ export default function RegenerateButton({ roundId, roundNumber }: { roundId: st
           regenerateRound(formData);
         });
       }}
-      className="min-h-9 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+      className="min-h-11 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
     >
       {isPending ? "Würfle neu…" : "🎲 Neu mischen"}
     </button>

@@ -69,7 +69,7 @@ export default async function LeaguePage() {
           </div>
           <button
             type="submit"
-            className="min-h-9 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background"
+            className="min-h-11 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background"
           >
             Abend starten — Runde 1 berechnen
           </button>
@@ -145,7 +145,7 @@ export default async function LeaguePage() {
           </div>
           <button
             type="submit"
-            className="min-h-9 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
+            className="min-h-11 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
           >
             Ergebnisse Runde {round.number} speichern
           </button>
@@ -160,7 +160,7 @@ export default async function LeaguePage() {
             <button
               type="submit"
               disabled={!lastRoundComplete}
-              className="min-h-9 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+              className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
             >
               Nächste Runde starten
             </button>
@@ -171,7 +171,7 @@ export default async function LeaguePage() {
           <button
             type="submit"
             disabled={!lastRoundComplete}
-            className="min-h-9 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+            className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
           >
             Abend beenden
           </button>

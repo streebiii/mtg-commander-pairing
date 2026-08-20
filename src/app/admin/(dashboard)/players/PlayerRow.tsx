@@ -128,7 +128,7 @@ export default function PlayerRow({ player }: { player: Player }) {
           <button
             type="button"
             onClick={handleDelete}
-            className="flex min-h-9 items-center text-xs text-red-600 underline"
+            className="flex min-h-11 items-center text-xs text-red-600 underline"
           >
             Löschen
           </button>

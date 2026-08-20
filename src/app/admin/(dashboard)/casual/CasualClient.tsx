@@ -70,8 +70,9 @@ export default function CasualClient({
     null,
   );
 
-  // Fester "Neuen Spieler erfassen"-Button oben an der Liste, öffnet ein
-  // kleines Formular (Vorname/Nachname/Skill).
+  // "Neuen Spieler erfassen" ist als letzte Option in der Such-Ergebnisliste
+  // verankert (nicht mehr als separater Button oben) und öffnet dort ein
+  // kleines Formular (Vorname/Nachname/Elo).
   const [showAddForm, setShowAddForm] = useState(false);
   const [newFirstName, setNewFirstName] = useState("");
   const [newLastName, setNewLastName] = useState("");
@@ -114,21 +115,17 @@ export default function CasualClient({
     setNewLastName("");
     setNewSkill(0);
     setShowAddForm(false);
+    setSearch("");
   }
 
-  async function handleQuickCreateFromSearch() {
+  /** Öffnet das Anlege-Formular, vorbefüllt mit dem bisher getippten Suchtext. */
+  function openAddForm() {
     const { firstName, lastName } = splitTypedName(search);
-    if (!firstName) return;
-    setAdding(true);
+    setNewFirstName(firstName);
+    setNewLastName(lastName ?? "");
+    setNewSkill(0);
     setAddError(null);
-    const { player, error: err } = await createPlayerQuick(firstName, lastName, 0);
-    setAdding(false);
-    if (err || !player) {
-      setAddError(err ?? "Unbekannter Fehler");
-      return;
-    }
-    addToSelection(player);
-    setSearch("");
+    setShowAddForm(true);
   }
 
   async function computePairing() {
@@ -196,68 +193,12 @@ export default function CasualClient({
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [players, selected, search]);
 
-  const showInlineCreate = search.trim() !== "" && searchResults.length === 0;
-
   return (
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium">
           Anwesende Spieler auswählen ({selectedCount})
         </h2>
-
-        <button
-          type="button"
-          onClick={() => setShowAddForm((v) => !v)}
-          className="min-h-9 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
-        >
-          {showAddForm ? "Abbrechen" : "+ Neuen Spieler erfassen"}
-        </button>
-
-        {showAddForm && (
-          <div className="flex flex-wrap items-end gap-3 rounded border border-dashed border-black/20 p-3 dark:border-white/20">
-            <label className="flex flex-col gap-1.5 text-xs">
-              Vorname
-              <input
-                type="text"
-                value={newFirstName}
-                onChange={(e) => setNewFirstName(e.target.value)}
-                className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-              />
-            </label>
-            <label className="flex flex-col gap-1.5 text-xs">
-              Nachname (optional)
-              <input
-                type="text"
-                value={newLastName}
-                onChange={(e) => setNewLastName(e.target.value)}
-                className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-              />
-            </label>
-            <label className="flex flex-col gap-1.5 text-xs">
-              Skill (0-3)
-              <select
-                value={newSkill}
-                onChange={(e) => setNewSkill(Number(e.target.value))}
-                className="min-h-9 w-44 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
-              >
-                {SKILL_LEVEL_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              onClick={handleAddFormSubmit}
-              disabled={!newFirstName.trim() || adding}
-              className="min-h-9 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
-            >
-              {adding ? "Lege an…" : "Anlegen"}
-            </button>
-          </div>
-        )}
-        {addError && <p className="text-sm text-red-600">{addError}</p>}
 
         {selectedPlayers.length > 0 && (
           <div className="flex flex-col gap-1.5">
@@ -270,7 +211,7 @@ export default function CasualClient({
                   key={p.id}
                   type="button"
                   onClick={() => toggle(p.id)}
-                  className="flex min-h-9 items-center gap-1 rounded border border-blue-500 bg-blue-500/10 px-3 py-2 text-sm"
+                  className="flex min-h-11 items-center gap-1 rounded border border-blue-500 bg-blue-500/10 px-3 py-2 text-sm"
                 >
                   ✓ {p.name}{" "}
                   <span className="opacity-60">({skillLevelShortLabel(p.skillLevel)})</span>
@@ -291,28 +232,86 @@ export default function CasualClient({
           />
         </label>
 
+        {/* Ergebnisliste der Suche — "Neuen Spieler erfassen" ist von Anfang
+            an als letzte Option verankert, unabhängig davon, ob es Treffer
+            gibt oder der Suchtext leer ist. */}
         <div className="flex max-w-2xl flex-col gap-1.5">
           {searchResults.map((p) => (
             <button
               key={p.id}
               type="button"
               onClick={() => toggle(p.id)}
-              className="flex min-h-9 items-center justify-between rounded border border-black/10 px-3 py-2 text-left text-sm dark:border-white/10"
+              className="flex min-h-11 items-center justify-between rounded border border-black/10 px-3 py-2 text-left text-sm dark:border-white/10"
             >
               <span>{p.name}</span>
               <span className="opacity-60">{skillLevelShortLabel(p.skillLevel)}</span>
             </button>
           ))}
-          {showInlineCreate && (
+
+          {!showAddForm && (
             <button
               type="button"
-              onClick={handleQuickCreateFromSearch}
-              disabled={adding}
-              className="min-h-9 rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20 disabled:opacity-40"
+              onClick={openAddForm}
+              className="flex min-h-11 items-center rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20"
             >
-              {adding ? "Lege an…" : `„${search.trim()}“ als neuen Spieler anlegen`}
+              {search.trim()
+                ? `+ „${search.trim()}“ als neuen Spieler anlegen`
+                : "+ Neuen Spieler erfassen"}
             </button>
           )}
+
+          {showAddForm && (
+            <div className="flex flex-wrap items-end gap-3 rounded border border-dashed border-black/20 p-3 dark:border-white/20">
+              <label className="flex flex-col gap-1.5 text-xs">
+                Vorname
+                <input
+                  type="text"
+                  value={newFirstName}
+                  onChange={(e) => setNewFirstName(e.target.value)}
+                  className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-xs">
+                Nachname (optional)
+                <input
+                  type="text"
+                  value={newLastName}
+                  onChange={(e) => setNewLastName(e.target.value)}
+                  className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-xs">
+                Elo (0-3)
+                <select
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(Number(e.target.value))}
+                  className="min-h-9 w-44 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+                >
+                  {SKILL_LEVEL_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={handleAddFormSubmit}
+                disabled={!newFirstName.trim() || adding}
+                className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+              >
+                {adding ? "Lege an…" : "Anlegen"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="min-h-11 rounded border border-transparent px-4 py-2 text-sm opacity-70"
+              >
+                Abbrechen
+              </button>
+            </div>
+          )}
+          {addError && <p className="text-sm text-red-600">{addError}</p>}
         </div>
 
         <fieldset className="mt-1 flex flex-wrap items-center gap-4 text-sm">
@@ -337,7 +336,7 @@ export default function CasualClient({
               onChange={() => setMode("skill")}
               className="h-4 w-4"
             />
-            Nach Skill balanciert
+            Nach Elo balanciert
           </label>
         </fieldset>
 
@@ -345,7 +344,7 @@ export default function CasualClient({
           type="button"
           disabled={selectedCount < 3 || loading}
           onClick={computePairing}
-          className="mt-2 min-h-9 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+          className="mt-2 min-h-11 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
         >
           {loading ? "Berechne…" : "Tische berechnen"}
         </button>
@@ -377,7 +376,7 @@ export default function CasualClient({
                         <button
                           type="button"
                           onClick={() => handlePlayerClick(table.tableNumber, p.id)}
-                          className={`flex min-h-9 w-full items-center rounded border px-3 py-2 text-left text-sm ${
+                          className={`flex min-h-11 w-full items-center rounded border px-3 py-2 text-left text-sm ${
                             isPicked
                               ? "border-blue-500 bg-blue-500/10"
                               : "border-black/10 dark:border-white/10"

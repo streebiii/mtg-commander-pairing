@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   }
   if (skillLevel === null) {
     return NextResponse.json(
-      { error: `Skill muss zwischen ${SKILL_LEVEL_MIN} und ${SKILL_LEVEL_MAX} liegen` },
+      { error: `Elo muss zwischen ${SKILL_LEVEL_MIN} und ${SKILL_LEVEL_MAX} liegen` },
       { status: 400 },
     );
   }
