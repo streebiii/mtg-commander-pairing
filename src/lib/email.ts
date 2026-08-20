@@ -17,12 +17,12 @@ function getTransporter() {
 }
 
 /**
- * Verschickt den Login-Link an die fest konfigurierte Organisator-Adresse.
+ * Verschickt den Login-Code an die fest konfigurierte Organisator-Adresse.
  * Ohne konfigurierte SMTP_*-Variablen (z.B. in der lokalen Entwicklung)
- * wird der Link stattdessen ins Server-Log geschrieben, damit der
+ * wird der Code stattdessen ins Server-Log geschrieben, damit der
  * Login-Flow auch ohne echten Email-Versand getestet werden kann.
  */
-export async function sendLoginLinkEmail(link: string): Promise<void> {
+export async function sendLoginCodeEmail(code: string): Promise<void> {
   const to = process.env.ADMIN_EMAIL;
   if (!to) {
     throw new Error("ADMIN_EMAIL ist nicht gesetzt (siehe .env.example).");
@@ -32,7 +32,7 @@ export async function sendLoginLinkEmail(link: string): Promise<void> {
   const transporter = getTransporter();
   if (!transporter) {
     // Nur ausserhalb von Produktion: dort MUSS SMTP korrekt konfiguriert
-    // sein, sonst würde der Login-Link im Server-Log landen statt sicher
+    // sein, sonst würde der Login-Code im Server-Log landen statt sicher
     // per Email verschickt zu werden.
     if (process.env.NODE_ENV === "production") {
       throw new Error(
@@ -40,7 +40,7 @@ export async function sendLoginLinkEmail(link: string): Promise<void> {
       );
     }
     console.log(
-      `[email] SMTP nicht konfiguriert — Login-Link für ${to}:\n${link}`,
+      `[email] SMTP nicht konfiguriert — Login-Code für ${to}: ${code}`,
     );
     return;
   }
@@ -48,17 +48,19 @@ export async function sendLoginLinkEmail(link: string): Promise<void> {
   await transporter.sendMail({
     to,
     from,
-    subject: "Dein Login-Link — Commander Pairing",
+    subject: `${code} — dein Login-Code für Commander`,
     text: [
-      "Klicke auf den folgenden Link, um dich einzuloggen (10 Minuten gültig):",
+      "Dein Login-Code (10 Minuten gültig):",
       "",
-      link,
+      code,
       "",
+      "Gib ihn im Browser ein, in dem du den Login gestartet hast.",
       "Falls du das nicht angefordert hast, ignoriere diese Email einfach.",
     ].join("\n"),
     html: `
-      <p>Klicke auf den folgenden Link, um dich einzuloggen (10&nbsp;Minuten gültig):</p>
-      <p><a href="${link}">${link}</a></p>
+      <p>Dein Login-Code (10&nbsp;Minuten gültig):</p>
+      <p style="font-size:32px;font-weight:700;letter-spacing:6px;font-family:monospace">${code}</p>
+      <p>Gib ihn im Browser ein, in dem du den Login gestartet hast.</p>
       <p>Falls du das nicht angefordert hast, ignoriere diese Email einfach.</p>
     `,
   });

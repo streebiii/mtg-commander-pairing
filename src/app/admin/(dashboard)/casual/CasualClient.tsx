@@ -214,30 +214,66 @@ export default function CasualClient({
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Die fertige Zuteilung steht bewusst zuoberst — beim Spielabend
+          schaut man darauf, nicht auf die Auswahlliste darunter. */}
+      {tables && (
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-sm font-medium">
+              Tischzuteilung — klicke zwei Spieler an, um sie zu tauschen
+            </h2>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
+            >
+              Zurücksetzen
+            </button>
+          </div>
+          <p className="text-xs opacity-70">
+            Diese Zuteilung ist auf der öffentlichen Pairing-Seite sichtbar.
+            &quot;Zurücksetzen&quot; nimmt sie dort wieder weg; deine
+            Spielerauswahl bleibt erhalten.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            {tables.map((table) => (
+              <div
+                key={table.tableNumber}
+                className="w-full rounded border border-black/20 p-3 dark:border-white/20 sm:w-48"
+              >
+                <div className="mb-2 text-sm font-semibold">
+                  Tisch {table.tableNumber} ({table.size} Spieler)
+                </div>
+                <ul className="flex flex-col gap-1.5">
+                  {table.players.map((p) => {
+                    const isPicked = swapPick?.player === p.id;
+                    return (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          onClick={() => handlePlayerClick(table.tableNumber, p.id)}
+                          className={`flex min-h-11 w-full items-center rounded border px-3 py-2 text-left text-sm ${
+                            isPicked
+                              ? "border-blue-500 bg-blue-500/10"
+                              : "border-black/10 dark:border-white/10"
+                          }`}
+                        >
+                          <span className="truncate">{p.name}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium">
           Anwesende Spieler auswählen ({selectedCount})
         </h2>
-
-        {selectedPlayers.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            <div className="text-xs font-medium opacity-70">
-              Ausgewählt ({selectedPlayers.length})
-            </div>
-            <div className="flex max-w-2xl flex-wrap gap-2">
-              {selectedPlayers.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => toggle(p.id)}
-                  className="flex min-h-11 items-center gap-1 rounded border border-blue-500 bg-blue-500/10 px-3 py-2 text-sm"
-                >
-                  ✓ {p.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <label className="flex flex-col gap-1.5 text-sm">
           Spieler suchen
@@ -252,7 +288,7 @@ export default function CasualClient({
 
         {/* Fester Trigger direkt unter dem Suchfeld — bleibt immer an
             derselben Stelle erreichbar, unabhängig von der Länge der
-            darunter angezeigten Ergebnisliste. */}
+            darunter angezeigten Listen. */}
         {!showAddForm && (
           <button
             type="button"
@@ -318,15 +354,39 @@ export default function CasualClient({
         )}
         {addError && <p className="text-sm text-red-600">{addError}</p>}
 
-        <div className="flex max-w-2xl flex-col gap-1.5">
+        {/* Ausgewählte Spieler unterhalb von Suche und Anlegen — ein Tap
+            nimmt sie wieder aus der Auswahl. */}
+        {selectedPlayers.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <div className="text-xs font-medium opacity-70">
+              Ausgewählt ({selectedPlayers.length})
+            </div>
+            <div className="grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3">
+              {selectedPlayers.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => toggle(p.id)}
+                  className="flex min-h-11 w-full items-center gap-1 rounded border border-blue-500 bg-blue-500/10 px-3 py-2 text-left text-sm"
+                >
+                  <span className="shrink-0">✓</span>
+                  <span className="truncate">{p.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Gleich breite Kacheln, höchstens drei pro Zeile. */}
+        <div className="grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3">
           {searchResults.map((p) => (
             <button
               key={p.id}
               type="button"
               onClick={() => toggle(p.id)}
-              className="flex min-h-11 items-center rounded border border-black/10 px-3 py-2 text-left text-sm dark:border-white/10"
+              className="flex min-h-11 w-full items-center rounded border border-black/10 px-3 py-2 text-left text-sm dark:border-white/10"
             >
-              {p.name}
+              <span className="truncate">{p.name}</span>
             </button>
           ))}
         </div>
@@ -370,60 +430,6 @@ export default function CasualClient({
         )}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </section>
-
-      {tables && (
-        <section className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-sm font-medium">
-              Tischzuteilung — klicke zwei Spieler an, um sie zu tauschen
-            </h2>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
-            >
-              Zurücksetzen
-            </button>
-          </div>
-          <p className="text-xs opacity-70">
-            Diese Zuteilung ist auf der öffentlichen Pairing-Seite sichtbar.
-            &quot;Zurücksetzen&quot; nimmt sie dort wieder weg; deine
-            Spielerauswahl bleibt erhalten.
-          </p>
-          <div className="flex flex-wrap gap-4">
-            {tables.map((table) => (
-              <div
-                key={table.tableNumber}
-                className="w-full rounded border border-black/20 p-3 dark:border-white/20 sm:w-48"
-              >
-                <div className="mb-2 text-sm font-semibold">
-                  Tisch {table.tableNumber} ({table.size} Spieler)
-                </div>
-                <ul className="flex flex-col gap-1.5">
-                  {table.players.map((p) => {
-                    const isPicked = swapPick?.player === p.id;
-                    return (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          onClick={() => handlePlayerClick(table.tableNumber, p.id)}
-                          className={`flex min-h-11 w-full items-center rounded border px-3 py-2 text-left text-sm ${
-                            isPicked
-                              ? "border-blue-500 bg-blue-500/10"
-                              : "border-black/10 dark:border-white/10"
-                          }`}
-                        >
-                          {p.name}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

@@ -17,10 +17,9 @@ import {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // /admin/login (Link anfordern) und /admin/verify (Link einlösen) sind
-  // der Login-Mechanismus selbst — hier ist naturgemäß noch keine Session
-  // vorhanden.
-  if (pathname === "/admin/login" || pathname === "/admin/verify") {
+  // /admin/login ist der Login-Mechanismus selbst (Code anfordern und
+  // eingeben) — hier ist naturgemäss noch keine Session vorhanden.
+  if (pathname === "/admin/login") {
     return NextResponse.next();
   }
 

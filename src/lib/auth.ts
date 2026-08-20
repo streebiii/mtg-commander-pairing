@@ -1,5 +1,5 @@
 // Passwortloser Email-Login für den Organisator-Bereich (/admin).
-// Kein Multi-User, keine Rollen — ein Login-Link per Email genügt (siehe
+// Kein Multi-User, keine Rollen — ein Login-Code per Email genügt (siehe
 // SPEC.md Abschnitt 2). Das eigentliche Ausstellen/Einlösen des
 // Einmal-Tokens steht in src/lib/loginToken.ts; hier nur die Session
 // nach erfolgreichem Login — als signiertes Cookie, damit keine

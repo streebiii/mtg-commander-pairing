@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getCasualPairing } from "@/lib/casualPairing";
 import { formatPlayerName } from "@/lib/players";
@@ -13,7 +14,6 @@ import { formatPlayerName } from "@/lib/players";
 // Liga-Abends verwirft sie ebenfalls. Elo-Werte tauchen hier nie auf
 // (siehe SPEC.md Abschnitt 6.1).
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Pairings" };
 
 interface DisplayTable {
   key: string;
@@ -69,7 +69,19 @@ export default async function Home() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
-      <h1 className="text-2xl font-semibold">Pairings</h1>
+      <div className="flex items-center gap-3">
+        {/* Vereinslogo von mtgbl.ch. Der Bär ist schwarz auf transparentem
+            Grund — im Dunkelmodus invertiert, damit er sichtbar bleibt. */}
+        <Image
+          src="/logo.png"
+          alt="MTG Baselland"
+          width={213}
+          height={191}
+          priority
+          className="h-10 w-auto dark:invert"
+        />
+        <h1 className="text-2xl font-semibold">Pairings</h1>
+      </div>
 
       {tables.length === 0 ? (
         <p className="text-sm opacity-70">

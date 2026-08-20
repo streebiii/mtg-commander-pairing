@@ -31,16 +31,12 @@ Im Vercel-Projekt unter **Settings → Environment Variables** ergänzen:
 | Variable | Wert |
 |---|---|
 | `SESSION_SECRET` | zufälliger String, z.B. `openssl rand -base64 32` |
-| `ADMIN_EMAIL` | die Email-Adresse, an die Login-Links gehen sollen |
+| `ADMIN_EMAIL` | die Email-Adresse, an die Login-Codes gehen sollen |
 | `SMTP_HOST` | `mail.cyon.ch` |
 | `SMTP_PORT` | `465` |
 | `SMTP_USER` | deine cyon-Email-Adresse |
 | `SMTP_PASSWORD` | dein cyon-Postfach-Passwort |
 | `SMTP_FROM` | Absenderadresse (muss zur cyon-Domain gehören) |
-
-`APP_URL` muss i.d.R. **nicht** gesetzt werden — Vercel liefert die
-Basis-URL automatisch über `VERCEL_URL`. Nur bei einer eigenen Domain
-explizit setzen (siehe `.env.example`).
 
 ## 3. Migrationen anwenden
 
@@ -86,7 +82,7 @@ pg_dump "$DATABASE_URL" > backup-$(date +%F).sql
   Kundencenter anbietet, aktivier es dort direkt.
 - Die App selbst schützt vor unautorisiertem Zugriff über die Webseite
   durch: passwortlosen Email-Login (Abschnitt 2 in SPEC.md),
-  Rate-Limiting auf Login-Link-Anfragen, Sicherheits-HTTP-Header (siehe
+  Rate-Limiting auf Login-Code-Anfragen, Sicherheits-HTTP-Header (siehe
   `next.config.ts`), und Prisma-parametrisierte Datenbankzugriffe
   (kein SQL-Injection-Risiko durch String-Konkatenation).
 - Vercel Postgres ist nicht per IP eingeschränkt, aber nur mit den in
