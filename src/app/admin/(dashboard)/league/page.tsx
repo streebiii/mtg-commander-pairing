@@ -44,6 +44,7 @@ export default async function LeaguePage() {
   // nur die aktuell teilnehmenden, damit man auch neue Spieler aktivieren
   // kann (siehe SPEC.md Abschnitt 6).
   const allPlayers = await prisma.player.findMany({
+    where: { archivedAt: null },
     orderBy: [{ points: "desc" }, { firstName: "asc" }],
     select: { id: true, firstName: true, lastName: true, points: true, leagueActive: true },
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SKILL_LEVEL_OPTIONS, skillLevelShortLabel } from "@/lib/players";
+import { SKILL_LEVELS } from "@/lib/players";
 
 interface PlayerOption {
   id: string;
@@ -215,8 +215,7 @@ export default function CasualClient({
                   onClick={() => toggle(p.id)}
                   className="flex min-h-11 items-center gap-1 rounded border border-blue-500 bg-blue-500/10 px-3 py-2 text-sm"
                 >
-                  ✓ {p.name}{" "}
-                  <span className="opacity-60">({skillLevelShortLabel(p.skillLevel)})</span>
+                  ✓ {p.name}
                 </button>
               ))}
             </div>
@@ -274,11 +273,11 @@ export default function CasualClient({
               <select
                 value={newSkill}
                 onChange={(e) => setNewSkill(Number(e.target.value))}
-                className="min-h-9 w-44 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+                className="min-h-9 w-20 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
               >
-                {SKILL_LEVEL_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                {SKILL_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
                   </option>
                 ))}
               </select>
@@ -308,10 +307,9 @@ export default function CasualClient({
               key={p.id}
               type="button"
               onClick={() => toggle(p.id)}
-              className="flex min-h-11 items-center justify-between rounded border border-black/10 px-3 py-2 text-left text-sm dark:border-white/10"
+              className="flex min-h-11 items-center rounded border border-black/10 px-3 py-2 text-left text-sm dark:border-white/10"
             >
-              <span>{p.name}</span>
-              <span className="opacity-60">{skillLevelShortLabel(p.skillLevel)}</span>
+              {p.name}
             </button>
           ))}
         </div>
@@ -384,10 +382,7 @@ export default function CasualClient({
                               : "border-black/10 dark:border-white/10"
                           }`}
                         >
-                          {p.name}{" "}
-                          <span className="opacity-60">
-                            ({skillLevelShortLabel(p.skillLevel)})
-                          </span>
+                          {p.name}
                         </button>
                       </li>
                     );

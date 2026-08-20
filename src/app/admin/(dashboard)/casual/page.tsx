@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CasualPage() {
   const rawPlayers = await prisma.player.findMany({
+    where: { archivedAt: null },
     orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
     select: { id: true, firstName: true, lastName: true, skillLevel: true },
   });

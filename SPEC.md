@@ -122,17 +122,15 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
   Rauschen (±1 Skill-Stufe — kleiner als bei der Liga, da die Skala nur
   0-3 umfasst), damit nicht stur die exakt gleich starken Spieler
   zusammen landen.
-  - Unbewertete Spieler (Skill = 0, "weiss ich nicht") werden für die
-    Berechnung so behandelt, als hätten sie den Mittelwert der bewerteten
-    anwesenden Spieler (bzw. den Skalen-Mittelwert 2, falls niemand
-    bewertet ist) — sie landen dadurch tendenziell in der Mitte statt
-    automatisch am schwächsten Tisch.
+  - Für noch nicht eingestufte Spieler (Elo = 0) wird pro Berechnung eine
+    zufällige Stufe aus 1-3 gewürfelt. Sie können damit an jedem Tisch
+    landen, statt systematisch immer in derselben Region zu erscheinen —
+    und bei jeder Neuberechnung fällt es anders aus.
   - Weiterhin keine Persistenz, kein Verlauf, keine Rematch-Vermeidung
     (Casual bleibt Einzelrunde).
-  - Die Skill-Werte sind nur im Organisator-Bereich sichtbar (Auswahl-
-    Liste und Ergebnis-Tische) — die öffentliche Lese-Ansicht zeigt
-    ohnehin ausschliesslich Liga-Abende (Abschnitt 8), Skill-Level
-    tauchen dort also nie auf.
+  - Die Skill-Werte werden in der Spielerauswahl und in den berechneten
+    Tischen bewusst **nicht** angezeigt — sie fliessen nur in die
+    Berechnung ein. Wo sie sichtbar sind, steht in Abschnitt 6.1.
 
 ## 5. Liga — Rangliste-Pairing
 
@@ -202,40 +200,75 @@ Ziel-Tisches zusammen gespielt hat. Die Tischgrössenverteilung selbst
 ## 6. Spielerverwaltung
 
 Nicht jeder Vereinsspieler nimmt an der Liga teil — deshalb ist die
-Verwaltung auf zwei getrennte Tabs aufgeteilt:
+Verwaltung auf zwei Tabs aufgeteilt:
 
-- **Spieler-Tab** (allgemeines Vereins-Roster):
-  - Persistente Spielerdatenbank: Spieler einmalig anlegen (Vorname,
-    optional Nachname).
-  - Enthält je Spieler eine optionale **Skill-Einstufung** (0-3), im
-    Organisator-UI als "Elo" bezeichnet (verdecktes Rating, siehe
-    `src/lib/players.ts`):
-    - 0 = "weiss ich nicht" / unbewertet
-    - 1 = Anfänger
-    - 2 = Medium
-    - 3 = erfahrener Spieler (mehrjährig)
+- **Spieler-Tab** (zentrales Vereins-Roster):
+  - Persistente Spielerdatenbank: Spieler anlegen (Vorname, optional
+    Nachname, Elo, optional direkt als Liga-Teilnehmer).
+  - Enthält je Spieler eine optionale **Skill-Einstufung** auf der Skala
+    0-3, im Organisator-UI als "Elo" bezeichnet (verdecktes Rating, siehe
+    `src/lib/players.ts`). Die Stufen werden bewusst **ohne Beschriftung**
+    angeboten — die Dropdowns zeigen nur die nackte Zahl. 0 bedeutet "noch
+    nicht eingestuft" und wird bei der Zuteilung zufällig behandelt
+    (Abschnitt 4.1).
 
-    Komplett unabhängig vom Liga-Punktestand, wird ausschliesslich für den
-    skill-balancierten Casual-Modus verwendet (Abschnitt 4.1).
-  - Neu angelegte Spieler nehmen noch **nicht** automatisch an der Liga
-    teil (siehe unten) — Liga-Punkte und -Teilnahme werden hier bewusst
-    nicht angezeigt/editiert.
-- **Liga-Tab** (Liga-Verwaltung, siehe Abschnitt 5):
-  - Enthält je Spieler den aktuellen Gesamt-Liga-Punktestand (wird durch
-    Ergebniserfassung in der Liga fortgeschrieben, hier aber auch manuell
-    editierbar) sowie eine **Liga-Teilnahme-Flag** (`leagueActive`).
-  - Die Teilnahme-Flag wirkt rein zukunftsgerichtet: sie filtert nur die
-    Auswahlliste beim Start eines neuen Liga-Abends — bestehende Abende
-    und Ergebnisse bleiben beim Deaktivieren unberührt.
-  - Neu im Spieler-Tab angelegte Spieler starten mit `leagueActive = false`
-    und müssen hier manuell aktiviert werden, bevor sie für einen
-    Liga-Abend auswählbar sind. Der Text-Import der Saison-Rangliste
-    (Abschnitt 7) markiert importierte Spieler automatisch als
-    Liga-teilnehmend.
-- **Auto-Save**: alle Felder speichern automatisch — Zahl-/Auswahlfelder
-  (inkl. Checkbox) sofort bei Änderung, Textfelder beim Verlassen des
-  Feldes (Blur). Kein expliziter "Speichern"-Klick nötig, kurzes visuelles
-  Feedback ("✓ Gespeichert") bestätigt den Vorgang. Gilt für beide Tabs.
+    Komplett unabhängig vom Liga-Punktestand, wird ausschliesslich für die
+    elo-balancierte Zuteilung im Casual-Modus verwendet (Abschnitt 4.1).
+  - Zeigt und ändert die **Liga-Teilnahme** (`leagueActive`) pro Spieler.
+  - Zeigt **keine** Liga-Punkte — die werden im Liga-Tab gepflegt.
+
+### 6.1 Sichtbarkeit der Elo-Einstufung
+
+Die Elo-Werte sollen die Spieler nicht mitbekommen. Sie erscheinen deshalb
+nur dort, wo sie aktiv gepflegt werden:
+
+- **sichtbar**: in den beiden Anlege-Formularen (Spieler-Tab und die
+  Inline-Anlage im Casual-Tab) sowie als editierbare Spalte im Spieler-Tab.
+- **nicht sichtbar**: in der Casual-Spielersuche, bei den ausgewählten
+  Spielern und in den fertigen Tischzuteilungen — also überall dort, wo
+  jemand beim Spielabend mitlesen könnte. Die öffentliche Lese-Ansicht
+  (Abschnitt 8) zeigt ohnehin nie Elo-Werte.
+
+### 6.2 Spieler entfernen
+
+Über den Spieler-Tab lässt sich jeder Spieler entfernen. Was dabei
+passiert, hängt von seiner Historie ab:
+
+- **ohne Abend-Historie**: der Spieler wird endgültig aus der Datenbank
+  gelöscht.
+- **mit Abend-Historie**: der Spieler wird **archiviert** (`archivedAt`
+  wird gesetzt) statt gelöscht. Er verschwindet aus allen Listen, seine
+  Tischzuteilungen und Rundenergebnisse bleiben aber erhalten, damit
+  vergangene Abende nachvollziehbar bleiben (Abschnitt 8). Es gibt bewusst
+  keine Archiv-Ansicht — ein Wiederherstellen wäre nur über direkten
+  Datenbankzugriff möglich.
+- **während eines laufenden Liga-Abends**: ist der Spieler einem Tisch des
+  laufenden Abends zugeteilt, ist das Entfernen gesperrt — sonst würde die
+  Zuteilung des laufenden Abends zerreissen.
+
+Beide Fälle werden über denselben Bestätigungsdialog abgefragt.
+
+### 6.3 Liga-Tab (siehe Abschnitt 5)
+
+- Enthält je Spieler den aktuellen Gesamt-Liga-Punktestand (wird durch
+  Ergebniserfassung in der Liga fortgeschrieben, hier aber auch manuell
+  editierbar) sowie — wie der Spieler-Tab — die **Liga-Teilnahme-Flag**.
+- Die Teilnahme-Flag wirkt rein zukunftsgerichtet: sie filtert nur die
+  Auswahlliste beim Start eines neuen Liga-Abends — bestehende Abende und
+  Ergebnisse bleiben beim Deaktivieren unberührt.
+- Neu angelegte Spieler starten mit `leagueActive = false`, sofern beim
+  Anlegen nichts anderes angehakt wurde. Der Text-Import der
+  Saison-Rangliste (Abschnitt 7) markiert importierte Spieler automatisch
+  als Liga-teilnehmend.
+- Es gibt kein Saison-Konzept: zum Saisonwechsel werden Teilnahmen manuell
+  umgestellt.
+
+### 6.4 Auto-Save
+
+Alle Felder speichern automatisch — Auswahlfelder und Checkboxen sofort bei
+Änderung, Textfelder beim Verlassen des Feldes (Blur). Kein expliziter
+"Speichern"-Klick nötig, kurzes visuelles Feedback ("✓ Gespeichert")
+bestätigt den Vorgang. Gilt für beide Tabs.
 
 ## 7. Datenimport zu Beginn
 
