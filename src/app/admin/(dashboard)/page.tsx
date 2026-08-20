@@ -9,10 +9,10 @@ export default function AdminDashboard() {
           Spielerverwaltung
         </Link>
         <Link className="flex min-h-11 items-center underline" href="/admin/casual">
-          Modus A — Casual-Rechner + Zuteilung
+          Casual
         </Link>
         <Link className="flex min-h-11 items-center underline" href="/admin/league">
-          Modus B — Liga-Abend
+          Liga
         </Link>
         <Link className="flex min-h-11 items-center underline" href="/">
           Öffentliche Pairing-Ansicht (ohne Login)

@@ -8,6 +8,27 @@ import { buildPreviousPairings } from "@/lib/pairing/leagueHistory";
 
 const MAX_ROUNDS = 3;
 
+/**
+ * Auto-Save für die Liga-Verwaltung: Punktestand und Liga-Teilnahme-Flag
+ * eines Spielers. Die Teilnahme-Flag wirkt rein zukunftsgerichtet (siehe
+ * SPEC.md Abschnitt 6) — sie filtert nur die Auswahlliste für neue
+ * Liga-Abende, bestehende Abende/Ergebnisse bleiben unberührt.
+ */
+export async function updateLeaguePlayer(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const pointsRaw = String(formData.get("points") ?? "").trim();
+  const points = Number.parseInt(pointsRaw, 10);
+  const leagueActive = formData.get("leagueActive") === "true";
+
+  if (!id || !Number.isFinite(points)) return;
+
+  await prisma.player.update({
+    where: { id },
+    data: { points, leagueActive },
+  });
+  revalidatePath("/admin/league");
+}
+
 async function createRoundInDb(
   eveningId: string,
   roundNumber: number,
@@ -40,8 +61,11 @@ export async function startEvening(formData: FormData) {
   });
   if (active) return; // es läuft bereits ein Abend — erst beenden
 
+  // leagueActive: true zur Sicherheit auch hier geprüft (nicht nur in der
+  // UI-Auswahlliste) — nur Liga-teilnehmende Spieler dürfen in einen
+  // Liga-Abend aufgenommen werden (siehe SPEC.md Abschnitt 6).
   const players = await prisma.player.findMany({
-    where: { id: { in: playerIds } },
+    where: { id: { in: playerIds }, leagueActive: true },
     select: { id: true, points: true },
   });
   if (players.length !== playerIds.length) return;

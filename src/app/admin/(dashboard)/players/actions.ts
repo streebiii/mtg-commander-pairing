@@ -7,16 +7,16 @@ import { parseSkillLevel } from "@/lib/players";
 export async function createPlayer(formData: FormData) {
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
-  const pointsRaw = String(formData.get("points") ?? "0").trim();
-  const points = Number.parseInt(pointsRaw, 10);
   const skillLevel = parseSkillLevel(formData.get("skillLevel"));
 
   if (!firstName) return;
-  if (!Number.isFinite(points)) return;
   if (skillLevel === null) return;
 
+  // points und leagueActive bewusst nicht gesetzt — neue Spieler starten
+  // gemäss Schema-Default bei 0 Punkten und nehmen noch nicht an der Liga
+  // teil (wird separat im Liga-Tab aktiviert, siehe SPEC.md Abschnitt 6).
   await prisma.player.create({
-    data: { firstName, lastName: lastName || null, points, skillLevel },
+    data: { firstName, lastName: lastName || null, skillLevel },
   });
   revalidatePath("/admin/players");
 }
@@ -25,16 +25,14 @@ export async function updatePlayer(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
-  const pointsRaw = String(formData.get("points") ?? "").trim();
-  const points = Number.parseInt(pointsRaw, 10);
   const skillLevel = parseSkillLevel(formData.get("skillLevel"));
 
-  if (!id || !firstName || !Number.isFinite(points)) return;
+  if (!id || !firstName) return;
   if (skillLevel === null) return;
 
   await prisma.player.update({
     where: { id },
-    data: { firstName, lastName: lastName || null, points, skillLevel },
+    data: { firstName, lastName: lastName || null, skillLevel },
   });
   revalidatePath("/admin/players");
 }

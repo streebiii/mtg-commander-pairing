@@ -1,15 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { SKILL_LEVEL_OPTIONS } from "@/lib/players";
 import { createPlayer } from "./actions";
-import ImportClient from "./ImportClient";
 import PlayerRow from "./PlayerRow";
 
 // Admin-Seiten lesen immer den aktuellen DB-Stand, kein statisches Caching.
 export const dynamic = "force-dynamic";
 
+// Allgemeine Vereins-Spielerverwaltung: Name + Elo. Liga-Punkte und die
+// Liga-Teilnahme-Auswahl leben separat im Liga-Tab (siehe SPEC.md
+// Abschnitt 6) — nicht jeder Vereinsspieler nimmt an der Liga teil.
 export default async function PlayersPage() {
   const players = await prisma.player.findMany({
-    orderBy: { points: "desc" },
+    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
     include: { _count: { select: { assignments: true } } },
   });
 
@@ -38,16 +40,6 @@ export default async function PlayersPage() {
             />
           </label>
           <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
-            Punktestand (Start)
-            <input
-              type="number"
-              name="points"
-              defaultValue={0}
-              required
-              className="min-h-9 w-full rounded border border-black/20 px-3 py-2 dark:border-white/20 sm:w-28"
-            />
-          </label>
-          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
             Elo (0-3)
             <select
               name="skillLevel"
@@ -69,11 +61,11 @@ export default async function PlayersPage() {
           </button>
         </form>
         <p className="text-xs opacity-70">
-          Hier trägst du die aktuelle Saison-Rangliste einmalig manuell ein
-          (siehe SPEC.md Abschnitt 7) — oder nutzt den Text-Import unten. Die
-          Elo-Einstufung (verdecktes Rating, nur hier im Organisator-Bereich
-          sichtbar) ist unabhängig davon und wird nur für den
-          skill-balancierten Modus A verwendet (siehe SPEC.md Abschnitt 4.1).
+          Neu angelegte Spieler nehmen noch nicht automatisch an der Liga
+          teil — das wird separat im Liga-Tab aktiviert. Die Elo-Einstufung
+          (verdecktes Rating, nur hier im Organisator-Bereich sichtbar) wird
+          nur für den skill-balancierten Casual-Modus verwendet (siehe
+          SPEC.md Abschnitt 4.1).
         </p>
       </section>
 
@@ -88,12 +80,11 @@ export default async function PlayersPage() {
         {/* Auf schmalen Bildschirmen (Handy) horizontal scrollbar, statt
             Spalten einfach abzuschneiden. */}
         <div className="w-full max-w-3xl overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="border-b border-black/10 text-left dark:border-white/10">
                 <th className="py-2 pr-3">Vorname</th>
                 <th className="py-2 pr-3">Nachname</th>
-                <th className="py-2 pr-3">Punkte</th>
                 <th className="py-2 pr-3">Elo</th>
                 <th className="py-2 pr-3">Abende</th>
                 <th className="py-2 pr-3"></th>
@@ -108,7 +99,6 @@ export default async function PlayersPage() {
                     id: player.id,
                     firstName: player.firstName,
                     lastName: player.lastName,
-                    points: player.points,
                     skillLevel: player.skillLevel,
                     assignmentCount: player._count.assignments,
                   }}
@@ -118,15 +108,6 @@ export default async function PlayersPage() {
           </table>
         </div>
       </section>
-
-      <ImportClient
-        existingPlayers={players.map((p) => ({
-          id: p.id,
-          firstName: p.firstName,
-          lastName: p.lastName,
-          points: p.points,
-        }))}
-      />
     </div>
   );
 }
