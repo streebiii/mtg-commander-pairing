@@ -48,7 +48,7 @@ export default async function PlayersPage() {
             />
           </label>
           <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
-            Skill (0-3)
+            Elo (0-3)
             <select
               name="skillLevel"
               defaultValue={0}
@@ -63,7 +63,7 @@ export default async function PlayersPage() {
           </label>
           <button
             type="submit"
-            className="min-h-9 w-full rounded bg-foreground px-4 py-2 text-sm font-medium text-background sm:w-auto"
+            className="min-h-11 w-full rounded bg-foreground px-4 py-2 text-sm font-medium text-background sm:w-auto"
           >
             Anlegen
           </button>
@@ -71,7 +71,8 @@ export default async function PlayersPage() {
         <p className="text-xs opacity-70">
           Hier trägst du die aktuelle Saison-Rangliste einmalig manuell ein
           (siehe SPEC.md Abschnitt 7) — oder nutzt den Text-Import unten. Die
-          Skill-Einstufung ist unabhängig davon und wird nur für den
+          Elo-Einstufung (verdecktes Rating, nur hier im Organisator-Bereich
+          sichtbar) ist unabhängig davon und wird nur für den
           skill-balancierten Modus A verwendet (siehe SPEC.md Abschnitt 4.1).
         </p>
       </section>
@@ -93,7 +94,7 @@ export default async function PlayersPage() {
                 <th className="py-2 pr-3">Vorname</th>
                 <th className="py-2 pr-3">Nachname</th>
                 <th className="py-2 pr-3">Punkte</th>
-                <th className="py-2 pr-3">Skill</th>
+                <th className="py-2 pr-3">Elo</th>
                 <th className="py-2 pr-3">Abende</th>
                 <th className="py-2 pr-3"></th>
                 <th className="py-2"></th>

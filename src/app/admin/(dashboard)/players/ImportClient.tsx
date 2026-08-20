@@ -163,7 +163,7 @@ export default function ImportClient({
         type="button"
         onClick={preview}
         disabled={!text.trim() || loading}
-        className="min-h-9 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+        className="min-h-11 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
       >
         {loading ? "Verarbeite…" : "Vorschau anzeigen"}
       </button>
@@ -266,7 +266,7 @@ export default function ImportClient({
             type="button"
             onClick={apply}
             disabled={loading}
-            className="min-h-9 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+            className="min-h-11 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
           >
             Import bestätigen
           </button>

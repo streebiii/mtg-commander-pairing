@@ -4,14 +4,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen">
       <header className="border-b border-black/10 px-4 py-4 dark:border-white/10">
-        <nav className="flex gap-6 text-sm font-medium">
-          <Link href="/admin/casual" className="flex min-h-9 items-center">
+        <nav className="mx-auto flex w-full max-w-md text-sm font-medium">
+          <Link
+            href="/admin/casual"
+            className="flex min-h-11 flex-1 items-center justify-center"
+          >
             Casual
           </Link>
-          <Link href="/admin/league" className="flex min-h-9 items-center">
+          <Link
+            href="/admin/league"
+            className="flex min-h-11 flex-1 items-center justify-center"
+          >
             Liga
           </Link>
-          <Link href="/admin/players" className="flex min-h-9 items-center">
+          <Link
+            href="/admin/players"
+            className="flex min-h-11 flex-1 items-center justify-center"
+          >
             Spieler
           </Link>
         </nav>

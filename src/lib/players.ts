@@ -11,6 +11,11 @@ export function formatPlayerName(player: {
 /**
  * Skill-Einstufung eines Spielers (siehe SPEC.md Abschnitt 6), nur für den
  * skill-balancierten Modus A relevant (Abschnitt 4.1). 0 = unbekannt.
+ *
+ * Nach außen (Admin-UI) heißt das Ganze bewusst "Elo" statt "Skill" — eine
+ * Art verdecktes Rating. Der Wert ist ausschließlich im Organisator-Bereich
+ * sichtbar (siehe SPEC.md Abschnitt 4.1) und soll das auch bleiben: Spieler
+ * sollen ihre eigene Einstufung nicht ohne Weiteres mitbekommen.
  */
 export const SKILL_LEVEL_MIN = 0;
 export const SKILL_LEVEL_MAX = 3;
@@ -27,9 +32,9 @@ export const SKILL_LEVEL_OPTIONS = [0, 1, 2, 3].map((value) => ({
   label: SKILL_LEVEL_LABELS[value],
 }));
 
-/** Kurzes Label für die Anzeige neben einem Spielernamen (z.B. "Skill 2"). */
+/** Kurzes Label für die Anzeige neben einem Spielernamen (z.B. "Elo 2"). */
 export function skillLevelShortLabel(skillLevel: number): string {
-  return skillLevel > 0 ? `Skill ${skillLevel}` : "Skill ?";
+  return skillLevel > 0 ? `Elo ${skillLevel}` : "Elo ?";
 }
 
 /** Prüft und normalisiert einen eingegebenen Skill-Wert (0-3). */
