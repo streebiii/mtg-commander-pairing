@@ -31,6 +31,11 @@ model Player {
   /// false (müssen im Liga-Tab manuell aktiviert werden); bei der Migration
   /// wurden alle bis dahin bestehenden Spieler auf true gesetzt.
   leagueActive Boolean @default(false)
+  /// Gesetzt, wenn der Spieler aus der Oberfläche entfernt wurde, aber
+  /// wegen bestehender Abend-Historie nicht hart gelöscht werden konnte
+  /// (siehe SPEC.md Abschnitt 6). Archivierte Spieler tauchen in keiner
+  /// Liste mehr auf; ihre Tischzuteilungen und Ergebnisse bleiben intakt.
+  archivedAt DateTime?
   createdAt DateTime @default(now())
 
   assignments TableAssignment[]

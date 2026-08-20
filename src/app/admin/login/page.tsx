@@ -1,4 +1,5 @@
 import { requestLoginLink } from "./actions";
+import SubmitButton from "./SubmitButton";
 
 const ERROR_MESSAGES: Record<string, string> = {
   rate_limited:
@@ -27,12 +28,7 @@ export default async function LoginPage({
 
       <form action={requestLoginLink} className="flex flex-col gap-3">
         <input type="hidden" name="next" value={next ?? "/admin"} />
-        <button
-          type="submit"
-          className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background"
-        >
-          Login-Link anfordern
-        </button>
+        <SubmitButton />
       </form>
 
       {sent && !error && (

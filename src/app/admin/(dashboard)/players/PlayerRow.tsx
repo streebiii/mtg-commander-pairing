@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { SKILL_LEVEL_OPTIONS } from "@/lib/players";
+import { SKILL_LEVELS } from "@/lib/players";
 import { deletePlayer, updatePlayer } from "./actions";
 
 interface Player {
@@ -9,21 +9,51 @@ interface Player {
   firstName: string;
   lastName: string | null;
   skillLevel: number;
-  assignmentCount: number;
+  leagueActive: boolean;
+  /** Sitzt der Spieler gerade an einem Tisch eines laufenden Liga-Abends? */
+  inRunningEvening: boolean;
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
 }
 
 /**
- * Eine Spielerzeile mit Auto-Save: jede Änderung (Auswahl sofort bei
+ * Eine Spielerzeile mit Auto-Save: jede Änderung (Auswahl/Checkbox sofort bei
  * Änderung, Text bei Verlassen des Feldes) speichert automatisch, ohne
  * expliziten "Speichern"-Klick. Kontrollierte Eingabefelder (statt
  * `defaultValue`) vermeiden dabei den Fehler, bei dem ein Wert nach einem
- * Server-Re-Render nicht mehr zuverlässig übernommen wurde. Liga-Punkte und
- * -Teilnahme werden hier bewusst nicht verwaltet — das lebt im Liga-Tab.
+ * Server-Re-Render nicht mehr zuverlässig übernommen wurde. Die Liga-Punkte
+ * werden bewusst nicht hier, sondern im Liga-Tab gepflegt.
+ *
+ * Die Löschbestätigung läuft bewusst inline und nicht über window.confirm:
+ * in eingebetteten Browser-Ansichten (z.B. Vorschau-Panels) liefert
+ * window.confirm ohne Rückfrage `false` — das Löschen wäre dort schlicht
+ * wirkungslos.
  */
 export default function PlayerRow({ player }: { player: Player }) {
   const [firstName, setFirstName] = useState(player.firstName);
   const [lastName, setLastName] = useState(player.lastName ?? "");
   const [skillLevel, setSkillLevel] = useState(player.skillLevel);
+  const [leagueActive, setLeagueActive] = useState(player.leagueActive);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [justSaved, setJustSaved] = useState(false);
   const savedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -32,12 +62,14 @@ export default function PlayerRow({ player }: { player: Player }) {
     firstName: string;
     lastName: string;
     skillLevel: number;
+    leagueActive: boolean;
   }> = {}) {
     const fd = new FormData();
     fd.set("id", player.id);
     fd.set("firstName", overrides.firstName ?? firstName);
     fd.set("lastName", overrides.lastName ?? lastName);
     fd.set("skillLevel", String(overrides.skillLevel ?? skillLevel));
+    fd.set("leagueActive", String(overrides.leagueActive ?? leagueActive));
 
     startTransition(async () => {
       await updatePlayer(fd);
@@ -48,13 +80,14 @@ export default function PlayerRow({ player }: { player: Player }) {
   }
 
   function handleDelete() {
-    if (!window.confirm(`${firstName} ${lastName} wirklich löschen?`)) return;
     const fd = new FormData();
     fd.set("id", player.id);
     startTransition(() => {
       deletePlayer(fd);
     });
   }
+
+  const displayName = [firstName, lastName].filter(Boolean).join(" ");
 
   return (
     <tr className="border-b border-black/5 dark:border-white/5">
@@ -87,15 +120,26 @@ export default function PlayerRow({ player }: { player: Player }) {
           }}
           className="min-h-9 w-14 rounded border border-black/20 px-2 py-2 dark:border-white/20"
         >
-          {SKILL_LEVEL_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.value}
+          {SKILL_LEVELS.map((level) => (
+            <option key={level} value={level}>
+              {level}
             </option>
           ))}
         </select>
       </td>
-      <td className="py-2 pr-3 text-xs opacity-70">
-        {player.assignmentCount} Abend(e)
+      <td className="py-2 pr-3">
+        <label className="flex min-h-11 w-fit cursor-pointer items-center pr-3">
+          <input
+            type="checkbox"
+            checked={leagueActive}
+            onChange={(e) => {
+              setLeagueActive(e.target.checked);
+              save({ leagueActive: e.target.checked });
+            }}
+            aria-label={`${displayName} nimmt an der Liga teil`}
+            className="h-4 w-4"
+          />
+        </label>
       </td>
       <td className="py-2 pr-3 text-xs">
         <span
@@ -110,21 +154,43 @@ export default function PlayerRow({ player }: { player: Player }) {
         )}
       </td>
       <td className="py-2 align-middle">
-        {player.assignmentCount === 0 ? (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="flex min-h-11 items-center text-xs text-red-600 underline"
-          >
-            Löschen
-          </button>
-        ) : (
+        {player.inRunningEvening ? (
           <span
             className="text-xs opacity-50"
-            title="Spieler hat bereits an Abenden teilgenommen"
+            title="Spieler ist im laufenden Liga-Abend einem Tisch zugeteilt"
           >
-            —
+            im Abend
           </span>
+        ) : confirmingDelete ? (
+          <span className="flex items-center gap-2 text-xs">
+            <span className="opacity-70">Löschen?</span>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isPending}
+              className="flex min-h-11 items-center rounded bg-red-600 px-3 py-2 font-medium text-white disabled:opacity-40"
+            >
+              {isPending ? "…" : "Ja"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(false)}
+              disabled={isPending}
+              className="flex min-h-11 items-center rounded border border-black/20 px-3 py-2 dark:border-white/20 disabled:opacity-40"
+            >
+              Nein
+            </button>
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(true)}
+            aria-label={`${displayName} löschen`}
+            title={`${displayName} löschen`}
+            className="flex min-h-11 w-11 items-center justify-center rounded text-red-600 hover:bg-red-600/10"
+          >
+            <TrashIcon />
+          </button>
         )}
       </td>
     </tr>

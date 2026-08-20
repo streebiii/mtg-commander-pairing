@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   }
 
   const players = await prisma.player.findMany({
-    where: { id: { in: playerIds as string[] } },
+    where: { id: { in: playerIds as string[] }, archivedAt: null },
     select: { id: true, firstName: true, lastName: true, skillLevel: true },
   });
 

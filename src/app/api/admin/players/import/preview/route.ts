@@ -18,6 +18,7 @@ export async function POST(request: Request) {
 
   const { rows, warnings } = parseLeagueImport(text);
   const players = await prisma.player.findMany({
+    where: { archivedAt: null },
     select: { id: true, firstName: true, lastName: true },
   });
   const matches = matchImportRows(rows, players);

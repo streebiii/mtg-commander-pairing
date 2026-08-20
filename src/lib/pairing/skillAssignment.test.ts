@@ -18,44 +18,41 @@ describe("assignSkillBalancedCasualRound", () => {
     expect(new Set(fourTable)).toEqual(new Set(["p0", "p1", "p2", "p3"]));
   });
 
-  it("behandelt unbewertete Spieler (0) als Mittelwert der bewerteten, nicht als schwächste Stufe", () => {
-    // 3 stark bewertete (3 = erfahren), 3 unbewertete (0) -> Mittelwert der
-    // bewerteten = 3. Die Unbewerteten sollten also NICHT automatisch am
-    // schwächsten Tisch landen (dort gäbe es sonst gar keine anderen Spieler
-    // zum Vergleich), sondern gemäß des imputierten Werts (3) mit den
-    // Bewerteten gemischt werden können. Wir prüfen das gegen die Alternative
-    // (0 als Literalwert gewertet), bei der die Unbewerteten IMMER strikt
-    // unten landen würden.
+  it("verteilt unbewertete Spieler (0) zufällig — mal an den starken, mal an den schwachen Tisch", () => {
+    // 3 erfahrene (3), 3 schwache (1) und ein unbewerteter Spieler (0).
+    // N=7 -> [4,3]. Für den Unbewerteten wird pro Berechnung eine Stufe
+    // gewürfelt, er muss deshalb über viele Läufe an BEIDEN Tischen
+    // auftauchen. Würde 0 buchstäblich als schwächste Stufe gewertet,
+    // landete er immer beim schwachen Block; als fixer Mittelwert wäre die
+    // Verteilung ebenfalls einseitig.
     const players: SkillRatedPlayer[] = [
-      { id: "a1", skillLevel: 3 },
-      { id: "a2", skillLevel: 3 },
-      { id: "a3", skillLevel: 3 },
+      { id: "s1", skillLevel: 3 },
+      { id: "s2", skillLevel: 3 },
+      { id: "s3", skillLevel: 3 },
+      { id: "w1", skillLevel: 1 },
+      { id: "w2", skillLevel: 1 },
+      { id: "w3", skillLevel: 1 },
       { id: "u1", skillLevel: 0 },
-      { id: "u2", skillLevel: 0 },
-      { id: "u3", skillLevel: 0 },
     ];
-    const sizes = computeTableSizes(players.length); // [3,3]
+    const sizes = computeTableSizes(players.length); // [4,3]
 
-    // Über viele Läufe sollte der Tisch mit a1 nicht IMMER exakt {a1,a2,a3}
-    // sein (das wäre der Fall, wenn 0 buchstäblich als schwächste Stufe
-    // gewertet würde und nie mit den erfahrenen Spielern gemischt werden
-    // könnte).
-    let mixedAtLeastOnce = false;
-    for (let i = 0; i < 50; i++) {
+    let beiDenStarken = false;
+    let beiDenSchwachen = false;
+    for (let i = 0; i < 200; i++) {
       const tables = assignSkillBalancedCasualRound(players, sizes);
-      const tableWithA1 = tables.find((t) => t.includes("a1"))!;
-      if (!["a1", "a2", "a3"].every((id) => tableWithA1.includes(id))) {
-        mixedAtLeastOnce = true;
-        break;
-      }
+      const tischMitU1 = tables.find((t) => t.includes("u1"))!;
+      if (tischMitU1.includes("s1")) beiDenStarken = true;
+      if (tischMitU1.includes("w1")) beiDenSchwachen = true;
+      if (beiDenStarken && beiDenSchwachen) break;
     }
-    expect(mixedAtLeastOnce).toBe(true);
+    expect(beiDenStarken).toBe(true);
+    expect(beiDenSchwachen).toBe(true);
   });
 
-  it("nutzt den Skalen-Mittelwert (2), wenn kein einziger Spieler bewertet ist", () => {
-    // Alle unbewertet -> alle bekommen denselben Wert (2) -> rein zufällige
-    // Gruppierung. Der Test prüft nur, dass es nicht crasht und alle Spieler
-    // korrekt verteilt werden.
+  it("verteilt korrekt, wenn kein einziger Spieler bewertet ist", () => {
+    // Alle unbewertet -> alle bekommen gewürfelte Werte -> rein zufällige
+    // Gruppierung. Der Test prüft, dass es nicht crasht und jeder Spieler
+    // genau einmal zugeteilt wird.
     const players = makePlayers([0, 0, 0, 0, 0, 0, 0]);
     const sizes = computeTableSizes(players.length);
     const tables = assignSkillBalancedCasualRound(players, sizes);

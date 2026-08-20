@@ -65,7 +65,7 @@ export async function startEvening(formData: FormData) {
   // UI-Auswahlliste) — nur Liga-teilnehmende Spieler dürfen in einen
   // Liga-Abend aufgenommen werden (siehe SPEC.md Abschnitt 6).
   const players = await prisma.player.findMany({
-    where: { id: { in: playerIds }, leagueActive: true },
+    where: { id: { in: playerIds }, leagueActive: true, archivedAt: null },
     select: { id: true, points: true },
   });
   if (players.length !== playerIds.length) return;
