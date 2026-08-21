@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assignSkillBalancedCasualRound, type SkillRatedPlayer } from "./skillAssignment";
 import { computeTableSizes } from "./tableSizes";
 import { PairingError } from "./errors";
+import type { PlayerGroup } from "./groups";
 
 function makePlayers(levels: number[]): SkillRatedPlayer[] {
   return levels.map((skillLevel, i) => ({ id: `p${i}`, skillLevel }));
@@ -79,5 +80,60 @@ describe("assignSkillBalancedCasualRound", () => {
     expect(() => assignSkillBalancedCasualRound(players, [4])).toThrow(
       PairingError,
     );
+  });
+
+  it("hält eine Gruppe zusammen und bewertet sie nach Durchschnitts-Skill", () => {
+    // N=11 -> [4,4,3]. Gruppe aus einem starken (3) und einem schwachen (1)
+    // Spieler -> Durchschnitt 2, landet also nicht zwingend beim reinen
+    // Stärksten-Tisch, aber immer zusammen an einem Tisch.
+    const players: SkillRatedPlayer[] = [
+      { id: "strong1", skillLevel: 3 },
+      { id: "strong2", skillLevel: 3 },
+      { id: "weak1", skillLevel: 1 },
+      { id: "weak2", skillLevel: 1 },
+      { id: "weak3", skillLevel: 1 },
+      { id: "g-strong", skillLevel: 3 },
+      { id: "g-weak", skillLevel: 1 },
+      { id: "n1", skillLevel: 2 },
+      { id: "n2", skillLevel: 2 },
+      { id: "n3", skillLevel: 2 },
+      { id: "n4", skillLevel: 2 },
+    ];
+    const groups: PlayerGroup[] = [
+      { id: "g1", playerIds: ["g-strong", "g-weak"] },
+    ];
+    const sizes = computeTableSizes(players.length);
+
+    for (let i = 0; i < 30; i++) {
+      const tables = assignSkillBalancedCasualRound(players, sizes, 0, groups);
+      const tableWithGroup = tables.find((t) => t.includes("g-strong"))!;
+      expect(tableWithGroup).toContain("g-weak");
+      expect(tables.flat().length).toBe(players.length);
+      expect(new Set(tables.flat()).size).toBe(players.length);
+    }
+  });
+
+  it("hält eine Vierer-Gruppe zusammen und respektiert die Tischgrößen", () => {
+    const players = makePlayers([3, 3, 1, 1, 2, 2, 2]); // N=7 -> [4,3]
+    const groups: PlayerGroup[] = [
+      { id: "g1", playerIds: ["p0", "p1", "p2", "p3"] },
+    ];
+    const sizes = computeTableSizes(players.length);
+    const tables = assignSkillBalancedCasualRound(players, sizes, 0, groups);
+
+    const tableWithGroup = tables.find((t) => t.includes("p0"))!;
+    expect(new Set(tableWithGroup)).toEqual(new Set(["p0", "p1", "p2", "p3"]));
+    expect(tables.map((t) => t.length).sort()).toEqual([...sizes].sort());
+  });
+
+  it("wirft PairingError, wenn eine Gruppe nicht in die Tischgrößen passt", () => {
+    const players = makePlayers([1, 1, 1, 1, 1, 1]); // N=6 -> [3,3]
+    const groups: PlayerGroup[] = [
+      { id: "g1", playerIds: ["p0", "p1", "p2", "p3"] },
+    ];
+    const sizes = computeTableSizes(players.length);
+    expect(() =>
+      assignSkillBalancedCasualRound(players, sizes, 0, groups),
+    ).toThrow(PairingError);
   });
 });

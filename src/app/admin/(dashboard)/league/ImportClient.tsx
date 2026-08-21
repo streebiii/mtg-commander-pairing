@@ -158,7 +158,7 @@ export default function ImportClient({
         onChange={(e) => setText(e.target.value)}
         rows={8}
         placeholder="| # | Spieler | F | Total | R1 | R2 | ... |"
-        className="w-full rounded border border-black/20 p-3 font-mono text-xs dark:border-white/20"
+        className="w-full rounded border border-black/20 p-3 font-mono dark:border-white/20"
       />
       <button
         type="button"

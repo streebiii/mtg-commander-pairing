@@ -118,7 +118,7 @@ export default function PlayerRow({ player }: { player: Player }) {
             setSkillLevel(value);
             save({ skillLevel: value });
           }}
-          className="min-h-9 w-14 rounded border border-black/20 px-2 py-2 dark:border-white/20"
+          className="min-h-9 w-16 rounded border border-black/20 px-2 py-2 dark:border-white/20"
         >
           {SKILL_LEVELS.map((level) => (
             <option key={level} value={level}>

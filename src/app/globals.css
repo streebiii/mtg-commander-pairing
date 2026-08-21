@@ -24,3 +24,21 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/*
+ * iOS Safari zoomt beim Fokussieren automatisch in jedes Formularfeld mit
+ * einer Schriftgröße unter 16px hinein. App-weit als Mindestwert gesetzt
+ * (nicht als fixer Wert — der Login-Code-Eingabe z.B. ist bewusst deutlich
+ * grösser), damit kein Feld mehr darunter zurückrutschen kann. Bewusst
+ * NICHT über user-scalable=no im Viewport gelöst — das würde auch das
+ * absichtliche Pinch-Zoom sperren.
+ *
+ * Felder, die direkt eine Tailwind-Textgrössenklasse (text-xs/text-sm)
+ * tragen, wurden zusätzlich von Hand auf mindestens 16px angehoben, da
+ * eine Klasse Vorrang vor dieser Element-Regel hätte.
+ */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
