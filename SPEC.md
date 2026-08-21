@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-08-18 (nach Grill-Session mit dem Auftraggeber)
+Stand: 2026-08-21 (nach Grill-Session zu Mobile-Optimierung und Gruppen im Casual-Modus)
 
 ## 1. Zweck
 
@@ -115,11 +115,15 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
 ## 4. Casual — Rechner + Zuteilung
 
 - **Spielerauswahl** (mobil-optimiert, tap-freundlich):
-  - Suchfeld filtert die Spielerliste live (Substring-Match auf
-    Vorname+Nachname).
-  - Bereits ausgewählte Spieler bleiben in einer festen "Ausgewählt
-    (n)"-Sektion oben sichtbar (auch während gesucht wird) — ein Tap dort
-    hebt die Auswahl wieder auf.
+  - Eine einzige, stabil alphabetisch sortierte Liste aller Vereinsspieler.
+    Ein Tap ändert nur den Zustand des Eintrags an seiner Position
+    (Häkchen + Hervorhebung) — die Liste springt nie, es gibt bewusst
+    **keine** separate "Ausgewählt (n)"-Sektion. Der Auswahlstand steht im
+    Zähler der Überschrift "Anwesende Spieler auswählen (n)".
+  - Suchfeld filtert die Liste live (Substring-Match auf Vorname+Nachname),
+    unabhängig vom Auswahlstatus eines Eintrags — ein ausgewählter Spieler,
+    der nicht zum Suchtext passt, wird also ebenfalls ausgefiltert; das
+    Leeren des Suchfelds zeigt wieder alle mit ihrem Häkchen.
   - Neuen Spieler anlegen geht auf zwei Wegen: ein fester Button "+ Neuen
     Spieler erfassen" oben an der Liste (öffnet ein kleines Formular:
     Vorname, optional Nachname, optional Skill-Einstufung), oder — wenn
@@ -140,7 +144,51 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
 - **Zurücksetzen**: verwirft die Zuteilung. Die Spielerauswahl bleibt
   bestehen, die öffentliche Ansicht ist danach wieder leer.
 
-### 4.1 Zuteilungsart: Zufällig vs. skill-balanciert
+### 4.1 Gruppen — Spieler, die garantiert zusammen sitzen
+
+Anwendungsfall: jemand bringt einen Freund mit und will unbedingt mit ihm
+am selben Tisch spielen.
+
+- Ein Knopf "+ Gruppe bilden" unterhalb der Spielerliste schaltet einen
+  Gruppen-Modus ein. Im Gruppen-Modus fügt ein Tap auf einen Spieler diesen
+  der entstehenden Gruppe hinzu; ist er noch nicht als anwesend markiert,
+  wird er dabei gleich mit ausgewählt. "Fertig" schliesst die Gruppe (eine
+  Gruppe mit weniger als 2 Mitgliedern wird dabei verworfen), "Abbrechen"
+  verwirft sie ohne Rückfrage. Kein Long-press — kollidiert mit
+  Scrollen/Textauswahl auf dem Handy.
+- Gruppenmitglieder tragen ein farbiges Kürzel (A, B, C, …) am
+  Listeneintrag. Bestehende Gruppen stehen als kompakte Zeilen mit einem
+  × zum Auflösen, plus einem Knopf "alle auflösen".
+- **Höchstens 4 Spieler pro Gruppe.** 4 ist die grösste reguläre
+  Tischgrösse (Abschnitt 3); ein 5er-Tisch existiert nur bei genau 5
+  Anwesenden, wo ohnehin alle zusammensitzen.
+- **Harte Regel bei der Zuteilung**: Gruppenmitglieder landen garantiert am
+  selben Tisch. Die Tischgrössen-Verteilung aus Abschnitt 3 bleibt dabei
+  unangetastet und hat Vorrang — Gruppen müssen sich in sie einfügen, nicht
+  umgekehrt. Mehrere Gruppen dürfen sich einen Tisch teilen, wenn sie exakt
+  hineinpassen (z. B. zwei Zweier-Gruppen an einem 4er-Tisch) — ohne das
+  wären gängige Fälle unlösbar.
+- **Machbarkeitsprüfung vor der Berechnung**: ist eine Kombination aus
+  Anwesendenzahl und Gruppen unmöglich, erscheint sofort ein konkreter
+  Hinweis bei den Gruppen (z. B. "Mit 6 Anwesenden gibt es nur 3er-Tische —
+  Gruppe A mit 4 Spielern passt nicht"), und "Tische berechnen" ist
+  gesperrt. Kein Fehlschlag erst nach dem Antippen; zusätzlich wird
+  serverseitig validiert.
+- **Im skill-balancierten Modus** (Abschnitt 4.2 unten) zählt eine Gruppe
+  als eine Einheit mit dem **Durchschnitts-Skill** ihrer Mitglieder und
+  wird damit als Ganzes in die passende Stärke-Region einsortiert.
+- **Persistenz**: Anwesenheits-Auswahl und Gruppen leben zusammen im
+  Browser-Speicher (localStorage) des Organisator-Geräts, nicht in der
+  Datenbank — keine Migration nötig. Spieler, die inzwischen archiviert
+  oder gelöscht wurden, fallen beim Laden still heraus. "Zurücksetzen"
+  (siehe oben) lässt Auswahl und Gruppen unangetastet; aufgelöst werden
+  Gruppen nur über die eigenen Knöpfe (× je Gruppe, "alle auflösen").
+- In der fertigen Tischzuteilung erscheinen die Gruppen-Kürzel auch an den
+  Tischkacheln. Manuelles Tauschen (siehe oben) bleibt uneingeschränkt
+  möglich, auch wenn es eine Gruppe trennt — der Organisator ist die letzte
+  Instanz. Elo-Werte bleiben dabei wie überall unsichtbar.
+
+### 4.2 Zuteilungsart: Zufällig vs. skill-balanciert
 
 Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
 
@@ -162,7 +210,7 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
     Tischen bewusst **nicht** angezeigt — sie fliessen nur in die
     Berechnung ein. Wo sie sichtbar sind, steht in Abschnitt 6.1.
 
-### 4.2 Speicherung und öffentliche Anzeige
+### 4.3 Speicherung und öffentliche Anzeige
 
 Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
 
@@ -265,10 +313,10 @@ Verwaltung auf zwei Tabs aufgeteilt:
     `src/lib/players.ts`). Die Stufen werden bewusst **ohne Beschriftung**
     angeboten — die Dropdowns zeigen nur die nackte Zahl. 0 bedeutet "noch
     nicht eingestuft" und wird bei der Zuteilung zufällig behandelt
-    (Abschnitt 4.1).
+    (Abschnitt 4.2).
 
     Komplett unabhängig vom Liga-Punktestand, wird ausschliesslich für die
-    elo-balancierte Zuteilung im Casual-Modus verwendet (Abschnitt 4.1).
+    elo-balancierte Zuteilung im Casual-Modus verwendet (Abschnitt 4.2).
   - Zeigt und ändert die **Liga-Teilnahme** (`leagueActive`) pro Spieler.
   - Zeigt **keine** Liga-Punkte — die werden im Liga-Tab gepflegt.
 
@@ -350,7 +398,7 @@ bestätigt den Vorgang. Gilt für beide Tabs.
 - Keine Sonderbehandlung für „zu wenige Spieler" (< 3 anwesend) — tritt
   laut Auftraggeber nicht auf.
 - Casual speichert keine Ergebnisse/Punkte und keinen Verlauf — nur die
-  eine aktuelle Zuteilung für die öffentliche Anzeige (Abschnitt 4.2).
+  eine aktuelle Zuteilung für die öffentliche Anzeige (Abschnitt 4.3).
 
 ## 10. Offene technische Fragen (vor Deployment zu klären)
 

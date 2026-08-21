@@ -10,7 +10,7 @@ export function formatPlayerName(player: {
 
 /**
  * Skill-Einstufung eines Spielers (siehe SPEC.md Abschnitt 6), nur für die
- * elo-balancierte Zuteilung im Casual-Modus relevant (Abschnitt 4.1).
+ * elo-balancierte Zuteilung im Casual-Modus relevant (Abschnitt 4.2).
  * 0 = noch nicht eingestuft.
  *
  * Die Stufen werden bewusst ohne Beschriftung angeboten — nur die nackte

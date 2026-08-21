@@ -189,7 +189,7 @@ export default async function LeaguePage() {
                         name={`points_${a.id}`}
                         defaultValue={a.pointsAwarded ?? ""}
                         placeholder="Pkt."
-                        className="min-h-9 w-16 rounded border border-black/20 px-2 py-2 dark:border-white/20"
+                        className="min-h-9 w-20 rounded border border-black/20 px-2 py-2 dark:border-white/20"
                       />
                       {round.number === evening.rounds.length && (
                         <ReassignSelect

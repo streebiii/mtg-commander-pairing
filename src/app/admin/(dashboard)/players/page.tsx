@@ -77,7 +77,7 @@ export default async function PlayersPage() {
           Die Elo-Einstufung ist ein verdecktes Rating und nur hier im
           Organisator-Bereich sichtbar — sie wird ausschliesslich für die
           elo-balancierte Zuteilung im Casual-Modus verwendet (siehe SPEC.md
-          Abschnitt 4.1). Die Liga-Punkte pflegst du im Liga-Tab.
+          Abschnitt 4.2). Die Liga-Punkte pflegst du im Liga-Tab.
         </p>
       </section>
 
