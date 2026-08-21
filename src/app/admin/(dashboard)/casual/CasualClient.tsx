@@ -400,6 +400,19 @@ export default function CasualClient({
     return allPlayersSorted.filter((p) => p.name.toLowerCase().includes(q));
   }, [allPlayersSorted, search]);
 
+  // Mindesthöhe für die Liste, reserviert für den vollen (ungefilterten)
+  // Bestand in der mobilen 2-Spalten-Breite (Worst Case) — sonst schrumpft
+  // die Seite bei jedem Tastendruck im Suchfeld mit der Anzahl Treffer und
+  // die Ansicht springt auf dem Handy hin und her, weil der sichtbare
+  // Ausschnitt bei jedem Tastendruck neu berechnet wird. ROW_HEIGHT/GAP
+  // entsprechen den Tailwind-Klassen `min-h-11`/`gap-2` der Kacheln unten.
+  const listMinHeight = useMemo(() => {
+    const ROW_HEIGHT = 44;
+    const ROW_GAP = 8;
+    const rows = Math.ceil(allPlayersSorted.length / 2);
+    return rows > 0 ? rows * ROW_HEIGHT + (rows - 1) * ROW_GAP : 0;
+  }, [allPlayersSorted.length]);
+
   const nameById = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players]);
 
   const playerGroupIndex = useMemo(() => {
@@ -614,7 +627,10 @@ export default function CasualClient({
             Eintrags an seiner Position, nichts springt (siehe
             Grill-Notizen Q2). Im Gruppen-Modus nimmt ein Tap den Spieler
             statt in die Gruppe auf. */}
-        <div className="grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3">
+        <div
+          className="grid max-w-2xl grid-cols-2 content-start gap-2 sm:grid-cols-3"
+          style={{ minHeight: listMinHeight }}
+        >
           {filteredPlayers.map((p) => {
             const isSelected = selected.has(p.id);
             const isPending = groupModeActive && pendingGroupMembers.includes(p.id);
