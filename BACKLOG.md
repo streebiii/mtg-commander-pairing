@@ -4,6 +4,60 @@ Ideen und zukünftige Vorhaben, die noch nicht spruchreif genug für einen
 Grill (`/mattpocock-skills:grill-me`) sind. Grob gehalten mit Absicht —
 Ausarbeitung passiert erst, wenn ein Eintrag tatsächlich angegangen wird.
 
+## Casual: einzelne Tische selektiv neu mischen
+
+**Status:** Idee, noch nicht ausgearbeitet.
+
+**Worum es geht:** Nach dem Auswürfeln der Casual-Tische soll der
+Organisator gezielt einzelne Tische auswählen können (z. B. Tisch 1 und
+Tisch 3), die dann **untereinander** neu gemischt werden — statt wie
+heute entweder gar nicht (nur manueller Einzeltausch, siehe
+`handlePlayerClick` in `CasualClient.tsx`) oder komplett neu für alle
+Tische ("Tische berechnen" ersetzt die gesamte Zuteilung).
+
+**Offen:**
+- Was passiert mit Gruppen (siehe SPEC.md Abschnitt 4.1), deren
+  Mitglieder auf ausgewählten Tischen sitzen — bleiben sie beim
+  selektiven Neumischen weiterhin zusammen (analog zur harten Regel bei
+  der vollen Berechnung), oder ist das hier bewusst ein freieres
+  Werkzeug ohne Gruppen-Garantie?
+- Zuteilungsart (Zufällig/Elo-balanciert) beim Teil-Mischen: gleicher
+  Modus wie bei der letzten vollen Berechnung, oder erneut wählbar?
+- Wie werden die betroffenen Tische ausgewählt — Mehrfachauswahl per Tap
+  auf die Tischkachel, ein Checkbox pro Tisch, o. ä.?
+- Tischgrössen der ausgewählten Tische bleiben dabei unverändert (nur
+  wer wo sitzt wird neu gewürfelt) — das dürfte unstrittig sein, aber
+  zur Sicherheit beim Grillen bestätigen.
+- Persistenz/öffentliche Anzeige: vermutlich wie beim manuellen Tausch
+  heute schon (`persistCasualPairing`) sofort übernehmen.
+
+**Nächster Schritt, wenn's angegangen wird:** Grill-Session zur
+Tischauswahl-UI und zum Gruppen-Verhalten, bevor irgendwas gebaut wird.
+
+## UI: "Tische berechnen"-Knopf auf Desktop zu weit weg
+
+**Status:** Bekannte Nebenwirkung, noch nicht behoben.
+
+**Worum es geht:** Die Mindesthöhe der Spielerliste in `CasualClient.tsx`
+(`listMinHeight`, eingeführt in PR #5 gegen das Sprung-Problem beim
+mobilen Suchen) reserviert bewusst Platz für die mobile 2-Spalten-Breite
+als Worst Case. Auf Desktop-Breiten (`sm:grid-cols-3`) bleibt dadurch oft
+unnötiger Leerraum zwischen der Liste und dem "Tische berechnen"-Knopf
+darunter, weil die tatsächlichen 3 Spalten weniger Zeilen brauchen als
+die reservierten 2-Spalten-Zeilen.
+
+**Offen:**
+- Reservierte Höhe an die tatsächliche Spaltenzahl anpassen (z. B. per
+  `matchMedia`/`ResizeObserver` die aktuelle Spaltenzahl ermitteln), oder
+  reicht ein einfacherer Ansatz (z. B. die Mindesthöhe nur unterhalb
+  einer Breakpoint-Grenze per CSS statt inline-Style anwenden)?
+- Betrifft nur Desktop/breite Viewports — der ursprüngliche Zoom-/Sprung-
+  Fix für Mobile (PR #4/#5) bleibt unangetastet.
+
+**Nächster Schritt, wenn's angegangen wird:** Kleiner, risikoarmer Fix —
+vermutlich kein eigener Grill nötig, nur kurz verifizieren auf beiden
+Breiten.
+
 ## Achievement-Tracking pro Liga-Abend und pro Spiel
 
 **Status:** Idee, noch nicht ausgearbeitet.
