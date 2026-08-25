@@ -21,9 +21,8 @@ export default async function CasualPage() {
       <div>
         <h1 className="text-xl font-semibold">Casual</h1>
         <p className="text-sm opacity-70">
-          Reine Anzahl-basierte Tischzuteilung ohne Rangliste. Einzelrunde,
-          keine Punkte-/Ergebniserfassung, kein Verlauf (siehe SPEC.md
-          Abschnitt 4).
+          Spieler auswählen · Tische auswürfeln · fertig. Eine Runde, keine
+          Punkte, kein Verlauf.
         </p>
       </div>
       <CasualClient players={players} />

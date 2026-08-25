@@ -128,7 +128,7 @@ export default function CasualClient({
   // Suchfeld (siehe SPEC.md Abschnitt 4) — bewusst NICHT am Ende der
   // Ergebnisliste, sonst rutscht er mit wachsender Spielerliste ausser
   // Reichweite (siehe Bugfix). Öffnet ein kleines Formular
-  // (Vorname/Nachname/Elo), vorbefüllt mit dem bisher getippten Suchtext.
+  // (Vorname/Nachname/Stufe), vorbefüllt mit dem getippten Suchtext.
   const [showAddForm, setShowAddForm] = useState(false);
   const [newFirstName, setNewFirstName] = useState("");
   const [newLastName, setNewLastName] = useState("");
@@ -474,10 +474,10 @@ export default function CasualClient({
   // Treffer und die Ansicht springt hin und her, weil der sichtbare
   // Ausschnitt bei jedem Tastendruck neu berechnet wird. ROW_HEIGHT/GAP
   // entsprechen den Tailwind-Klassen `min-h-11`/`gap-2` der Kacheln unten.
-  // Mobil (2 Spalten) und Desktop (`sm:grid-cols-3`, 3 Spalten) reservieren
-  // unterschiedlich viele Zeilen — beide Werte werden berechnet und die
-  // Umschaltung passiert per CSS-Custom-Property an derselben Breakpoint-
-  // Grenze wie `sm:grid-cols-3`, ohne ResizeObserver/matchMedia in JS.
+  // Mobil (2 Spalten), ab `sm` 3 und ab `xl` 4 Spalten reservieren
+  // unterschiedlich viele Zeilen — alle Werte werden berechnet und die
+  // Umschaltung passiert per CSS-Custom-Property an denselben Breakpoint-
+  // Grenzen wie die Spaltenzahl, ohne ResizeObserver/matchMedia in JS.
   const listMinHeight = useMemo(() => {
     const ROW_HEIGHT = 44;
     const ROW_GAP = 8;
@@ -485,7 +485,11 @@ export default function CasualClient({
       const rows = Math.ceil(allPlayersSorted.length / columns);
       return rows > 0 ? rows * ROW_HEIGHT + (rows - 1) * ROW_GAP : 0;
     };
-    return { mobile: heightForColumns(2), desktop: heightForColumns(3) };
+    return {
+      mobile: heightForColumns(2),
+      desktop: heightForColumns(3),
+      wide: heightForColumns(4),
+    };
   }, [allPlayersSorted.length]);
 
   const nameById = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players]);
@@ -550,29 +554,22 @@ export default function CasualClient({
   }, [reshuffleSelection]);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="grid gap-8 lg:grid-cols-4">
+      {/* Linke Spalte (3 von 4): erst die Zuteilung, darunter die Auswahl.
+          Die rechte Spalte steht daneben und reicht dadurch bis ganz nach
+          oben neben die Zuteilung. */}
+      <div className="flex flex-col gap-8 lg:col-span-3">
       {/* Die fertige Zuteilung steht bewusst zuoberst — beim Spielabend
           schaut man darauf, nicht auf die Auswahlliste darunter. */}
       {tables && (
         <section className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-sm font-medium">
-              Tischzuteilung — klicke zwei Spieler an, um sie zu tauschen
-            </h2>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
-            >
-              Zurücksetzen
-            </button>
-          </div>
+          <h2 className="text-sm font-medium">
+            Tischzuteilung — klicke zwei Spieler an, um sie zu tauschen
+          </h2>
           <p className="text-xs opacity-70">
             Diese Zuteilung ist auf der öffentlichen Pairing-Seite sichtbar.
-            &quot;Zurücksetzen&quot; nimmt sie dort wieder weg; deine
-            Spielerauswahl und Gruppen bleiben erhalten. Tippe auf einen
-            Tisch-Titel, um ihn für ein selektives Neumischen auszuwählen
-            (mindestens 2 Tische).
+            Tippe auf einen Tisch-Titel, um ihn für ein selektives
+            Neumischen auszuwählen (mindestens 2 Tische).
           </p>
           <div className="flex flex-wrap gap-4">
             {tables.map((table) => {
@@ -680,256 +677,278 @@ export default function CasualClient({
         </section>
       )}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">
-          Anwesende Spieler auswählen ({selectedCount})
-        </h2>
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium">
+            Anwesende Spieler auswählen ({selectedCount})
+          </h2>
 
-        <label className="flex flex-col gap-1.5 text-sm">
-          Spieler suchen
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name eingeben…"
-            className="min-h-9 w-full max-w-sm rounded border border-black/20 px-3 py-2 dark:border-white/20"
-          />
-        </label>
+          <label className="flex flex-col gap-1.5 text-sm">
+            Spieler suchen
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Name eingeben…"
+              className="min-h-9 w-full max-w-sm rounded border border-black/20 px-3 py-2 dark:border-white/20"
+            />
+          </label>
 
-        {/* Fester Trigger direkt unter dem Suchfeld — bleibt immer an
-            derselben Stelle erreichbar, unabhängig von der Länge der
-            darunter angezeigten Liste. */}
-        {!showAddForm && (
-          <button
-            type="button"
-            onClick={openAddForm}
-            className="flex min-h-11 w-fit items-center rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20"
-          >
-            {search.trim()
-              ? `+ „${search.trim()}“ als neuen Spieler anlegen`
-              : "+ Neuen Spieler erfassen"}
-          </button>
-        )}
-
-        {showAddForm && (
-          <div className="flex flex-wrap items-end gap-3 rounded border border-dashed border-black/20 p-3 dark:border-white/20">
-            <label className="flex flex-col gap-1.5 text-xs">
-              Vorname
-              <input
-                type="text"
-                value={newFirstName}
-                onChange={(e) => setNewFirstName(e.target.value)}
-                className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 dark:border-white/20"
-              />
-            </label>
-            <label className="flex flex-col gap-1.5 text-xs">
-              Nachname (optional)
-              <input
-                type="text"
-                value={newLastName}
-                onChange={(e) => setNewLastName(e.target.value)}
-                className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 dark:border-white/20"
-              />
-            </label>
-            <label className="flex flex-col gap-1.5 text-xs">
-              Elo (0-3)
-              <select
-                value={newSkill}
-                onChange={(e) => setNewSkill(Number(e.target.value))}
-                className="min-h-9 w-20 rounded border border-black/20 px-3 py-2 dark:border-white/20"
-              >
-                {SKILL_LEVELS.map((level) => (
-                  <option key={level} value={level}>
-                    {level}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {/* Fester Trigger direkt unter dem Suchfeld — bleibt immer an
+              derselben Stelle erreichbar, unabhängig von der Länge der
+              darunter angezeigten Liste. */}
+          {!showAddForm && (
             <button
               type="button"
-              onClick={handleAddFormSubmit}
-              disabled={!newFirstName.trim() || adding}
-              className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+              onClick={openAddForm}
+              className="flex min-h-11 w-fit items-center rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20"
             >
-              {adding ? "Lege an…" : "Anlegen"}
+              {search.trim()
+                ? `+ „${search.trim()}“ als neuen Spieler anlegen`
+                : "+ Neuen Spieler erfassen"}
             </button>
-            <button
-              type="button"
-              onClick={() => setShowAddForm(false)}
-              className="min-h-11 rounded border border-transparent px-4 py-2 text-sm opacity-70"
-            >
-              Abbrechen
-            </button>
-          </div>
-        )}
-        {addError && <p className="text-sm text-red-600">{addError}</p>}
+          )}
 
-        {groupModeActive && (
-          <div className="flex flex-col gap-2 rounded border border-amber-500 bg-amber-500/10 p-3">
-            <p className="text-sm">
-              Gruppe bilden: tippe die Spieler an, die zusammen sitzen sollen
-              ({pendingGroupMembers.length}/{MAX_GROUP_SIZE}).
-            </p>
-            {groupModeHint && (
-              <p className="text-xs text-red-600">{groupModeHint}</p>
-            )}
-            <div className="flex gap-2">
+          {showAddForm && (
+            <div className="flex flex-wrap items-end gap-3 rounded border border-dashed border-black/20 p-3 dark:border-white/20">
+              <label className="flex flex-col gap-1.5 text-xs">
+                Vorname
+                <input
+                  type="text"
+                  value={newFirstName}
+                  onChange={(e) => setNewFirstName(e.target.value)}
+                  className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-xs">
+                Nachname (optional)
+                <input
+                  type="text"
+                  value={newLastName}
+                  onChange={(e) => setNewLastName(e.target.value)}
+                  className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-xs">
+                Stufe (0-3)
+                <select
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(Number(e.target.value))}
+                  className="min-h-9 w-20 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+                >
+                  {SKILL_LEVELS.map((level) => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 type="button"
-                onClick={finishGroupMode}
-                disabled={pendingGroupMembers.length < MIN_GROUP_SIZE}
-                className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+                onClick={handleAddFormSubmit}
+                disabled={!newFirstName.trim() || adding}
+                className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
               >
-                Fertig
+                {adding ? "Lege an…" : "Anlegen"}
               </button>
               <button
                 type="button"
-                onClick={cancelGroupMode}
-                className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
+                onClick={() => setShowAddForm(false)}
+                className="min-h-11 rounded border border-transparent px-4 py-2 text-sm opacity-70"
               >
                 Abbrechen
               </button>
             </div>
-          </div>
-        )}
+          )}
+          {addError && <p className="text-sm text-red-600">{addError}</p>}
 
-        {/* Eine einzige Liste: Antippen ändert nur den Zustand des
-            Eintrags an seiner Position, nichts springt (siehe
-            Grill-Notizen Q2). Im Gruppen-Modus nimmt ein Tap den Spieler
-            statt in die Gruppe auf. */}
-        <div
-          className="grid max-w-2xl min-h-[var(--list-min-height-mobile)] grid-cols-2 content-start gap-2 sm:min-h-[var(--list-min-height-desktop)] sm:grid-cols-3"
-          style={
-            {
-              "--list-min-height-mobile": `${listMinHeight.mobile}px`,
-              "--list-min-height-desktop": `${listMinHeight.desktop}px`,
-            } as CSSProperties
-          }
-        >
-          {filteredPlayers.map((p) => {
-            const isSelected = selected.has(p.id);
-            const isPending = groupModeActive && pendingGroupMembers.includes(p.id);
-            const groupIndex = playerGroupIndex.get(p.id);
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => handleRowTap(p.id)}
-                className={`flex min-h-11 w-full items-center gap-1.5 rounded border px-3 py-2 text-left text-sm ${
-                  isPending
-                    ? "border-amber-500 bg-amber-500/10"
-                    : isSelected
-                      ? "border-blue-500 bg-blue-500/10"
-                      : "border-black/10 dark:border-white/10"
-                }`}
-              >
-                <span className="w-4 shrink-0">{isSelected ? "✓" : ""}</span>
-                <span className="truncate flex-1">{p.name}</span>
-                {groupIndex !== undefined && (
-                  <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(groupIndex)}`}
-                  >
-                    {groupLabel(groupIndex)}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {!groupModeActive && (
-          <button
-            type="button"
-            onClick={startGroupMode}
-            className="flex min-h-11 w-fit items-center rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20"
+          {/* Eine einzige Liste: Antippen ändert nur den Zustand des
+              Eintrags an seiner Position, nichts springt (siehe
+              Grill-Notizen Q2). Im Gruppen-Modus nimmt ein Tap den Spieler
+              statt in die Gruppe auf. */}
+          <div
+            className="grid min-h-[var(--list-min-height-mobile)] grid-cols-2 content-start gap-2 sm:min-h-[var(--list-min-height-desktop)] sm:grid-cols-3 xl:min-h-[var(--list-min-height-wide)] xl:grid-cols-4"
+            style={
+              {
+                "--list-min-height-mobile": `${listMinHeight.mobile}px`,
+                "--list-min-height-desktop": `${listMinHeight.desktop}px`,
+                "--list-min-height-wide": `${listMinHeight.wide}px`,
+              } as CSSProperties
+            }
           >
-            + Gruppe bilden
-          </button>
-        )}
+            {filteredPlayers.map((p) => {
+              const isSelected = selected.has(p.id);
+              const isPending = groupModeActive && pendingGroupMembers.includes(p.id);
+              const groupIndex = playerGroupIndex.get(p.id);
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleRowTap(p.id)}
+                  className={`flex min-h-11 w-full items-center gap-1.5 rounded border px-3 py-2 text-left text-sm ${
+                    isPending
+                      ? "border-amber-500 bg-amber-500/10"
+                      : isSelected
+                        ? "border-blue-500 bg-blue-500/10"
+                        : "border-black/10 dark:border-white/10"
+                  }`}
+                >
+                  <span className="w-4 shrink-0">{isSelected ? "✓" : ""}</span>
+                  <span className="truncate flex-1">{p.name}</span>
+                  {groupIndex !== undefined && (
+                    <span
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(groupIndex)}`}
+                    >
+                      {groupLabel(groupIndex)}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </div>
 
-        {groups.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium opacity-70">Gruppen</span>
+      {/* Einstellungen und Aktionen. Ab lg eine eigene Spalte über die
+          volle Höhe; darunter stapelt es unter die Auswahl — dort steht
+          "Fertig" beim Gruppieren direkt unter der Liste. */}
+      <aside className="flex flex-col gap-4 lg:col-span-1">
+          <h2 className="text-sm font-medium">Einstellungen</h2>
+
+          <div className="flex flex-col gap-2">
+            {!groupModeActive && (
               <button
                 type="button"
-                onClick={dissolveAllGroups}
-                className="flex min-h-9 items-center text-xs underline opacity-70"
+                onClick={startGroupMode}
+                className="flex min-h-11 w-full items-center rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20"
               >
-                alle auflösen
+                + Gruppe bilden
               </button>
-            </div>
-            <ul className="flex flex-col gap-1.5">
-              {groups.map((g, i) => (
-                <li
-                  key={g.id}
-                  className="flex min-h-11 items-center gap-2 rounded border border-black/10 px-3 py-2 dark:border-white/10"
-                >
-                  <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(i)}`}
-                  >
-                    {groupLabel(i)}
-                  </span>
-                  <span className="truncate flex-1 text-sm">
-                    {g.playerIds.map((id) => nameById.get(id) ?? "?").join(", ")}
-                  </span>
+            )}
+
+            {groupModeActive && (
+              <div className="flex flex-col gap-2 rounded border border-amber-500 bg-amber-500/10 p-3">
+                <p className="text-sm">
+                  Gruppe bilden: tippe die Spieler an, die zusammen sitzen sollen
+                  ({pendingGroupMembers.length}/{MAX_GROUP_SIZE}).
+                </p>
+                {groupModeHint && (
+                  <p className="text-xs text-red-600">{groupModeHint}</p>
+                )}
+                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => dissolveGroup(g.id)}
-                    aria-label={`Gruppe ${groupLabel(i)} auflösen`}
-                    className="flex min-h-11 w-11 shrink-0 items-center justify-center text-lg opacity-70"
+                    onClick={finishGroupMode}
+                    disabled={pendingGroupMembers.length < MIN_GROUP_SIZE}
+                    className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
                   >
-                    ×
+                    Fertig
                   </button>
-                </li>
-              ))}
-            </ul>
+                  <button
+                    type="button"
+                    onClick={cancelGroupMode}
+                    className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {groups.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium opacity-70">Gruppen</span>
+                  <button
+                    type="button"
+                    onClick={dissolveAllGroups}
+                    className="flex min-h-9 items-center text-xs underline opacity-70"
+                  >
+                    alle auflösen
+                  </button>
+                </div>
+                <ul className="flex flex-col gap-1.5">
+                  {groups.map((g, i) => (
+                    <li
+                      key={g.id}
+                      className="flex min-h-11 items-center gap-2 rounded border border-black/10 px-3 py-2 dark:border-white/10"
+                    >
+                      <span
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(i)}`}
+                      >
+                        {groupLabel(i)}
+                      </span>
+                      <span className="truncate flex-1 text-sm">
+                        {g.playerIds.map((id) => nameById.get(id) ?? "?").join(", ")}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => dissolveGroup(g.id)}
+                        aria-label={`Gruppe ${groupLabel(i)} auflösen`}
+                        className="flex min-h-11 w-11 shrink-0 items-center justify-center text-lg opacity-70"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {groupConflict && (
+              <p className="text-sm text-red-600">{groupConflict.message}</p>
+            )}
           </div>
-        )}
 
-        {groupConflict && (
-          <p className="text-sm text-red-600">{groupConflict.message}</p>
-        )}
+          <fieldset className="flex flex-col gap-1 text-sm">
+            <legend className="mb-1 text-xs font-medium opacity-70">
+              Zuteilungsart
+            </legend>
+            <label className="flex min-h-9 items-center gap-1.5">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === "random"}
+                onChange={() => setMode("random")}
+                className="h-4 w-4"
+              />
+              Zufällig
+            </label>
+            <label className="flex min-h-9 items-center gap-1.5">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === "skill"}
+                onChange={() => setMode("skill")}
+                className="h-4 w-4"
+              />
+              Ausgewogen
+            </label>
+          </fieldset>
 
-        <fieldset className="mt-1 flex flex-wrap items-center gap-4 text-sm">
-          <legend className="mb-1 text-xs font-medium opacity-70">
-            Zuteilungsart
-          </legend>
-          <label className="flex min-h-9 items-center gap-1.5">
-            <input
-              type="radio"
-              name="mode"
-              checked={mode === "random"}
-              onChange={() => setMode("random")}
-              className="h-4 w-4"
-            />
-            Zufällig
-          </label>
-          <label className="flex min-h-9 items-center gap-1.5">
-            <input
-              type="radio"
-              name="mode"
-              checked={mode === "skill"}
-              onChange={() => setMode("skill")}
-              className="h-4 w-4"
-            />
-            Nach Elo balanciert
-          </label>
-        </fieldset>
-
-        <button
-          type="button"
-          disabled={selectedCount < 3 || loading || !!groupConflict}
-          onClick={computePairing}
-          className="mt-2 min-h-11 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
-        >
-          {loading ? "Berechne…" : "Tische berechnen"}
-        </button>
-        {selectedCount > 0 && selectedCount < 3 && (
-          <p className="text-xs opacity-70">Mindestens 3 Spieler nötig.</p>
-        )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
-      </section>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={selectedCount < 3 || loading || !!groupConflict}
+              onClick={computePairing}
+              className="min-h-11 w-full rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+            >
+              {loading ? "Berechne…" : "Tische berechnen"}
+            </button>
+            {tables && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="min-h-11 w-full rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
+              >
+                Zurücksetzen
+              </button>
+            )}
+            {selectedCount > 0 && selectedCount < 3 && (
+              <p className="text-xs opacity-70">Mindestens 3 Spieler nötig.</p>
+            )}
+            {error && <p className="text-sm text-red-600">{error}</p>}
+          </div>
+        </aside>
     </div>
   );
 }
