@@ -553,6 +553,9 @@ export default function CasualClient({
     );
   }, [reshuffleSelection]);
 
+  /** Wie viele Gruppen sitzen vollständig auf den gewählten Tischen? */
+  const betroffeneGruppen = reshuffleSelection?.applicableGroups.length ?? 0;
+
   return (
     <div className="grid gap-8 lg:grid-cols-4">
       {/* Linke Spalte (3 von 4): erst die Zuteilung, darunter die Auswahl.
@@ -642,22 +645,38 @@ export default function CasualClient({
               )}
               {selectedForReshuffle.size >= 2 && (
                 <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    disabled={reshuffling || !!reshuffleGroupConflict}
-                    onClick={() => reshuffleSelected(true)}
-                    className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
-                  >
-                    {reshuffling ? "Mische…" : "Gruppen behalten"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={reshuffling}
-                    onClick={() => reshuffleSelected(false)}
-                    className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
-                  >
-                    {reshuffling ? "Mische…" : "Gruppen auflösen"}
-                  </button>
+                  {/* Die Unterscheidung "behalten oder auflösen" ergibt nur
+                      Sinn, wenn auf den gewählten Tischen überhaupt eine
+                      Gruppe sitzt — sonst täten beide Knöpfe dasselbe. */}
+                  {betroffeneGruppen > 0 ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={reshuffling || !!reshuffleGroupConflict}
+                        onClick={() => reshuffleSelected(true)}
+                        className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+                      >
+                        {reshuffling ? "Mische…" : "Gruppen behalten"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={reshuffling}
+                        onClick={() => reshuffleSelected(false)}
+                        className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+                      >
+                        {reshuffling ? "Mische…" : "Gruppen auflösen"}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={reshuffling}
+                      onClick={() => reshuffleSelected(true)}
+                      className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+                    >
+                      {reshuffling ? "Mische…" : "Neu mischen"}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setSelectedForReshuffle(new Set())}
@@ -811,7 +830,11 @@ export default function CasualClient({
       {/* Einstellungen und Aktionen. Ab lg eine eigene Spalte über die
           volle Höhe; darunter stapelt es unter die Auswahl — dort steht
           "Fertig" beim Gruppieren direkt unter der Liste. */}
-      <aside className="flex flex-col gap-4 lg:col-span-1">
+      {/* Ab lg bleibt die Spalte beim Scrollen stehen und zentriert ihren
+          Inhalt vertikal. Höhe und Abstand rechnen das p-6 des
+          Admin-Layouts heraus, damit sie exakt in den sichtbaren Bereich
+          passt statt oben darüber hinauszulaufen. */}
+      <aside className="flex flex-col gap-4 lg:col-span-1 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start lg:justify-center">
           <h2 className="text-sm font-medium">Einstellungen</h2>
 
           <div className="flex flex-col gap-2">
