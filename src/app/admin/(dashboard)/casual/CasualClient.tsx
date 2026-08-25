@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { SKILL_LEVELS } from "@/lib/players";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import {
@@ -106,6 +106,15 @@ export default function CasualClient({
   const [swapPick, setSwapPick] = useState<{ table: number; player: string } | null>(
     null,
   );
+
+  // Selektives Neumischen (siehe BACKLOG.md "Casual: einzelne Tische
+  // selektiv neu mischen"): Tap auf einen Tisch-Header markiert ihn zum
+  // Neumischen, mindestens 2 nötig. Bewusst flüchtiger State — überlebt
+  // keinen Reload und setzt sich nach dem Mischen selbst zurück.
+  const [selectedForReshuffle, setSelectedForReshuffle] = useState<Set<number>>(
+    new Set(),
+  );
+  const [reshuffling, setReshuffling] = useState(false);
 
   // Gruppen-Modus: "+ Gruppe bilden" schaltet die Liste kurz um, ein Tap
   // auf einen Spieler nimmt ihn in die entstehende Gruppe auf statt ihn
@@ -320,6 +329,7 @@ export default function CasualClient({
     setLoading(true);
     setTables(null);
     setSwapPick(null);
+    setSelectedForReshuffle(new Set());
     try {
       const res = await fetch("/api/admin/casual/pair", {
         method: "POST",
@@ -378,10 +388,68 @@ export default function CasualClient({
     );
   }
 
+  /** Tap auf einen Tisch-Header (de-)markiert ihn für das Neumischen. */
+  function toggleTableSelection(tableNumber: number) {
+    // Ein offener Einzeltausch und die Mehrfachauswahl fürs Neumischen
+    // bleiben zwei getrennte Interaktionen — sonst könnten zwei
+    // unabhängige Klick-Ketten sich vermischen.
+    setSwapPick(null);
+    setSelectedForReshuffle((prev) => {
+      const next = new Set(prev);
+      if (next.has(tableNumber)) next.delete(tableNumber);
+      else next.add(tableNumber);
+      return next;
+    });
+  }
+
+  /**
+   * Mischt die Belegung der ausgewählten Tische untereinander neu, ohne
+   * die übrigen Tische oder Tischgrößen anzufassen. `keepGroups` wird bei
+   * jedem Durchgang bewusst neu entschieden (kein fester Modus).
+   */
+  async function reshuffleSelected(keepGroups: boolean) {
+    if (!tables || selectedForReshuffle.size < 2) return;
+    setError(null);
+    setReshuffling(true);
+    try {
+      const res = await fetch("/api/admin/casual/reshuffle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tables: tables.map((t) => ({
+            tableNumber: t.tableNumber,
+            playerIds: t.players.map((p) => p.id),
+          })),
+          tableNumbers: [...selectedForReshuffle],
+          mode,
+          keepGroups,
+          groups: groups.map((g) => ({ id: g.id, playerIds: g.playerIds })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Unbekannter Fehler");
+        return;
+      }
+      const updatedByNumber = new Map<number, TableResult>(
+        (data.tables as TableResult[]).map((t) => [t.tableNumber, t]),
+      );
+      setTables((prev) =>
+        prev ? prev.map((t) => updatedByNumber.get(t.tableNumber) ?? t) : prev,
+      );
+      setSelectedForReshuffle(new Set());
+    } catch {
+      setError("Netzwerkfehler beim Neumischen");
+    } finally {
+      setReshuffling(false);
+    }
+  }
+
   /** Verwirft die Zuteilung. Spielerauswahl und Gruppen bleiben bewusst stehen. */
   function handleReset() {
     setTables(null);
     setSwapPick(null);
+    setSelectedForReshuffle(new Set());
     setError(null);
     void resetCasualPairing();
   }
@@ -401,16 +469,23 @@ export default function CasualClient({
   }, [allPlayersSorted, search]);
 
   // Mindesthöhe für die Liste, reserviert für den vollen (ungefilterten)
-  // Bestand in der mobilen 2-Spalten-Breite (Worst Case) — sonst schrumpft
-  // die Seite bei jedem Tastendruck im Suchfeld mit der Anzahl Treffer und
-  // die Ansicht springt auf dem Handy hin und her, weil der sichtbare
+  // Bestand in der jeweils aktuellen Spaltenzahl (Worst Case) — sonst
+  // schrumpft die Seite bei jedem Tastendruck im Suchfeld mit der Anzahl
+  // Treffer und die Ansicht springt hin und her, weil der sichtbare
   // Ausschnitt bei jedem Tastendruck neu berechnet wird. ROW_HEIGHT/GAP
   // entsprechen den Tailwind-Klassen `min-h-11`/`gap-2` der Kacheln unten.
+  // Mobil (2 Spalten) und Desktop (`sm:grid-cols-3`, 3 Spalten) reservieren
+  // unterschiedlich viele Zeilen — beide Werte werden berechnet und die
+  // Umschaltung passiert per CSS-Custom-Property an derselben Breakpoint-
+  // Grenze wie `sm:grid-cols-3`, ohne ResizeObserver/matchMedia in JS.
   const listMinHeight = useMemo(() => {
     const ROW_HEIGHT = 44;
     const ROW_GAP = 8;
-    const rows = Math.ceil(allPlayersSorted.length / 2);
-    return rows > 0 ? rows * ROW_HEIGHT + (rows - 1) * ROW_GAP : 0;
+    const heightForColumns = (columns: number) => {
+      const rows = Math.ceil(allPlayersSorted.length / columns);
+      return rows > 0 ? rows * ROW_HEIGHT + (rows - 1) * ROW_GAP : 0;
+    };
+    return { mobile: heightForColumns(2), desktop: heightForColumns(3) };
   }, [allPlayersSorted.length]);
 
   const nameById = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players]);
@@ -444,6 +519,36 @@ export default function CasualClient({
     );
   }, [tableSizes, groups]);
 
+  // Gruppen, deren Mitglieder vollständig auf den aktuell für das
+  // selektive Neumischen ausgewählten Tischen sitzen (siehe Grill-Notizen:
+  // eine Gruppe kann per Definition nie über zwei Tische verteilt sein —
+  // sie ist entweder komplett drin oder komplett irrelevant hier).
+  const reshuffleSelection = useMemo(() => {
+    if (!tables || selectedForReshuffle.size < 2) return null;
+    const selectedTables = tables.filter((t) =>
+      selectedForReshuffle.has(t.tableNumber),
+    );
+    if (selectedTables.length !== selectedForReshuffle.size) return null;
+    const sizes = selectedTables.map((t) => t.players.length);
+    const playerIdSet = new Set(
+      selectedTables.flatMap((t) => t.players.map((p) => p.id)),
+    );
+    const applicableGroups = groups
+      .map((g, i) => ({ ...g, label: groupLabel(i) }))
+      .filter((g) => g.playerIds.every((id) => playerIdSet.has(id)));
+    return { sizes, applicableGroups };
+  }, [tables, selectedForReshuffle, groups]);
+
+  const reshuffleGroupConflict = useMemo(() => {
+    if (!reshuffleSelection || reshuffleSelection.applicableGroups.length === 0) {
+      return null;
+    }
+    return describeGroupConflict(
+      reshuffleSelection.applicableGroups,
+      reshuffleSelection.sizes,
+    );
+  }, [reshuffleSelection]);
+
   return (
     <div className="flex flex-col gap-8">
       {/* Die fertige Zuteilung steht bewusst zuoberst — beim Spielabend
@@ -465,48 +570,113 @@ export default function CasualClient({
           <p className="text-xs opacity-70">
             Diese Zuteilung ist auf der öffentlichen Pairing-Seite sichtbar.
             &quot;Zurücksetzen&quot; nimmt sie dort wieder weg; deine
-            Spielerauswahl und Gruppen bleiben erhalten.
+            Spielerauswahl und Gruppen bleiben erhalten. Tippe auf einen
+            Tisch-Titel, um ihn für ein selektives Neumischen auszuwählen
+            (mindestens 2 Tische).
           </p>
           <div className="flex flex-wrap gap-4">
-            {tables.map((table) => (
-              <div
-                key={table.tableNumber}
-                className="w-full rounded border border-black/20 p-3 dark:border-white/20 sm:w-48"
-              >
-                <div className="mb-2 text-sm font-semibold">
-                  Tisch {table.tableNumber} ({table.size} Spieler)
+            {tables.map((table) => {
+              const isSelectedForReshuffle = selectedForReshuffle.has(
+                table.tableNumber,
+              );
+              return (
+                <div
+                  key={table.tableNumber}
+                  className={`w-full rounded border p-3 sm:w-48 ${
+                    isSelectedForReshuffle
+                      ? "border-blue-500 bg-blue-500/5"
+                      : "border-black/20 dark:border-white/20"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleTableSelection(table.tableNumber)}
+                    className="mb-2 flex min-h-11 w-full items-center justify-between gap-2 rounded text-left text-sm font-semibold"
+                  >
+                    <span>
+                      Tisch {table.tableNumber} ({table.size} Spieler)
+                    </span>
+                    {isSelectedForReshuffle && (
+                      <span className="shrink-0 text-xs font-normal text-blue-600 dark:text-blue-400">
+                        ausgewählt
+                      </span>
+                    )}
+                  </button>
+                  <ul className="flex flex-col gap-1.5">
+                    {table.players.map((p) => {
+                      const isPicked = swapPick?.player === p.id;
+                      const groupIndex = playerGroupIndex.get(p.id);
+                      return (
+                        <li key={p.id}>
+                          <button
+                            type="button"
+                            onClick={() => handlePlayerClick(table.tableNumber, p.id)}
+                            className={`flex min-h-11 w-full items-center gap-2 rounded border px-3 py-2 text-left text-sm ${
+                              isPicked
+                                ? "border-blue-500 bg-blue-500/10"
+                                : "border-black/10 dark:border-white/10"
+                            }`}
+                          >
+                            <span className="truncate flex-1">{p.name}</span>
+                            {groupIndex !== undefined && (
+                              <span
+                                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(groupIndex)}`}
+                              >
+                                {groupLabel(groupIndex)}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
-                <ul className="flex flex-col gap-1.5">
-                  {table.players.map((p) => {
-                    const isPicked = swapPick?.player === p.id;
-                    const groupIndex = playerGroupIndex.get(p.id);
-                    return (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          onClick={() => handlePlayerClick(table.tableNumber, p.id)}
-                          className={`flex min-h-11 w-full items-center gap-2 rounded border px-3 py-2 text-left text-sm ${
-                            isPicked
-                              ? "border-blue-500 bg-blue-500/10"
-                              : "border-black/10 dark:border-white/10"
-                          }`}
-                        >
-                          <span className="truncate flex-1">{p.name}</span>
-                          {groupIndex !== undefined && (
-                            <span
-                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(groupIndex)}`}
-                            >
-                              {groupLabel(groupIndex)}
-                            </span>
-                          )}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
+          {selectedForReshuffle.size > 0 && (
+            <div className="flex flex-col gap-2">
+              {selectedForReshuffle.size === 1 && (
+                <p className="text-xs opacity-70">
+                  Noch einen zweiten Tisch auswählen, um sie untereinander
+                  neu zu mischen.
+                </p>
+              )}
+              {selectedForReshuffle.size >= 2 && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={reshuffling || !!reshuffleGroupConflict}
+                    onClick={() => reshuffleSelected(true)}
+                    className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+                  >
+                    {reshuffling ? "Mische…" : "Gruppen behalten"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reshuffling}
+                    onClick={() => reshuffleSelected(false)}
+                    className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+                  >
+                    {reshuffling ? "Mische…" : "Gruppen auflösen"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedForReshuffle(new Set())}
+                    className="min-h-11 rounded border border-transparent px-3 py-2 text-sm opacity-70"
+                  >
+                    Auswahl aufheben
+                  </button>
+                </div>
+              )}
+              {reshuffleGroupConflict && (
+                <p className="text-xs text-red-600">
+                  {reshuffleGroupConflict.message}
+                </p>
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -628,8 +798,13 @@ export default function CasualClient({
             Grill-Notizen Q2). Im Gruppen-Modus nimmt ein Tap den Spieler
             statt in die Gruppe auf. */}
         <div
-          className="grid max-w-2xl grid-cols-2 content-start gap-2 sm:grid-cols-3"
-          style={{ minHeight: listMinHeight }}
+          className="grid max-w-2xl min-h-[var(--list-min-height-mobile)] grid-cols-2 content-start gap-2 sm:min-h-[var(--list-min-height-desktop)] sm:grid-cols-3"
+          style={
+            {
+              "--list-min-height-mobile": `${listMinHeight.mobile}px`,
+              "--list-min-height-desktop": `${listMinHeight.desktop}px`,
+            } as CSSProperties
+          }
         >
           {filteredPlayers.map((p) => {
             const isSelected = selected.has(p.id);
