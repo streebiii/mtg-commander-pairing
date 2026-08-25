@@ -11,7 +11,7 @@ import { formatPlayerName } from "@/lib/players";
 // Es läuft immer nur eines von beidem: entweder eine Casual-Zuteilung oder
 // ein Liga-Abend. Existiert eine Casual-Zuteilung, hat sie Vorrang; sie wird
 // über "Zurücksetzen" im Casual-Tab wieder entfernt, und das Starten eines
-// Liga-Abends verwirft sie ebenfalls. Elo-Werte tauchen hier nie auf
+// Liga-Abends verwirft sie ebenfalls. Spieler-Stufen tauchen hier nie auf
 // (siehe SPEC.md Abschnitt 6.1).
 export const dynamic = "force-dynamic";
 

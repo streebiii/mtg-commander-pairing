@@ -121,7 +121,7 @@ export function describeGroupConflict(
   };
 }
 
-/** Mittelwert der Skill-Level einer Gruppe, für den elo-balancierten Modus. */
+/** Mittelwert der Skill-Level einer Gruppe, für die ausgewogene Zuteilung. */
 export function averageValue(values: readonly number[]): number {
   if (values.length === 0) return 0;
   return values.reduce((a, b) => a + b, 0) / values.length;

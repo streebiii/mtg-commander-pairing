@@ -6,7 +6,7 @@ import PlayerRow from "./PlayerRow";
 // Admin-Seiten lesen immer den aktuellen DB-Stand, kein statisches Caching.
 export const dynamic = "force-dynamic";
 
-// Zentrale Vereins-Spielerverwaltung: Name, Elo und Liga-Teilnahme. Die
+// Zentrale Vereins-Spielerverwaltung: Name, Stufe und Liga-Teilnahme. Die
 // Liga-Punkte werden bewusst nur im Liga-Tab gepflegt (siehe SPEC.md
 // Abschnitt 6). Archivierte Spieler erscheinen hier nicht mehr.
 export default async function PlayersPage() {
@@ -49,7 +49,7 @@ export default async function PlayersPage() {
             />
           </label>
           <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
-            Elo (0-3)
+            Stufe (0-3)
             <select
               name="skillLevel"
               defaultValue={0}
@@ -74,10 +74,9 @@ export default async function PlayersPage() {
           </button>
         </form>
         <p className="text-xs opacity-70">
-          Die Elo-Einstufung ist ein verdecktes Rating und nur hier im
-          Organisator-Bereich sichtbar — sie wird ausschliesslich für die
-          elo-balancierte Zuteilung im Casual-Modus verwendet (siehe SPEC.md
-          Abschnitt 4.2). Die Liga-Punkte pflegst du im Liga-Tab.
+          Die Stufe ist nur hier sichtbar und dient allein der ausgewogenen
+          Zuteilung im Casual-Modus. Neu angelegte Spieler nehmen noch nicht
+          an der Liga teil. Die Liga-Punkte pflegst du im Liga-Tab.
         </p>
       </section>
 
@@ -97,7 +96,7 @@ export default async function PlayersPage() {
               <tr className="border-b border-black/10 text-left dark:border-white/10">
                 <th className="py-2 pr-3">Vorname</th>
                 <th className="py-2 pr-3">Nachname</th>
-                <th className="py-2 pr-3">Elo</th>
+                <th className="py-2 pr-3">Stufe</th>
                 <th className="py-2 pr-3">Liga</th>
                 <th className="py-2 pr-3"></th>
                 <th className="py-2"></th>

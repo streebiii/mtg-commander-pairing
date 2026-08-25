@@ -174,7 +174,7 @@ am selben Tisch spielen.
   Gruppe A mit 4 Spielern passt nicht"), und "Tische berechnen" ist
   gesperrt. Kein Fehlschlag erst nach dem Antippen; zusätzlich wird
   serverseitig validiert.
-- **Im skill-balancierten Modus** (Abschnitt 4.2 unten) zählt eine Gruppe
+- **Bei der ausgewogenen Zuteilung** (Abschnitt 4.2 unten) zählt eine Gruppe
   als eine Einheit mit dem **Durchschnitts-Skill** ihrer Mitglieder und
   wird damit als Ganzes in die passende Stärke-Region einsortiert.
 - **Persistenz**: Anwesenheits-Auswahl und Gruppen leben zusammen im
@@ -186,21 +186,21 @@ am selben Tisch spielen.
 - In der fertigen Tischzuteilung erscheinen die Gruppen-Kürzel auch an den
   Tischkacheln. Manuelles Tauschen (siehe oben) bleibt uneingeschränkt
   möglich, auch wenn es eine Gruppe trennt — der Organisator ist die letzte
-  Instanz. Elo-Werte bleiben dabei wie überall unsichtbar.
+  Instanz. Die Stufen bleiben dabei wie überall unsichtbar.
 
-### 4.2 Zuteilungsart: Zufällig vs. skill-balanciert
+### 4.2 Zuteilungsart: Zufällig vs. Ausgewogen
 
 Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
 
 - **Zufällig** (Standard): wie oben beschrieben, keine Berücksichtigung von
   Skill-Level.
-- **Nach Skill balanciert**: nutzt dieselbe Rang-Gruppierungs-Logik wie
+- **Ausgewogen**: nutzt dieselbe Rang-Gruppierungs-Logik wie
   die Liga (Abschnitt 5.1), aber mit der Skill-Einstufung der Spieler
   (Abschnitt 6) statt Liga-Punkten als Sortier-Kriterium, inkl. Zufalls-
   Rauschen (±1 Skill-Stufe — kleiner als bei der Liga, da die Skala nur
   0-3 umfasst), damit nicht stur die exakt gleich starken Spieler
   zusammen landen.
-  - Für noch nicht eingestufte Spieler (Elo = 0) wird pro Berechnung eine
+  - Für noch nicht eingestufte Spieler (Stufe = 0) wird pro Berechnung eine
     zufällige Stufe aus 1-3 gewürfelt. Sie können damit an jedem Tisch
     landen, statt systematisch immer in derselben Region zu erscheinen —
     und bei jeder Neuberechnung fällt es anders aus.
@@ -307,22 +307,22 @@ Verwaltung auf zwei Tabs aufgeteilt:
 
 - **Spieler-Tab** (zentrales Vereins-Roster):
   - Persistente Spielerdatenbank: Spieler anlegen (Vorname, optional
-    Nachname, Elo, optional direkt als Liga-Teilnehmer).
+    Nachname, Stufe, optional direkt als Liga-Teilnehmer).
   - Enthält je Spieler eine optionale **Skill-Einstufung** auf der Skala
-    0-3, im Organisator-UI als "Elo" bezeichnet (verdecktes Rating, siehe
+    0-3, im Organisator-UI schlicht als "Stufe" bezeichnet (siehe
     `src/lib/players.ts`). Die Stufen werden bewusst **ohne Beschriftung**
     angeboten — die Dropdowns zeigen nur die nackte Zahl. 0 bedeutet "noch
     nicht eingestuft" und wird bei der Zuteilung zufällig behandelt
     (Abschnitt 4.2).
 
     Komplett unabhängig vom Liga-Punktestand, wird ausschliesslich für die
-    elo-balancierte Zuteilung im Casual-Modus verwendet (Abschnitt 4.2).
+    ausgewogene Zuteilung im Casual-Modus verwendet (Abschnitt 4.2).
   - Zeigt und ändert die **Liga-Teilnahme** (`leagueActive`) pro Spieler.
   - Zeigt **keine** Liga-Punkte — die werden im Liga-Tab gepflegt.
 
-### 6.1 Sichtbarkeit der Elo-Einstufung
+### 6.1 Sichtbarkeit der Stufen-Einstufung
 
-Die Elo-Werte sollen die Spieler nicht mitbekommen. Sie erscheinen deshalb
+Die Stufen sollen die Spieler nicht mitbekommen. Sie erscheinen deshalb
 nur dort, wo sie aktiv gepflegt werden:
 
 - **sichtbar**: in den beiden Anlege-Formularen (Spieler-Tab und die
@@ -330,7 +330,7 @@ nur dort, wo sie aktiv gepflegt werden:
 - **nicht sichtbar**: in der Casual-Spielersuche, bei den ausgewählten
   Spielern und in den fertigen Tischzuteilungen — also überall dort, wo
   jemand beim Spielabend mitlesen könnte. Die öffentliche Lese-Ansicht
-  (Abschnitt 8) zeigt ohnehin nie Elo-Werte.
+  (Abschnitt 8) zeigt ohnehin nie Stufen.
 
 ### 6.2 Spieler entfernen
 

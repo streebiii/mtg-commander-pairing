@@ -14,7 +14,7 @@ interface Player {
 
 /**
  * Eine Zeile in der Liga-Verwaltung mit Auto-Save (Punkte + Teilnahme-Flag).
- * Name und Elo werden hier bewusst nicht angezeigt/editiert — das lebt im
+ * Name und Stufe werden hier bewusst nicht angezeigt/editiert — das lebt im
  * Spieler-Tab (siehe SPEC.md Abschnitt 6).
  */
 export default function LeaguePlayerRow({ player }: { player: Player }) {
