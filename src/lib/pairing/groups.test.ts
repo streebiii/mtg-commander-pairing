@@ -63,6 +63,54 @@ describe("packGroupsIntoTables", () => {
     expect(result).toBeNull();
   });
 
+  it("setzt eine 4er-Gruppe an den 4er-Tisch, nicht an den 5er", () => {
+    // N=9 mit erlaubtem 5er-Tisch -> [5, 4]. Die Gruppe soll unter sich
+    // bleiben, statt sich den 5er mit einem Fremden zu teilen.
+    const sizes = computeTableSizes(9, { allowFiveTable: true }); // [5, 4]
+    const result = packGroupsIntoTables([{ id: "g1", size: 4 }], sizes);
+    expect(result).not.toBeNull();
+    expect(result!.tableGroups).toEqual([[], ["g1"]]);
+  });
+
+  it("wählt bei mehreren passenden Tischen den knappsten", () => {
+    // Eine 3er-Gruppe passt auf beide Tische; am 4er sitzt nur ein
+    // Fremder dabei, am 5er wären es zwei.
+    const result = packGroupsIntoTables([{ id: "g1", size: 3 }], [5, 4]);
+    expect(result!.tableGroups).toEqual([[], ["g1"]]);
+  });
+
+  it("lässt den 5er frei, wenn zwei 4er-Gruppen zwei 4er-Tische haben", () => {
+    // N=13 mit erlaubtem 5er-Tisch -> [5, 4, 4].
+    const sizes = computeTableSizes(13, { allowFiveTable: true });
+    const result = packGroupsIntoTables(
+      [
+        { id: "a", size: 4 },
+        { id: "b", size: 4 },
+      ],
+      sizes,
+    );
+    expect(result).not.toBeNull();
+    expect(result!.tableGroups[0]).toEqual([]);
+    expect(result!.tableGroups[1].concat(result!.tableGroups[2]).sort()).toEqual([
+      "a",
+      "b",
+    ]);
+  });
+
+  it("weicht auf den 5er aus, wenn der 4er schon belegt ist", () => {
+    // Zwei 4er-Gruppen, aber nur ein 4er-Tisch: eine muss an den 5er.
+    const result = packGroupsIntoTables(
+      [
+        { id: "a", size: 4 },
+        { id: "b", size: 4 },
+      ],
+      [5, 4],
+    );
+    expect(result).not.toBeNull();
+    expect(result!.tableGroups[0].length).toBe(1);
+    expect(result!.tableGroups[1].length).toBe(1);
+  });
+
   it("findet eine Lösung für gemischte Gruppengrössen, wenn eine existiert", () => {
     // N=11 -> [4,4,3]. Gruppe zu 3 + Gruppe zu 2 + Rest Einzelspieler.
     const result = packGroupsIntoTables(
