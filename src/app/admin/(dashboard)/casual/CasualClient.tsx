@@ -91,8 +91,15 @@ function splitTypedName(text: string): { firstName: string; lastName: string | n
 
 export default function CasualClient({
   players: initialPlayers,
+  initialTables,
 }: {
   players: PlayerOption[];
+  /**
+   * Die zuletzt gespeicherte Zuteilung, sofern sie jung genug ist (siehe
+   * `getRecentCasualPairing()`). Dadurch überlebt sie einen Reload der
+   * Admin-Seite, ohne dass hier etwas zusätzlich persistiert werden muss.
+   */
+  initialTables: TableResult[] | null;
 }) {
   const [players, setPlayers] = useState<PlayerOption[]>(initialPlayers);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -100,7 +107,7 @@ export default function CasualClient({
   const [hydrated, setHydrated] = useState(false);
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState<Mode>("random");
-  const [tables, setTables] = useState<TableResult[] | null>(null);
+  const [tables, setTables] = useState<TableResult[] | null>(initialTables);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [swapPick, setSwapPick] = useState<{ table: number; player: string } | null>(
@@ -834,7 +841,11 @@ export default function CasualClient({
           Inhalt vertikal. Höhe und Abstand rechnen das p-6 des
           Admin-Layouts heraus, damit sie exakt in den sichtbaren Bereich
           passt statt oben darüber hinauszulaufen. */}
-      <aside className="flex flex-col gap-4 lg:col-span-1 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start lg:justify-center">
+      {/* Die abgesetzte Fläche (`bg-surface`) zieht die Grenze zur
+          Auswahl links. Bewusst erst ab lg: darunter stapeln die Spalten
+          untereinander, dort gibt es keine zwei Bereiche nebeneinander,
+          die auseinandergehalten werden müssten. */}
+      <aside className="flex flex-col gap-4 lg:col-span-1 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start lg:justify-center lg:rounded-lg lg:bg-surface lg:px-4 lg:py-6">
           <h2 className="text-sm font-medium">Einstellungen</h2>
 
           <div className="flex flex-col gap-2">

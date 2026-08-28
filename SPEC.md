@@ -221,8 +221,15 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
   Abend-Teilnahme und blockiert nie das harte Löschen eines Spielers
   (Abschnitt 6.2). Wird ein Spieler gelöscht, verschwindet sein Platz per
   Cascade mit.
-- Gespeichert wird ausschliesslich, damit die öffentliche Lese-Ansicht die
+- Gespeichert wird in erster Linie, damit die öffentliche Lese-Ansicht die
   Tische zeigen kann — ohne das sähe sie niemand ausser dem Organisator.
+- Die Admin-Seite liest die gespeicherte Zuteilung beim Laden ebenfalls und
+  zeigt sie als Startzustand an. Ein Reload verschluckt sie dadurch nicht
+  mehr. Das gilt nur für Zuteilungen, die **jünger als 24 Stunden** sind —
+  was älter ist, gehört zu einem vergangenen Abend und wird dem
+  Organisator nicht als aktueller Stand untergeschoben. Die Frist betrifft
+  ausschliesslich diese Auto-Anzeige: die Zeilen bleiben stehen und die
+  öffentliche Seite zeigt sie unbegrenzt weiter, bis zurückgesetzt wird.
 - Öffentlich wird immer nur **eines von beidem** gezeigt: existiert eine
   Casual-Zuteilung, hat sie Vorrang; sonst der laufende Liga-Abend. Das
   Starten eines Liga-Abends verwirft eine offene Casual-Zuteilung, damit
