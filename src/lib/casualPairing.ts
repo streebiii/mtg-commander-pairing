@@ -9,8 +9,9 @@ import { formatPlayerName } from "@/lib/players";
  * Casual-Zuteilungen sind flüchtig, zählen nicht als Abend-Teilnahme und
  * blockieren deshalb auch nie das Löschen eines Spielers (Abschnitt 6.2).
  *
- * Gespeichert wird ausschliesslich, damit die öffentliche Lese-Ansicht die
- * Tische zeigen kann.
+ * Gespeichert wird in erster Linie, damit die öffentliche Lese-Ansicht die
+ * Tische zeigen kann; die Admin-Seite liest denselben Stand beim Laden als
+ * Startzustand (siehe `getRecentCasualPairing()`).
  */
 export interface CasualPairingTable {
   tableNumber: number;
@@ -61,4 +62,34 @@ export async function getCasualPairing(): Promise<CasualPairingTable[]> {
     table.players.sort((a, b) => a.name.localeCompare(b.name));
   }
   return tables;
+}
+
+/**
+ * Frist, innerhalb derer die Admin-Seite eine gespeicherte Zuteilung beim
+ * Laden automatisch wieder anzeigt (siehe BACKLOG.md "Casual-Zuteilung
+ * überlebt Reload der Admin-Seite"). Ein Spielabend dauert nie länger als
+ * das; was älter ist, gehört zu einem vergangenen Abend und soll dem
+ * Organisator nicht als aktueller Stand untergeschoben werden.
+ */
+export const CASUAL_PAIRING_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Wie `getCasualPairing()`, liefert aber nur Zuteilungen zurück, die
+ * jünger als `CASUAL_PAIRING_MAX_AGE_MS` sind — sonst eine leere Liste.
+ *
+ * Betrifft ausschliesslich die Auto-Anzeige im Admin-Bereich: die Zeilen
+ * bleiben in der Datenbank stehen und die öffentliche Seite zeigt sie
+ * weiterhin unbegrenzt, bis sie zurückgesetzt werden.
+ */
+export async function getRecentCasualPairing(): Promise<CasualPairingTable[]> {
+  // Alle Zeilen einer Zuteilung teilen denselben Zeitstempel
+  // (`saveCasualPairing()` legt sie in einer Transaktion per `createMany`
+  // an), eine einzelne genügt daher zur Altersbestimmung.
+  const oldest = await prisma.casualSeat.findFirst({
+    orderBy: { createdAt: "asc" },
+    select: { createdAt: true },
+  });
+  if (!oldest) return [];
+  if (Date.now() - oldest.createdAt.getTime() > CASUAL_PAIRING_MAX_AGE_MS) return [];
+  return getCasualPairing();
 }

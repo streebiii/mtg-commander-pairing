@@ -38,48 +38,123 @@ nur den fortlaufenden Gesamtpunktestand zu pflegen.
 **Nächster Schritt, wenn's angegangen wird:** Grill-Session zu
 Datenmodell und UI, bevor irgendwas gebaut wird.
 
-## Casual-Zuteilung überlebt Reload der Admin-Seite
+## Hellmodus komplett entfernen — App ist immer dunkel
 
-**Status:** Fertig gegrillt, bereit zur Umsetzung ohne weitere Rückfragen.
+**Status:** Klar, kein Grill nötig.
 
-**Problem:** `/admin/casual` vergisst die zuletzt berechnete
-Tischzuteilung bei einem Reload — nur Auswahl+Gruppen überleben aktuell
-(via `localStorage`, siehe PR #4), nicht die Tische selbst. Dabei liegt
-die Zuteilung in der DB (`casual_seats`) längst persistent, nur die
-Admin-Seite liest sie beim Laden bisher nicht.
+**Worum es geht:** Die App unterstützt aktuell beide Farbmodi und folgt
+der Systemeinstellung (`prefers-color-scheme` in
+`src/app/globals.css`). Gewünscht ist stattdessen **durchgehend dunkel**,
+unabhängig davon, was das Gerät eingestellt hat. Der Hellmodus fällt
+ersatzlos weg.
 
-**Ursprünglicher Wunsch** ("Cookie für 1 Tag") wurde beim Grillen zu
-folgendem Design verfeinert:
+**Was dazugehört:**
+- `globals.css`: `--background`/`--foreground` fest auf die dunklen Werte
+  (`#0a0a0a` / `#ededed`), den `@media (prefers-color-scheme: dark)`-Block
+  auflösen. Dasselbe gilt für `--surface` (die abgesetzte Fläche der
+  rechten Casual-Spalte): der helle Wert `#f4f4f5` fällt weg, `#161616`
+  bleibt.
+- `<html>` in `src/app/layout.tsx` bekommt `color-scheme: dark`, damit
+  Browser-Bedienelemente (Scrollbalken, Auswahlfelder, Datumsfelder)
+  ebenfalls dunkel rendern statt hell zu bleiben.
+- Die rund **47 `dark:`-Varianten in 12 Dateien** werden dadurch
+  überflüssig: `border-black/20 dark:border-white/20` wird schlicht
+  `border-white/20`. Aufräumen, sonst bleibt toter Ballast stehen, der
+  suggeriert, es gäbe noch einen zweiten Modus.
+- **Ausnahme prüfen:** das Vereinslogo auf der öffentlichen Seite trägt
+  `dark:invert` (`src/app/page.tsx`) — der Bär ist schwarz auf
+  transparentem Grund und braucht die Invertierung, damit er auf dunklem
+  Hintergrund sichtbar ist. Diese eine Stelle wird zu einem festen
+  `invert`, nicht einfach gestrichen.
 
-- **Kein Cookie** — Single-User-App, es gibt keinen Grund für eine
-  zweite Quelle der Wahrheit neben der DB. Stattdessen liest die
-  Server-Komponente `src/app/admin/(dashboard)/casual/page.tsx` beim
-  Laden die aktuelle Zuteilung über `getCasualPairing()`
-  (`src/lib/casualPairing.ts`) und übergibt sie als Startzustand an
-  `CasualClient` (neue Prop, z. B. `initialPairing`).
-- **1-Tag-Frist** läuft ab `createdAt` der `casual_seats`-Zeilen (Feld
-  existiert bereits, alle Zeilen einer Zuteilung teilen denselben
-  Zeitstempel, da `saveCasualPairing()` sie in einer Transaktion per
-  `createMany` anlegt). Ist die Zuteilung älter als 1 Tag, wird sie beim
-  Laden **nicht** automatisch angezeigt (Startzustand bleibt `null`,
-  wie heute) — der Organisator müsste neu auswählen/berechnen.
-- **Nach Ablauf betrifft das ausschliesslich diese Admin-Auto-Anzeige.**
-  Die DB-Zeilen bleiben unangetastet, die öffentliche Seite zeigt die
-  Zuteilung weiterhin unbegrenzt, bis sie manuell zurückgesetzt oder ein
-  Liga-Abend gestartet wird — daran ändert sich nichts.
-- **Neu berechnen** ersetzt die Zuteilung wie gewohnt (bestehende
-  `saveCasualPairing()`-Logik, unverändert).
-- **Keine Schema-Änderung, keine Migration** — `createdAt` existiert
-  bereits.
-- `skillLevel` in `TableResultPlayer` wird in der Tischanzeige aktuell
-  nirgends gerendert (verifiziert) — für den aus der DB
-  wiederhergestellten Zustand reicht ein Platzhalterwert (0), es muss
-  dafür nichts zusätzlich aus der DB geladen werden.
-- Gruppen-Kürzel auf den wiederhergestellten Tischkacheln ergeben sich
-  automatisch aus dem ohnehin unabhängig aus `localStorage` geladenen
-  Gruppen-Zustand — keine zusätzliche Verdrahtung nötig.
+**Zu beachten:** Betrifft auch die öffentliche Pairing-Seite, nicht nur
+den Organisator-Bereich.
 
-**Nächster Schritt, wenn's angegangen wird:** Direkt umsetzen (Branch,
-Anpassung in `page.tsx` + `CasualClient.tsx`, lokal mit einer frischen
-und einer künstlich auf >1 Tag zurückdatierten Zuteilung verifizieren),
-PR wie gewohnt — kein erneutes Grillen nötig.
+**Nächster Schritt:** Direkt umsetzen, danach alle Seiten einmal
+durchklicken — inklusive Formularfeldern und der öffentlichen Seite.
+
+## Liga: Knopf "alle Spieler auswählen"
+
+**Status:** Klar, kein Grill nötig.
+
+**Worum es geht:** Beim Start eines Liga-Abends muss der Organisator
+aktuell jeden anwesenden Spieler einzeln antippen (Checkbox-Liste in
+`src/app/admin/(dashboard)/league/page.tsx`). Bei fast vollständiger
+Anwesenheit ist das viel Klickarbeit. Gewünscht ist ein Knopf, der alle
+auf einmal auswählt.
+
+**Zu beachten bei der Umsetzung:**
+- Die Auswahl steckt in einem klassischen `<form>` mit
+  `<input type="checkbox" name="playerIds">`, gerendert von einer
+  **Server-Komponente**. Ein Umschalten braucht Zustand, also eine kleine
+  Client-Komponente — entweder für den Knopf allein (setzt die Checkboxen
+  im umgebenden Formular) oder für die ganze Liste.
+- Sinnvoll als **Umschalter**: "alle auswählen" bzw. "Auswahl aufheben",
+  je nachdem ob schon alle angehakt sind. Sonst braucht es zwei Knöpfe.
+- Es erscheinen ohnehin nur Liga-teilnehmende Spieler in der Liste
+  (`leagueActive`), "alle" heisst also "alle Teilnehmenden" — nicht das
+  gesamte Vereins-Roster.
+- 44px Klickfläche wie überall.
+
+**Nächster Schritt:** Direkt umsetzen.
+
+## Liga-Verwaltung zeigt nur noch Liga-Teilnehmer
+
+**Status:** Klar, kein Grill nötig.
+
+**Worum es geht:** Die Liga-Verwaltung
+(`src/app/admin/(dashboard)/league/page.tsx`) listet heute **alle**
+Vereinsspieler mit Punktestand und Teilnahme-Checkbox. Künftig sollen
+dort nur noch die tatsächlich Teilnehmenden stehen (`leagueActive`).
+Wer den Haken nicht gesetzt hat, taucht ausschliesslich im Spieler-Tab
+auf.
+
+**Aufgenommen wird weiterhin im Spieler-Tab** — die Checkbox dort
+(`PlayerRow.tsx`) existiert bereits und bleibt der Weg, jemanden zur Liga
+hinzuzufügen. Die Liga-Verwaltung wird damit zur reinen Pflege der
+Teilnehmenden.
+
+**Zu entscheiden bei der Umsetzung:** ob die Teilnahme-Spalte in der
+Liga-Verwaltung ganz verschwindet (dann nur noch Punkte, Entfernen läuft
+über den Spieler-Tab) oder als Weg zum Herausnehmen bestehen bleibt. Ein
+Haken, den man dort abwählt, lässt die Zeile sofort verschwinden — das
+sollte nicht wie ein Fehler wirken.
+
+**Ausserdem anzupassen:** Der Hinweistext in der Liga-Verwaltung ("nur
+teilnehmende Spieler erscheinen in der Auswahlliste für neue
+Liga-Abende") und die Anzahl in der Überschrift beziehen sich heute auf
+alle Spieler.
+
+**Nächster Schritt:** Direkt umsetzen.
+
+## Casual: den Enter-Treffer in der Suche hervorheben
+
+**Status:** Klar, kein Grill nötig.
+
+**Worum es geht:** Enter im Suchfeld wählt den Spieler aus, wenn die
+Suche genau einen Treffer übrig lässt (siehe SPEC.md Abschnitt 4). Man
+sieht der Liste aber nicht an, dass dieser eine Eintrag jetzt "scharf"
+ist — die Kachel sieht aus wie jede andere. Gewünscht ist eine sichtbare
+Hervorhebung des letzten verbliebenen Treffers, damit vor dem Tastendruck
+klar ist, wen es trifft.
+
+**Zu beachten bei der Umsetzung:**
+- Bedingung ist `filteredPlayers.length === 1` **und** ein nicht-leerer
+  Suchtext (`src/app/admin/(dashboard)/casual/CasualClient.tsx`). Ohne die
+  zweite Bedingung leuchtete die Kachel auch bei leerem Suchfeld auf,
+  sobald der Verein nur einen einzigen Spieler hat.
+- Die Kacheln haben bereits drei Zustände: Gruppen-Kandidat (amber),
+  ausgewählt (blau) und neutral. Ein vierter Rahmen in einer vierten Farbe
+  wird unleserlich — besser ein zusätzlicher `ring`/Outline, der sich mit
+  den bestehenden Zuständen überlagern darf, statt sie zu ersetzen.
+- Nicht allein über Farbe: ein kleines `↵` auf der Kachel sagt auch dann,
+  was passieren wird, wenn jemand die Farben nicht unterscheiden kann.
+- **Gegenstück nicht vergessen:** bei *null* Treffern ist der Knopf
+  „+ „{Suchtext}" als neuen Spieler anlegen" das Enter-Ziel. Der sollte
+  dieselbe Hervorhebung bekommen, sonst wirkt die Logik willkürlich.
+- Ein bereits ausgewählter Spieler bleibt Enter-Ziel, obwohl Enter dann
+  bewusst nichts tut (kein Abwählen, siehe SPEC.md Abschnitt 4). Entweder
+  die Hervorhebung in dem Fall weglassen oder sie klar anders aussehen
+  lassen als bei einem noch nicht ausgewählten Spieler.
+
+**Nächster Schritt:** Direkt umsetzen.

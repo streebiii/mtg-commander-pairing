@@ -132,6 +132,18 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
     Vorname/Nachname gesplittet). Beide legen den Spieler sofort an und
     wählen ihn automatisch aus. Punktestand startet dabei immer bei 0
     (Liga-Punkte sind für Casual irrelevant).
+  - **Enter im Suchfeld** bedient den ganzen Ablauf ohne Maus, weil am
+    Spielabend reihum Namen eingetippt werden:
+    - genau ein Treffer → dieser Spieler wird ausgewählt und das Suchfeld
+      geleert, bereit für den nächsten Namen. Bewusst nur auswählen, nie
+      abwählen — sonst nähme ein zweites Enter den eben markierten Spieler
+      versehentlich wieder heraus. Im Gruppen-Modus wandert der Spieler
+      stattdessen in die entstehende Gruppe, wie bei einem Tap.
+    - kein Treffer → das Anlege-Formular öffnet sich vorbefüllt, der
+      Fokus steht im Vornamen-Feld. Ein weiteres Enter dort legt den
+      Spieler an; danach springt der Fokus zurück ins Suchfeld.
+    - mehrere Treffer → nichts, es wäre nicht entscheidbar, wer gemeint
+      ist. Der Suchtext bleibt stehen.
 - Ausgabe: Tischverteilung (Anzahl & Grösse der Tische) gemäss Algorithmus
   aus Abschnitt 3, plus zufällige Zuteilung der konkreten Spieler auf die
   Tische.
@@ -177,9 +189,12 @@ am selben Tisch spielen.
 - **Bei der ausgewogenen Zuteilung** (Abschnitt 4.2 unten) zählt eine Gruppe
   als eine Einheit mit dem **Durchschnitts-Skill** ihrer Mitglieder und
   wird damit als Ganzes in die passende Stärke-Region einsortiert.
-- **Persistenz**: Anwesenheits-Auswahl und Gruppen leben zusammen im
-  Browser-Speicher (localStorage) des Organisator-Geräts, nicht in der
-  Datenbank — keine Migration nötig. Spieler, die inzwischen archiviert
+- **Persistenz**: Anwesenheits-Auswahl, Gruppen und die gewählte
+  Zuteilungsart (Abschnitt 4.2) leben zusammen im Browser-Speicher
+  (localStorage) des Organisator-Geräts, nicht in der Datenbank — keine
+  Migration nötig. Die Zuteilungsart gehört dazu, weil die berechneten
+  Tische einen Reload überleben (Abschnitt 4.3): ein selektives
+  Neumischen danach soll nicht stillschweigend im falschen Modus laufen. Spieler, die inzwischen archiviert
   oder gelöscht wurden, fallen beim Laden still heraus. "Zurücksetzen"
   (siehe oben) lässt Auswahl und Gruppen unangetastet; aufgelöst werden
   Gruppen nur über die eigenen Knöpfe (× je Gruppe, "alle auflösen").
@@ -221,8 +236,20 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
   Abend-Teilnahme und blockiert nie das harte Löschen eines Spielers
   (Abschnitt 6.2). Wird ein Spieler gelöscht, verschwindet sein Platz per
   Cascade mit.
-- Gespeichert wird ausschliesslich, damit die öffentliche Lese-Ansicht die
+- Gespeichert wird in erster Linie, damit die öffentliche Lese-Ansicht die
   Tische zeigen kann — ohne das sähe sie niemand ausser dem Organisator.
+- Ein Spieler, der zwischenzeitlich archiviert wurde, behält seinen Platz
+  in einer bestehenden Zuteilung und lässt sich weiterhin tauschen und
+  neu mischen — beim Neumischen wird nicht entschieden, wer anwesend ist,
+  sondern nur die bestehende Belegung umgestellt. In die Auswahlliste für
+  eine **neue** Berechnung kommt er nicht mehr.
+- Die Admin-Seite liest die gespeicherte Zuteilung beim Laden ebenfalls und
+  zeigt sie als Startzustand an. Ein Reload verschluckt sie dadurch nicht
+  mehr. Das gilt nur für Zuteilungen, die **jünger als 24 Stunden** sind —
+  was älter ist, gehört zu einem vergangenen Abend und wird dem
+  Organisator nicht als aktueller Stand untergeschoben. Die Frist betrifft
+  ausschliesslich diese Auto-Anzeige: die Zeilen bleiben stehen und die
+  öffentliche Seite zeigt sie unbegrenzt weiter, bis zurückgesetzt wird.
 - Öffentlich wird immer nur **eines von beidem** gezeigt: existiert eine
   Casual-Zuteilung, hat sie Vorrang; sonst der laufende Liga-Abend. Das
   Starten eines Liga-Abends verwirft eine offene Casual-Zuteilung, damit

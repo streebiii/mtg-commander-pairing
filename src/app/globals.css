@@ -3,11 +3,19 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /*
+   * Abgesetzte Flaeche fuer Panels, die sich vom Seitenhintergrund
+   * loesen sollen (aktuell die rechte Spalte im Casual-Tab). Bewusst nur
+   * eine Nuance daneben: es geht um eine sichtbare Grenze, nicht um eine
+   * zweite Farbwelt.
+   */
+  --surface: #f4f4f5;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -16,6 +24,7 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --surface: #161616;
   }
 }
 

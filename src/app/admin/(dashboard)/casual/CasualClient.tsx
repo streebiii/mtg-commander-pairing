@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { SKILL_LEVELS } from "@/lib/players";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import {
@@ -32,11 +38,16 @@ interface TableResult {
 type Mode = "random" | "skill";
 
 /**
- * Zustand von Auswahl und Gruppen wird nur im Browser gehalten (siehe
- * Grill-Notizen) — keine Datenbank-Tabelle, keine Migration. Beides
- * zusammen unter einem Schlüssel, damit nach einem Reload ein in sich
- * konsistenter Stand geladen wird (nie eine Gruppe, deren Mitglieder gar
- * nicht als anwesend markiert sind).
+ * Zustand von Auswahl, Gruppen und Zuteilungsart wird nur im Browser
+ * gehalten (siehe Grill-Notizen) — keine Datenbank-Tabelle, keine
+ * Migration. Alles zusammen unter einem Schlüssel, damit nach einem
+ * Reload ein in sich konsistenter Stand geladen wird (nie eine Gruppe,
+ * deren Mitglieder gar nicht als anwesend markiert sind).
+ *
+ * Die Zuteilungsart gehört seit dem Wiederherstellen der Tische dazu:
+ * sonst stünde nach einem Reload wieder "Zufällig", und ein selektives
+ * Neumischen der wiederhergestellten Tische liefe stillschweigend im
+ * falschen Modus (siehe `reshuffleSelected`).
  */
 const STORAGE_KEY = "casual-selection-v1";
 
@@ -91,8 +102,15 @@ function splitTypedName(text: string): { firstName: string; lastName: string | n
 
 export default function CasualClient({
   players: initialPlayers,
+  initialTables,
 }: {
   players: PlayerOption[];
+  /**
+   * Die zuletzt gespeicherte Zuteilung, sofern sie jung genug ist (siehe
+   * `getRecentCasualPairing()`). Dadurch überlebt sie einen Reload der
+   * Admin-Seite, ohne dass hier etwas zusätzlich persistiert werden muss.
+   */
+  initialTables: TableResult[] | null;
 }) {
   const [players, setPlayers] = useState<PlayerOption[]>(initialPlayers);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -100,7 +118,7 @@ export default function CasualClient({
   const [hydrated, setHydrated] = useState(false);
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState<Mode>("random");
-  const [tables, setTables] = useState<TableResult[] | null>(null);
+  const [tables, setTables] = useState<TableResult[] | null>(initialTables);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [swapPick, setSwapPick] = useState<{ table: number; player: string } | null>(
@@ -135,6 +153,8 @@ export default function CasualClient({
   const [newSkill, setNewSkill] = useState(0);
   const [addError, setAddError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const selectedCount = selected.size;
 
@@ -148,6 +168,7 @@ export default function CasualClient({
       const parsed = JSON.parse(raw) as {
         selectedIds?: unknown;
         groups?: unknown;
+        mode?: unknown;
       };
       const knownIds = new Set(initialPlayers.map((p) => p.id));
 
@@ -183,6 +204,7 @@ export default function CasualClient({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelected(restoredSelectedSet);
       setGroups(restoredGroups);
+      setMode(parsed.mode === "skill" ? "skill" : "random");
     } catch {
       // Ungültiger/korrupter Zustand im Speicher — einfach frisch starten.
     } finally {
@@ -192,8 +214,9 @@ export default function CasualClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auswahl + Gruppen bei jeder Änderung sichern (erst nach dem Laden,
-  // sonst würde der leere Anfangszustand den gespeicherten überschreiben).
+  // Auswahl + Gruppen + Zuteilungsart bei jeder Änderung sichern (erst
+  // nach dem Laden, sonst würde der leere Anfangszustand den
+  // gespeicherten überschreiben).
   useEffect(() => {
     if (!hydrated) return;
     localStorage.setItem(
@@ -201,9 +224,10 @@ export default function CasualClient({
       JSON.stringify({
         selectedIds: [...selected],
         groups: groups.map((g) => ({ id: g.id, playerIds: g.playerIds })),
+        mode,
       }),
     );
-  }, [hydrated, selected, groups]);
+  }, [hydrated, selected, groups, mode]);
 
   function addToSelection(player: PlayerOption) {
     setPlayers((prev) => (prev.some((p) => p.id === player.id) ? prev : [...prev, player]));
@@ -312,6 +336,10 @@ export default function CasualClient({
     setNewSkill(0);
     setShowAddForm(false);
     setSearch("");
+    // Zurück ins Suchfeld: mit dem Schliessen des Formulars verschwindet
+    // das fokussierte Feld aus dem DOM, der Fokus fiele sonst auf <body>
+    // und die Kette "tippen, Enter, nächster Name" wäre unterbrochen.
+    searchRef.current?.focus();
   }
 
   /** Öffnet das Anlege-Formular, vorbefüllt mit dem bisher getippten Suchtext. */
@@ -322,6 +350,21 @@ export default function CasualClient({
     setNewSkill(0);
     setAddError(null);
     setShowAddForm(true);
+  }
+
+  // Beim Öffnen des Formulars gleich ins Vornamen-Feld springen. Damit
+  // führt die Enter-Kette aus dem Suchfeld ohne Mausgriff weiter: tippen,
+  // Enter (Formular öffnet), Enter (Spieler ist angelegt und ausgewählt).
+  useEffect(() => {
+    if (showAddForm) firstNameRef.current?.focus();
+  }, [showAddForm]);
+
+  /** Enter in den Namensfeldern legt den Spieler an, wie der Knopf "Anlegen". */
+  function handleAddFormKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    if (!newFirstName.trim() || adding) return;
+    void handleAddFormSubmit();
   }
 
   async function computePairing() {
@@ -468,6 +511,34 @@ export default function CasualClient({
     return allPlayersSorted.filter((p) => p.name.toLowerCase().includes(q));
   }, [allPlayersSorted, search]);
 
+  /**
+   * Enter im Suchfeld — die Tastatur-Abkürzung für den häufigsten
+   * Handgriff am Spielabend: Name tippen, Enter, nächster Name.
+   *
+   * - Genau ein Treffer: dieser Spieler wird ausgewählt (im Gruppen-Modus
+   *   in die entstehende Gruppe aufgenommen) und das Suchfeld geleert, um
+   *   direkt den nächsten Namen tippen zu können. Bewusst nur auswählen,
+   *   nie abwählen: sonst würde ein zweites Enter aus Versehen den eben
+   *   markierten Spieler wieder entfernen.
+   * - Kein Treffer: das Anlege-Formular öffnet sich, vorbefüllt mit dem
+   *   getippten Namen.
+   * - Mehrere Treffer: nichts, es wäre nicht entscheidbar, wer gemeint ist.
+   */
+  function handleSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+
+    if (filteredPlayers.length === 1) {
+      const only = filteredPlayers[0];
+      if (groupModeActive) handleGroupModeTap(only.id);
+      else if (!selected.has(only.id)) toggle(only.id);
+      setSearch("");
+      return;
+    }
+
+    if (filteredPlayers.length === 0 && search.trim()) openAddForm();
+  }
+
   // Mindesthöhe für die Liste, reserviert für den vollen (ungefilterten)
   // Bestand in der jeweils aktuellen Spaltenzahl (Worst Case) — sonst
   // schrumpft die Seite bei jedem Tastendruck im Suchfeld mit der Anzahl
@@ -552,6 +623,9 @@ export default function CasualClient({
       reshuffleSelection.sizes,
     );
   }, [reshuffleSelection]);
+
+  /** Wie viele Gruppen sitzen vollständig auf den gewählten Tischen? */
+  const betroffeneGruppen = reshuffleSelection?.applicableGroups.length ?? 0;
 
   return (
     <div className="grid gap-8 lg:grid-cols-4">
@@ -642,22 +716,38 @@ export default function CasualClient({
               )}
               {selectedForReshuffle.size >= 2 && (
                 <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    disabled={reshuffling || !!reshuffleGroupConflict}
-                    onClick={() => reshuffleSelected(true)}
-                    className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
-                  >
-                    {reshuffling ? "Mische…" : "Gruppen behalten"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={reshuffling}
-                    onClick={() => reshuffleSelected(false)}
-                    className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
-                  >
-                    {reshuffling ? "Mische…" : "Gruppen auflösen"}
-                  </button>
+                  {/* Die Unterscheidung "behalten oder auflösen" ergibt nur
+                      Sinn, wenn auf den gewählten Tischen überhaupt eine
+                      Gruppe sitzt — sonst täten beide Knöpfe dasselbe. */}
+                  {betroffeneGruppen > 0 ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={reshuffling || !!reshuffleGroupConflict}
+                        onClick={() => reshuffleSelected(true)}
+                        className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+                      >
+                        {reshuffling ? "Mische…" : "Gruppen behalten"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={reshuffling}
+                        onClick={() => reshuffleSelected(false)}
+                        className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+                      >
+                        {reshuffling ? "Mische…" : "Gruppen auflösen"}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={reshuffling}
+                      onClick={() => reshuffleSelected(true)}
+                      className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+                    >
+                      {reshuffling ? "Mische…" : "Neu mischen"}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setSelectedForReshuffle(new Set())}
@@ -686,8 +776,10 @@ export default function CasualClient({
             Spieler suchen
             <input
               type="text"
+              ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Name eingeben…"
               className="min-h-9 w-full max-w-sm rounded border border-black/20 px-3 py-2 dark:border-white/20"
             />
@@ -713,9 +805,11 @@ export default function CasualClient({
               <label className="flex flex-col gap-1.5 text-xs">
                 Vorname
                 <input
+                  ref={firstNameRef}
                   type="text"
                   value={newFirstName}
                   onChange={(e) => setNewFirstName(e.target.value)}
+                  onKeyDown={handleAddFormKeyDown}
                   className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 dark:border-white/20"
                 />
               </label>
@@ -725,6 +819,7 @@ export default function CasualClient({
                   type="text"
                   value={newLastName}
                   onChange={(e) => setNewLastName(e.target.value)}
+                  onKeyDown={handleAddFormKeyDown}
                   className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 dark:border-white/20"
                 />
               </label>
@@ -811,7 +906,15 @@ export default function CasualClient({
       {/* Einstellungen und Aktionen. Ab lg eine eigene Spalte über die
           volle Höhe; darunter stapelt es unter die Auswahl — dort steht
           "Fertig" beim Gruppieren direkt unter der Liste. */}
-      <aside className="flex flex-col gap-4 lg:col-span-1">
+      {/* Ab lg bleibt die Spalte beim Scrollen stehen und zentriert ihren
+          Inhalt vertikal. Höhe und Abstand rechnen das p-6 des
+          Admin-Layouts heraus, damit sie exakt in den sichtbaren Bereich
+          passt statt oben darüber hinauszulaufen. */}
+      {/* Die abgesetzte Fläche (`bg-surface`) zieht die Grenze zur
+          Auswahl links. Bewusst erst ab lg: darunter stapeln die Spalten
+          untereinander, dort gibt es keine zwei Bereiche nebeneinander,
+          die auseinandergehalten werden müssten. */}
+      <aside className="flex flex-col gap-4 lg:col-span-1 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start lg:justify-center lg:rounded-lg lg:bg-surface lg:px-4 lg:py-6">
           <h2 className="text-sm font-medium">Einstellungen</h2>
 
           <div className="flex flex-col gap-2">
