@@ -1,18 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { MAX_GROUP_SIZE, MIN_GROUP_SIZE } from "@/lib/pairing/groups";
 
-/**
- * Überschrift des Casual-Tabs mit aufklappbarer Erklärung.
- *
- * Der frühere Dauertext unter der Überschrift ist bewusst weg — im Alltag
- * weiss der Organisator, was der Modus tut, und der Platz auf dem Handy
- * ist knapp. Wer die Erklärung braucht, holt sie sich über den Info-Knopf.
- *
- * Bewusst ein aufklappbarer Abschnitt statt `window.alert`: Letzteres
- * liefert in eingebetteten Browser-Ansichten gar keinen Dialog (siehe
- * Bugfix beim Löschen von Spielern).
- */
+/** Inhalt der Erklärung, in der Reihenfolge des Arbeitsablaufs. */
 const TOPICS: { title: string; text: string }[] = [
   {
     title: "Spieler auswählen",
@@ -20,11 +11,11 @@ const TOPICS: { title: string; text: string }[] = [
   },
   {
     title: "Gruppe bilden",
-    text: "Spieler, die zusammen an einen Tisch sollen, lassen sich zu einer Gruppe zusammenfassen (2 bis 4 Spieler). Im Gruppen-Modus nimmt ein Tap den Spieler in die entstehende Gruppe auf und markiert ihn gleichzeitig als anwesend.",
+    text: `Spieler, die zusammen an einen Tisch sollen, lassen sich zu einer Gruppe zusammenfassen (${MIN_GROUP_SIZE} bis ${MAX_GROUP_SIZE} Spieler). Im Gruppen-Modus nimmt ein Tap den Spieler in die entstehende Gruppe auf und markiert ihn gleichzeitig als anwesend.`,
   },
   {
     title: "Zuteilungsart",
-    text: "„Zufällig“ verteilt die Anwesenden ohne weitere Rücksicht. „Ausgewogen“ verteilt sie so, dass die Tische ähnlich stark besetzt sind.",
+    text: "„Zufällig“ verteilt die Anwesenden ohne weiteres Kriterium. „Ausgewogen“ setzt Spieler mit ähnlicher Stufe an denselben Tisch, damit die Partien innerhalb eines Tisches ausgeglichen sind — mit etwas Zufall, damit nicht jedes Mal dieselbe Konstellation entsteht. Wer noch keine Stufe hat, bekommt pro Berechnung eine zufällige zugelost.",
   },
   {
     title: "Tische berechnen",
@@ -40,6 +31,17 @@ const TOPICS: { title: string; text: string }[] = [
   },
 ];
 
+/**
+ * Überschrift des Casual-Tabs mit aufklappbarer Erklärung.
+ *
+ * Der frühere Dauertext unter der Überschrift ist bewusst weg — im Alltag
+ * weiss der Organisator, was der Modus tut, und der Platz auf dem Handy
+ * ist knapp. Wer die Erklärung braucht, holt sie sich über den Info-Knopf.
+ *
+ * Bewusst ein aufklappbarer Abschnitt statt `window.alert`: Letzteres
+ * liefert in eingebetteten Browser-Ansichten gar keinen Dialog (siehe
+ * Bugfix beim Löschen von Spielern).
+ */
 export default function CasualInfo() {
   const [open, setOpen] = useState(false);
 
