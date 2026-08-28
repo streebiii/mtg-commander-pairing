@@ -132,6 +132,18 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
     Vorname/Nachname gesplittet). Beide legen den Spieler sofort an und
     wählen ihn automatisch aus. Punktestand startet dabei immer bei 0
     (Liga-Punkte sind für Casual irrelevant).
+  - **Enter im Suchfeld** bedient den ganzen Ablauf ohne Maus, weil am
+    Spielabend reihum Namen eingetippt werden:
+    - genau ein Treffer → dieser Spieler wird ausgewählt und das Suchfeld
+      geleert, bereit für den nächsten Namen. Bewusst nur auswählen, nie
+      abwählen — sonst nähme ein zweites Enter den eben markierten Spieler
+      versehentlich wieder heraus. Im Gruppen-Modus wandert der Spieler
+      stattdessen in die entstehende Gruppe, wie bei einem Tap.
+    - kein Treffer → das Anlege-Formular öffnet sich vorbefüllt, der
+      Fokus steht im Vornamen-Feld. Ein weiteres Enter dort legt den
+      Spieler an; danach springt der Fokus zurück ins Suchfeld.
+    - mehrere Treffer → nichts, es wäre nicht entscheidbar, wer gemeint
+      ist. Der Suchtext bleibt stehen.
 - Ausgabe: Tischverteilung (Anzahl & Grösse der Tische) gemäss Algorithmus
   aus Abschnitt 3, plus zufällige Zuteilung der konkreten Spieler auf die
   Tische.

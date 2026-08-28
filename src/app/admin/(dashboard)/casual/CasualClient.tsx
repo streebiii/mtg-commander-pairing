@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { SKILL_LEVELS } from "@/lib/players";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import {
@@ -147,6 +153,8 @@ export default function CasualClient({
   const [newSkill, setNewSkill] = useState(0);
   const [addError, setAddError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const selectedCount = selected.size;
 
@@ -328,6 +336,10 @@ export default function CasualClient({
     setNewSkill(0);
     setShowAddForm(false);
     setSearch("");
+    // Zurück ins Suchfeld: mit dem Schliessen des Formulars verschwindet
+    // das fokussierte Feld aus dem DOM, der Fokus fiele sonst auf <body>
+    // und die Kette "tippen, Enter, nächster Name" wäre unterbrochen.
+    searchRef.current?.focus();
   }
 
   /** Öffnet das Anlege-Formular, vorbefüllt mit dem bisher getippten Suchtext. */
@@ -338,6 +350,21 @@ export default function CasualClient({
     setNewSkill(0);
     setAddError(null);
     setShowAddForm(true);
+  }
+
+  // Beim Öffnen des Formulars gleich ins Vornamen-Feld springen. Damit
+  // führt die Enter-Kette aus dem Suchfeld ohne Mausgriff weiter: tippen,
+  // Enter (Formular öffnet), Enter (Spieler ist angelegt und ausgewählt).
+  useEffect(() => {
+    if (showAddForm) firstNameRef.current?.focus();
+  }, [showAddForm]);
+
+  /** Enter in den Namensfeldern legt den Spieler an, wie der Knopf "Anlegen". */
+  function handleAddFormKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    if (!newFirstName.trim() || adding) return;
+    void handleAddFormSubmit();
   }
 
   async function computePairing() {
@@ -483,6 +510,34 @@ export default function CasualClient({
     if (!q) return allPlayersSorted;
     return allPlayersSorted.filter((p) => p.name.toLowerCase().includes(q));
   }, [allPlayersSorted, search]);
+
+  /**
+   * Enter im Suchfeld — die Tastatur-Abkürzung für den häufigsten
+   * Handgriff am Spielabend: Name tippen, Enter, nächster Name.
+   *
+   * - Genau ein Treffer: dieser Spieler wird ausgewählt (im Gruppen-Modus
+   *   in die entstehende Gruppe aufgenommen) und das Suchfeld geleert, um
+   *   direkt den nächsten Namen tippen zu können. Bewusst nur auswählen,
+   *   nie abwählen: sonst würde ein zweites Enter aus Versehen den eben
+   *   markierten Spieler wieder entfernen.
+   * - Kein Treffer: das Anlege-Formular öffnet sich, vorbefüllt mit dem
+   *   getippten Namen.
+   * - Mehrere Treffer: nichts, es wäre nicht entscheidbar, wer gemeint ist.
+   */
+  function handleSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+
+    if (filteredPlayers.length === 1) {
+      const only = filteredPlayers[0];
+      if (groupModeActive) handleGroupModeTap(only.id);
+      else if (!selected.has(only.id)) toggle(only.id);
+      setSearch("");
+      return;
+    }
+
+    if (filteredPlayers.length === 0 && search.trim()) openAddForm();
+  }
 
   // Mindesthöhe für die Liste, reserviert für den vollen (ungefilterten)
   // Bestand in der jeweils aktuellen Spaltenzahl (Worst Case) — sonst
@@ -721,8 +776,10 @@ export default function CasualClient({
             Spieler suchen
             <input
               type="text"
+              ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Name eingeben…"
               className="min-h-9 w-full max-w-sm rounded border border-black/20 px-3 py-2 dark:border-white/20"
             />
@@ -748,9 +805,11 @@ export default function CasualClient({
               <label className="flex flex-col gap-1.5 text-xs">
                 Vorname
                 <input
+                  ref={firstNameRef}
                   type="text"
                   value={newFirstName}
                   onChange={(e) => setNewFirstName(e.target.value)}
+                  onKeyDown={handleAddFormKeyDown}
                   className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 dark:border-white/20"
                 />
               </label>
@@ -760,6 +819,7 @@ export default function CasualClient({
                   type="text"
                   value={newLastName}
                   onChange={(e) => setNewLastName(e.target.value)}
+                  onKeyDown={handleAddFormKeyDown}
                   className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 dark:border-white/20"
                 />
               </label>

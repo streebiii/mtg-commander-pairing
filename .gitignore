@@ -23,3 +23,6 @@ tsconfig.tsbuildinfo
 # Persönliche Arbeitsnotizen (Session-Übergaben o.ä.) — gehören nicht ins
 # öffentliche Repository.
 HANDOVER.md
+
+# Lokale Test-Hilfe, siehe src/app/dev-login/route.ts (nie committen)
+src/app/dev-login/
