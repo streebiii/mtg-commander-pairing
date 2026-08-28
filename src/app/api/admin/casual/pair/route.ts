@@ -64,6 +64,10 @@ function parseGroups(
  * - "random" (Standard): rein zufällige Zuteilung.
  * - "skill": nach Skill-Level balanciert, mit Zufallsfaktor.
  *
+ * Mit `allowFiveTable` darf ein einzelner 5er-Tisch entstehen, wo er die
+ * Verteilung verbessert (siehe SPEC.md Abschnitt 3.1) — eine reine
+ * Casual-Option, die Liga rechnet weiterhin ohne.
+ *
  * Optional werden Gruppen mitgegeben (siehe SPEC.md Abschnitt 4.1):
  * ihre Mitglieder landen garantiert am selben Tisch. Das UI prüft die
  * Machbarkeit bereits vorab, hier wird zusätzlich serverseitig validiert.
@@ -72,6 +76,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const playerIds: unknown = body?.playerIds;
   const mode = body?.mode === "skill" ? "skill" : "random";
+  const allowFiveTable = body?.allowFiveTable === true;
 
   if (!Array.isArray(playerIds) || playerIds.some((id) => typeof id !== "string")) {
     return NextResponse.json(
@@ -106,7 +111,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const sizes = computeTableSizes(players.length);
+    const sizes = computeTableSizes(players.length, { allowFiveTable });
 
     if (groups.length > 0) {
       const packing = packGroupsIntoTables(

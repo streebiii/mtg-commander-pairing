@@ -112,6 +112,38 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
 > mehrere 3/4-Kombinationen möglich sind): **maximale Anzahl 4er-Tische
 > gewinnt**, da das automatisch auch die Gesamtzahl der Tische minimiert.
 
+### 3.1 Option "5er-Tisch erlauben" (nur Casual)
+
+Im Casual-Modus lässt sich pro Berechnung **ein einzelner** 5er-Tisch
+zulassen (Checkbox neben der Zuteilungsart, siehe Abschnitt 4.2). Dann
+wird unter allen Zerlegungen mit höchstens einem 5er die mit den **meisten
+4er-Tischen** gewählt.
+
+Betroffen sind genau die Spielerzahlen **N ≡ 1 (mod 4)** — 9, 13, 17,
+21, 25, … —, bei denen sonst drei 3er-Tische entstünden:
+
+| N  | Standard      | mit 5er-Tisch |
+|----|---------------|---------------|
+| 9  | 3+3+3         | **5+4**       |
+| 13 | 4+3+3+3       | **5+4+4**     |
+| 17 | 4+4+3+3+3     | **5+4+4+4**   |
+| 21 | 4+4+4+3+3+3   | **5+4+4+4+4** |
+
+Alle übrigen Spielerzahlen bleiben unverändert — 10 bleibt 4+3+3, 14
+bleibt 4+4+3+3.
+
+**Entscheidend ist das Ziel, nicht die Möglichkeit.** "Nimm einen 5er,
+wann immer es aufgeht" wäre falsch: bei N = 14 ergäbe das 5+3+3+3 statt
+4+4+3+3, also mehr 3er-Tische statt weniger.
+
+**Nicht in der Liga.** Dort hängt an der Tischgrösse die Punktechance —
+wer am 5er sitzt, hat statistisch schlechtere Siegchancen als am 4er. Für
+einen lockeren Abend ist das egal, für eine Saisonrangliste nicht.
+
+**Die maximale Gruppengrösse bleibt bei 4** (Abschnitt 4.1), auch wenn ein
+5er-Tisch erlaubt ist: eine 5er-Gruppe wäre zwingend an genau diesen einen
+Tisch gebunden und bei den meisten Spielerzahlen gar nicht platzierbar.
+
 ## 4. Casual — Rechner + Zuteilung
 
 - **Spielerauswahl** (mobil-optimiert, tap-freundlich):
@@ -189,8 +221,8 @@ am selben Tisch spielen.
 - **Bei der ausgewogenen Zuteilung** (Abschnitt 4.2 unten) zählt eine Gruppe
   als eine Einheit mit dem **Durchschnitts-Skill** ihrer Mitglieder und
   wird damit als Ganzes in die passende Stärke-Region einsortiert.
-- **Persistenz**: Anwesenheits-Auswahl, Gruppen und die gewählte
-  Zuteilungsart (Abschnitt 4.2) leben zusammen im Browser-Speicher
+- **Persistenz**: Anwesenheits-Auswahl, Gruppen, die gewählte Zuteilungsart
+  und der 5er-Haken (Abschnitt 4.2) leben zusammen im Browser-Speicher
   (localStorage) des Organisator-Geräts, nicht in der Datenbank — keine
   Migration nötig. Die Zuteilungsart gehört dazu, weil die berechneten
   Tische einen Reload überleben (Abschnitt 4.3): ein selektives
@@ -209,6 +241,13 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
 
 - **Zufällig** (Standard): wie oben beschrieben, keine Berücksichtigung von
   Skill-Level.
+- **5er-Tisch erlauben** (Checkbox, unabhängig von der Zuteilungsart —
+  beide Kombinationen sind sinnvoll): lässt einen einzelnen 5er-Tisch zu,
+  wo er die Verteilung verbessert (Abschnitt 3.1). Ein Hinweis unter der
+  Checkbox zeigt für die aktuelle Spielerzahl, was herauskäme, bzw. dass
+  sich nichts ändert — sonst wäre nicht erkennbar, ob der Haken überhaupt
+  greift. Wirkt wie die Zuteilungsart erst bei der nächsten Berechnung;
+  eine bereits stehende Zuteilung bleibt unangetastet.
 - **Ausgewogen**: nutzt dieselbe Rang-Gruppierungs-Logik wie
   die Liga (Abschnitt 5.1), aber mit der Skill-Einstufung der Spieler
   (Abschnitt 6) statt Liga-Punkten als Sortier-Kriterium, inkl. Zufalls-

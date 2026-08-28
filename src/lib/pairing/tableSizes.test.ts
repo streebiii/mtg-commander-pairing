@@ -66,3 +66,59 @@ describe("computeTableSizes", () => {
     expect(() => computeTableSizes(4.5)).toThrow(PairingError);
   });
 });
+
+describe("computeTableSizes mit allowFiveTable (SPEC.md Abschnitt 3.1)", () => {
+  // Nur bei N ≡ 1 (mod 4) ändert sich etwas: aus drei 3er-Tischen wird ein
+  // 5er. Tabelle aus SPEC.md Abschnitt 3.1.
+  const geaendert: Record<number, number[]> = {
+    9: [5, 4],
+    13: [5, 4, 4],
+    17: [5, 4, 4, 4],
+    21: [5, 4, 4, 4, 4],
+    25: [5, 4, 4, 4, 4, 4],
+  };
+
+  for (const [n, tables] of Object.entries(geaendert)) {
+    it(`verteilt N=${n} als ${JSON.stringify(tables)} statt mit drei 3er-Tischen`, () => {
+      expect(computeTableSizes(Number(n), { allowFiveTable: true })).toEqual(
+        tables,
+      );
+    });
+  }
+
+  it("lässt alle übrigen Spielerzahlen unverändert", () => {
+    for (let n = 3; n <= 200; n++) {
+      if (n % 4 === 1 && n >= 9) continue;
+      expect(computeTableSizes(n, { allowFiveTable: true })).toEqual(
+        computeTableSizes(n),
+      );
+    }
+  });
+
+  it("nimmt keinen 5er-Tisch, nur weil er aufginge", () => {
+    // Die Falle: 14 = 5+3+3+3 ginge auf, wäre aber schlechter als
+    // 4+4+3+3 — mehr 3er-Tische statt weniger.
+    expect(computeTableSizes(14, { allowFiveTable: true })).toEqual([4, 4, 3, 3]);
+    expect(computeTableSizes(10, { allowFiveTable: true })).toEqual([4, 3, 3]);
+  });
+
+  it("verwendet nie mehr als einen 5er-Tisch", () => {
+    for (let n = 3; n <= 200; n++) {
+      const tables = computeTableSizes(n, { allowFiveTable: true });
+      expect(tables.filter((t) => t === 5).length).toBeLessThanOrEqual(1);
+      expect(tables.reduce((a, b) => a + b, 0)).toBe(n);
+      expect(tables.every((t) => t >= 3 && t <= 5)).toBe(true);
+    }
+  });
+
+  it("erzeugt bei N ≡ 1 (mod 4) höchstens einen 3er-Tisch statt dreien", () => {
+    for (let n = 9; n <= 200; n += 4) {
+      const ohne = computeTableSizes(n).filter((t) => t === 3).length;
+      const mit = computeTableSizes(n, { allowFiveTable: true }).filter(
+        (t) => t === 3,
+      ).length;
+      expect(ohne).toBe(3);
+      expect(mit).toBe(0);
+    }
+  });
+});
