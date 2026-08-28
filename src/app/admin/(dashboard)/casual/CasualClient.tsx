@@ -38,7 +38,7 @@ interface TableResult {
 type Mode = "random" | "skill";
 
 /**
- * Zustand von Auswahl, Gruppen und Zuteilungsart wird nur im Browser
+ * Zustand von Auswahl, Gruppen und Einstellungen wird nur im Browser
  * gehalten (siehe Grill-Notizen) — keine Datenbank-Tabelle, keine
  * Migration. Alles zusammen unter einem Schlüssel, damit nach einem
  * Reload ein in sich konsistenter Stand geladen wird (nie eine Gruppe,
@@ -118,6 +118,9 @@ export default function CasualClient({
   const [hydrated, setHydrated] = useState(false);
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState<Mode>("random");
+  // Ein einzelner 5er-Tisch, wo er die Verteilung verbessert (siehe SPEC.md
+  // Abschnitt 3.1). Standard aus, damit sich ohne Zutun nichts ändert.
+  const [allowFiveTable, setAllowFiveTable] = useState(false);
   const [tables, setTables] = useState<TableResult[] | null>(initialTables);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -169,6 +172,7 @@ export default function CasualClient({
         selectedIds?: unknown;
         groups?: unknown;
         mode?: unknown;
+        allowFiveTable?: unknown;
       };
       const knownIds = new Set(initialPlayers.map((p) => p.id));
 
@@ -205,6 +209,7 @@ export default function CasualClient({
       setSelected(restoredSelectedSet);
       setGroups(restoredGroups);
       setMode(parsed.mode === "skill" ? "skill" : "random");
+      setAllowFiveTable(parsed.allowFiveTable === true);
     } catch {
       // Ungültiger/korrupter Zustand im Speicher — einfach frisch starten.
     } finally {
@@ -225,9 +230,10 @@ export default function CasualClient({
         selectedIds: [...selected],
         groups: groups.map((g) => ({ id: g.id, playerIds: g.playerIds })),
         mode,
+        allowFiveTable,
       }),
     );
-  }, [hydrated, selected, groups, mode]);
+  }, [hydrated, selected, groups, mode, allowFiveTable]);
 
   function addToSelection(player: PlayerOption) {
     setPlayers((prev) => (prev.some((p) => p.id === player.id) ? prev : [...prev, player]));
@@ -380,6 +386,7 @@ export default function CasualClient({
         body: JSON.stringify({
           playerIds: [...selected],
           mode,
+          allowFiveTable,
           groups: groups.map((g) => ({ id: g.id, playerIds: g.playerIds })),
         }),
       });
@@ -580,7 +587,29 @@ export default function CasualClient({
   const tableSizes = useMemo(() => {
     if (selectedCount < 3) return null;
     try {
-      return computeTableSizes(selectedCount);
+      return computeTableSizes(selectedCount, { allowFiveTable });
+    } catch {
+      return null;
+    }
+  }, [selectedCount, allowFiveTable]);
+
+  /**
+   * Was der 5er-Haken bei der aktuellen Spielerzahl bewirkt. Ohne diesen
+   * Hinweis wäre am Spielabend nicht erkennbar, ob er überhaupt greift —
+   * betroffen sind nur Spielerzahlen mit N ≡ 1 (mod 4), bei 10 oder 14
+   * ändert er nichts.
+   */
+  const fiveTableHint = useMemo(() => {
+    if (selectedCount < 3) return null;
+    try {
+      const ohne = computeTableSizes(selectedCount).join("+");
+      const mit = computeTableSizes(selectedCount, {
+        allowFiveTable: true,
+      }).join("+");
+      if (ohne === mit) {
+        return `Bei ${selectedCount} Spielern ändert das nichts: ${ohne}.`;
+      }
+      return `${selectedCount} Spieler: ${mit} statt ${ohne}.`;
     } catch {
       return null;
     }
@@ -1027,6 +1056,25 @@ export default function CasualClient({
               Ausgewogen
             </label>
           </fieldset>
+
+          {/* Orthogonal zur Zuteilungsart: beide Kombinationen ergeben Sinn,
+              deshalb bewusst eine eigene Checkbox und keine dritte
+              Radio-Option. Wirkt erst bei der nächsten Berechnung, genau
+              wie die Zuteilungsart. */}
+          <div className="flex flex-col gap-1">
+            <label className="flex min-h-11 items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={allowFiveTable}
+                onChange={(e) => setAllowFiveTable(e.target.checked)}
+                className="h-4 w-4"
+              />
+              5er-Tisch erlauben
+            </label>
+            {fiveTableHint && (
+              <p className="text-xs opacity-70">{fiveTableHint}</p>
+            )}
+          </div>
 
           <div className="flex flex-col gap-2">
             <button
