@@ -126,3 +126,35 @@ Liga-Abende") und die Anzahl in der Überschrift beziehen sich heute auf
 alle Spieler.
 
 **Nächster Schritt:** Direkt umsetzen.
+
+## Casual: den Enter-Treffer in der Suche hervorheben
+
+**Status:** Klar, kein Grill nötig.
+
+**Worum es geht:** Enter im Suchfeld wählt den Spieler aus, wenn die
+Suche genau einen Treffer übrig lässt (siehe SPEC.md Abschnitt 4). Man
+sieht der Liste aber nicht an, dass dieser eine Eintrag jetzt "scharf"
+ist — die Kachel sieht aus wie jede andere. Gewünscht ist eine sichtbare
+Hervorhebung des letzten verbliebenen Treffers, damit vor dem Tastendruck
+klar ist, wen es trifft.
+
+**Zu beachten bei der Umsetzung:**
+- Bedingung ist `filteredPlayers.length === 1` **und** ein nicht-leerer
+  Suchtext (`src/app/admin/(dashboard)/casual/CasualClient.tsx`). Ohne die
+  zweite Bedingung leuchtete die Kachel auch bei leerem Suchfeld auf,
+  sobald der Verein nur einen einzigen Spieler hat.
+- Die Kacheln haben bereits drei Zustände: Gruppen-Kandidat (amber),
+  ausgewählt (blau) und neutral. Ein vierter Rahmen in einer vierten Farbe
+  wird unleserlich — besser ein zusätzlicher `ring`/Outline, der sich mit
+  den bestehenden Zuständen überlagern darf, statt sie zu ersetzen.
+- Nicht allein über Farbe: ein kleines `↵` auf der Kachel sagt auch dann,
+  was passieren wird, wenn jemand die Farben nicht unterscheiden kann.
+- **Gegenstück nicht vergessen:** bei *null* Treffern ist der Knopf
+  „+ „{Suchtext}" als neuen Spieler anlegen" das Enter-Ziel. Der sollte
+  dieselbe Hervorhebung bekommen, sonst wirkt die Logik willkürlich.
+- Ein bereits ausgewählter Spieler bleibt Enter-Ziel, obwohl Enter dann
+  bewusst nichts tut (kein Abwählen, siehe SPEC.md Abschnitt 4). Entweder
+  die Hervorhebung in dem Fall weglassen oder sie klar anders aussehen
+  lassen als bei einem noch nicht ausgewählten Spieler.
+
+**Nächster Schritt:** Direkt umsetzen.
