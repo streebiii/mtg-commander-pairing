@@ -38,10 +38,20 @@ export interface GroupPackingResult {
  *
  * Die Tischgrößen-Verteilung selbst (SPEC.md Abschnitt 3) ist dabei fix
  * und wird nie verändert — die Gruppen müssen sich in sie einfügen, nicht
- * umgekehrt. Größte Gruppen zuerst probieren, jeweils den Tisch mit der
- * meisten freien Kapazität zuerst — in der Praxis (wenige, kleine
- * Gruppen) findet das sofort eine Lösung oder stellt schnell fest, dass
- * keine existiert.
+ * umgekehrt. Größte Gruppen zuerst probieren, jeweils den **knappsten
+ * passenden** Tisch zuerst — in der Praxis (wenige, kleine Gruppen) findet
+ * das sofort eine Lösung oder stellt schnell fest, dass keine existiert.
+ *
+ * Der knappste Tisch zuerst ist keine Kosmetik: eine 4er-Gruppe soll bei
+ * den Tischgrößen [5, 4] den 4er bekommen und dort unter sich bleiben,
+ * nicht den 5er mit einem Fremden am Tisch. Umgekehrt sortiert (meiste
+ * freie Kapazität zuerst) landete sie immer am 5er, sobald einer erlaubt
+ * war (siehe SPEC.md Abschnitt 3.1).
+ *
+ * Auf die Frage, *ob* eine Lösung existiert, hat die Reihenfolge keinen
+ * Einfluss — das Backtracking probiert im Zweifel ohnehin alle Tische
+ * durch. Sie bestimmt nur, welche der möglichen Lösungen zuerst gefunden
+ * wird.
  */
 export function packGroupsIntoTables(
   groupSizes: readonly { id: string; size: number }[],
@@ -57,7 +67,7 @@ export function packGroupsIntoTables(
     const candidateTables = remaining
       .map((_, i) => i)
       .filter((i) => remaining[i] >= group.size)
-      .sort((a, b) => remaining[b] - remaining[a]);
+      .sort((a, b) => remaining[a] - remaining[b]);
 
     for (const t of candidateTables) {
       remaining[t] -= group.size;

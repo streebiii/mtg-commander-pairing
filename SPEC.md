@@ -144,6 +144,11 @@ einen lockeren Abend ist das egal, für eine Saisonrangliste nicht.
 5er-Tisch erlaubt ist: eine 5er-Gruppe wäre zwingend an genau diesen einen
 Tisch gebunden und bei den meisten Spielerzahlen gar nicht platzierbar.
 
+**Gruppen bekommen den knappsten passenden Tisch.** Eine 4er-Gruppe landet
+bei den Tischgrössen [5, 4] am 4er und bleibt dort unter sich, statt sich
+den 5er mit einem Fremden zu teilen. Nur wenn kein passender Tisch mehr
+frei ist, weicht sie auf einen grösseren aus.
+
 ## 4. Casual — Rechner + Zuteilung
 
 - **Spielerauswahl** (mobil-optimiert, tap-freundlich):
