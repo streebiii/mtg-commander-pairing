@@ -177,9 +177,12 @@ am selben Tisch spielen.
 - **Bei der ausgewogenen Zuteilung** (Abschnitt 4.2 unten) zählt eine Gruppe
   als eine Einheit mit dem **Durchschnitts-Skill** ihrer Mitglieder und
   wird damit als Ganzes in die passende Stärke-Region einsortiert.
-- **Persistenz**: Anwesenheits-Auswahl und Gruppen leben zusammen im
-  Browser-Speicher (localStorage) des Organisator-Geräts, nicht in der
-  Datenbank — keine Migration nötig. Spieler, die inzwischen archiviert
+- **Persistenz**: Anwesenheits-Auswahl, Gruppen und die gewählte
+  Zuteilungsart (Abschnitt 4.2) leben zusammen im Browser-Speicher
+  (localStorage) des Organisator-Geräts, nicht in der Datenbank — keine
+  Migration nötig. Die Zuteilungsart gehört dazu, weil die berechneten
+  Tische einen Reload überleben (Abschnitt 4.3): ein selektives
+  Neumischen danach soll nicht stillschweigend im falschen Modus laufen. Spieler, die inzwischen archiviert
   oder gelöscht wurden, fallen beim Laden still heraus. "Zurücksetzen"
   (siehe oben) lässt Auswahl und Gruppen unangetastet; aufgelöst werden
   Gruppen nur über die eigenen Knöpfe (× je Gruppe, "alle auflösen").
@@ -223,6 +226,11 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
   Cascade mit.
 - Gespeichert wird in erster Linie, damit die öffentliche Lese-Ansicht die
   Tische zeigen kann — ohne das sähe sie niemand ausser dem Organisator.
+- Ein Spieler, der zwischenzeitlich archiviert wurde, behält seinen Platz
+  in einer bestehenden Zuteilung und lässt sich weiterhin tauschen und
+  neu mischen — beim Neumischen wird nicht entschieden, wer anwesend ist,
+  sondern nur die bestehende Belegung umgestellt. In die Auswahlliste für
+  eine **neue** Berechnung kommt er nicht mehr.
 - Die Admin-Seite liest die gespeicherte Zuteilung beim Laden ebenfalls und
   zeigt sie als Startzustand an. Ein Reload verschluckt sie dadurch nicht
   mehr. Das gilt nur für Zuteilungen, die **jünger als 24 Stunden** sind —

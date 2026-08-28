@@ -32,11 +32,16 @@ interface TableResult {
 type Mode = "random" | "skill";
 
 /**
- * Zustand von Auswahl und Gruppen wird nur im Browser gehalten (siehe
- * Grill-Notizen) — keine Datenbank-Tabelle, keine Migration. Beides
- * zusammen unter einem Schlüssel, damit nach einem Reload ein in sich
- * konsistenter Stand geladen wird (nie eine Gruppe, deren Mitglieder gar
- * nicht als anwesend markiert sind).
+ * Zustand von Auswahl, Gruppen und Zuteilungsart wird nur im Browser
+ * gehalten (siehe Grill-Notizen) — keine Datenbank-Tabelle, keine
+ * Migration. Alles zusammen unter einem Schlüssel, damit nach einem
+ * Reload ein in sich konsistenter Stand geladen wird (nie eine Gruppe,
+ * deren Mitglieder gar nicht als anwesend markiert sind).
+ *
+ * Die Zuteilungsart gehört seit dem Wiederherstellen der Tische dazu:
+ * sonst stünde nach einem Reload wieder "Zufällig", und ein selektives
+ * Neumischen der wiederhergestellten Tische liefe stillschweigend im
+ * falschen Modus (siehe `reshuffleSelected`).
  */
 const STORAGE_KEY = "casual-selection-v1";
 
@@ -155,6 +160,7 @@ export default function CasualClient({
       const parsed = JSON.parse(raw) as {
         selectedIds?: unknown;
         groups?: unknown;
+        mode?: unknown;
       };
       const knownIds = new Set(initialPlayers.map((p) => p.id));
 
@@ -190,6 +196,7 @@ export default function CasualClient({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelected(restoredSelectedSet);
       setGroups(restoredGroups);
+      setMode(parsed.mode === "skill" ? "skill" : "random");
     } catch {
       // Ungültiger/korrupter Zustand im Speicher — einfach frisch starten.
     } finally {
@@ -199,8 +206,9 @@ export default function CasualClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auswahl + Gruppen bei jeder Änderung sichern (erst nach dem Laden,
-  // sonst würde der leere Anfangszustand den gespeicherten überschreiben).
+  // Auswahl + Gruppen + Zuteilungsart bei jeder Änderung sichern (erst
+  // nach dem Laden, sonst würde der leere Anfangszustand den
+  // gespeicherten überschreiben).
   useEffect(() => {
     if (!hydrated) return;
     localStorage.setItem(
@@ -208,9 +216,10 @@ export default function CasualClient({
       JSON.stringify({
         selectedIds: [...selected],
         groups: groups.map((g) => ({ id: g.id, playerIds: g.playerIds })),
+        mode,
       }),
     );
-  }, [hydrated, selected, groups]);
+  }, [hydrated, selected, groups, mode]);
 
   function addToSelection(player: PlayerOption) {
     setPlayers((prev) => (prev.some((p) => p.id === player.id) ? prev : [...prev, player]));

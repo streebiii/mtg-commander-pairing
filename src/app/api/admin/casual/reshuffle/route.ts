@@ -157,8 +157,15 @@ export async function POST(request: Request) {
   }
   const groups = groupsResult;
 
+  // Bewusst OHNE `archivedAt: null`: wer bereits an einem Tisch sitzt,
+  // bleibt mischbar, auch wenn er zwischenzeitlich archiviert wurde. Beim
+  // Neumischen wird nicht entschieden, wer anwesend ist (das macht die
+  // volle Berechnung in ../pair), sondern nur die bestehende Belegung
+  // umgestellt. Seit die Zuteilung einen Reload überlebt, kann sie
+  // durchaus einen inzwischen archivierten Spieler enthalten — der Abend
+  // soll daran nicht scheitern.
   const players = await prisma.player.findMany({
-    where: { id: { in: selectedPlayerIds }, archivedAt: null },
+    where: { id: { in: selectedPlayerIds } },
     select: { id: true, firstName: true, lastName: true, skillLevel: true },
   });
   if (players.length !== selectedPlayerIds.length) {
