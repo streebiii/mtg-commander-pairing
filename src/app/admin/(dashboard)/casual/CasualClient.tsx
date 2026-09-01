@@ -519,6 +519,20 @@ export default function CasualClient({
   }, [allPlayersSorted, search]);
 
   /**
+   * Was ein Enter im Suchfeld gerade treffen würde (siehe
+   * `handleSearchKeyDown`). Wird in der Liste sichtbar hervorgehoben, damit
+   * vor dem Tastendruck klar ist, wen es trifft.
+   *
+   * Nur bei nicht-leerer Suche: sonst leuchtete die Kachel auch bei leerem
+   * Feld auf, sobald der Verein nur einen einzigen Spieler hat.
+   */
+  const searchActive = search.trim().length > 0;
+  const enterTargetId =
+    searchActive && filteredPlayers.length === 1 ? filteredPlayers[0].id : null;
+  /** Bei null Treffern ist der Anlegen-Knopf das Enter-Ziel. */
+  const enterCreatesNew = searchActive && filteredPlayers.length === 0;
+
+  /**
    * Enter im Suchfeld — die Tastatur-Abkürzung für den häufigsten
    * Handgriff am Spielabend: Name tippen, Enter, nächster Name.
    *
@@ -821,11 +835,24 @@ export default function CasualClient({
             <button
               type="button"
               onClick={openAddForm}
-              className="flex min-h-11 w-fit items-center rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20"
+              className={`flex min-h-11 w-fit items-center gap-2 rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20 ${
+                enterCreatesNew ? "ring-2 ring-foreground/60" : ""
+              }`}
             >
-              {search.trim()
-                ? `+ „${search.trim()}“ als neuen Spieler anlegen`
-                : "+ Neuen Spieler erfassen"}
+              <span>
+                {search.trim()
+                  ? `+ „${search.trim()}“ als neuen Spieler anlegen`
+                  : "+ Neuen Spieler erfassen"}
+              </span>
+              {enterCreatesNew && (
+                <span
+                  aria-hidden="true"
+                  className="shrink-0 text-xs opacity-70"
+                  title="Enter öffnet das Anlege-Formular"
+                >
+                  ↵
+                </span>
+              )}
             </button>
           )}
 
@@ -914,10 +941,24 @@ export default function CasualClient({
                       : isSelected
                         ? "border-blue-500 bg-blue-500/10"
                         : "border-black/10 dark:border-white/10"
+                  } ${
+                    // Der Ring legt sich über den bestehenden Zustand, statt
+                    // ihn zu ersetzen — eine vierte Rahmenfarbe neben amber
+                    // und blau wäre nicht mehr unterscheidbar.
+                    p.id === enterTargetId ? "ring-2 ring-foreground/60" : ""
                   }`}
                 >
                   <span className="w-4 shrink-0">{isSelected ? "✓" : ""}</span>
                   <span className="truncate flex-1">{p.name}</span>
+                  {p.id === enterTargetId && (
+                    <span
+                      aria-hidden="true"
+                      className="shrink-0 text-xs opacity-70"
+                      title="Enter wählt diesen Spieler aus"
+                    >
+                      ↵
+                    </span>
+                  )}
                   {groupIndex !== undefined && (
                     <span
                       className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(groupIndex)}`}
