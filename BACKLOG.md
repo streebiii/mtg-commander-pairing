@@ -107,10 +107,10 @@ mtgbl.ch einfügen kannst.
 - Die Kopfzeile lautet `Datum | Commander | Color-ID | Art | Punkte |
   Achievement | Abrechnung | R1 | R2`. Die beiden Spalten **R1 und R2**
   bestätigen die Erfassung je Runde eins zu eins.
-- Jedes Achievement trägt eine **Art**: `1x pro Match`, `1x pro Abend`
-  oder `1x am Ende der Liga`. Das ist ein Feld pro Achievement, keine
-  Eigenschaft der Kategorie — die Maske entscheidet daran, ob ein
-  Achievement zwei Runden-Häkchen bekommt oder nur eines pro Abend.
+- Die Spalte **Art** (`1x pro Match`, `1x pro Abend`, `1x am Ende der
+  Liga`) entscheidet, ob ein Achievement zwei Runden-Häkchen bekommt oder
+  nur eines pro Abend. Sie steht nicht auf der Website, folgt dort aber
+  eindeutig aus der Kategorie (siehe Katalog-Eintrag).
 - Das Blatt summiert **nach Kategorie**: `Name | Core | Deckbau | Rotate
   | Total`. Die Maske sollte dieselben Teilsummen zeigen, sonst lässt
   sich die Eingabe nicht gegen den Zettel prüfen.
@@ -120,12 +120,13 @@ mtgbl.ch einfügen kannst.
   beides heute nicht.
 
 **Zu beachten:**
-- **Punktwerte sind nicht einfach positive Zahlen.** Es gibt ein
-  negatives Achievement (`−3 I'm Too Young To Die!`) und zwei mit
-  variablem Wert: `+2/+1` (It's Good to Be the King/Queen — 2 für den
-  ersten Spieler, danach 1) und `+1/Spieler` (Commander Classic Win).
-  Ein `Int`-Feld reicht dafür nicht; entweder ein Betrag plus Multiplikator
-  oder ein frei eingebbarer Wert bei genau diesen Ausnahmen.
+- **Punktwerte prüfen, bevor das Feld festgelegt wird.** Die fixen und
+  Deckbau-Achievements der Website sind durchweg einfache positive Werte
+  (+1 bis +7). Im rotierenden Pool gibt es dagegen mindestens eines, das
+  mehrfach zählen kann (`Commander Classic Win`), und die xlsx kennt
+  variable Schreibweisen wie `+2/+1` und `+1/Spieler`. Beim Anlegen des
+  Katalogs die 70 rotierenden daraufhin durchsehen — ein reines
+  `Int`-Feld könnte zu knapp sein.
 - Die Maske wird breit: 25 Achievements × 2 Runden × alle Anwesenden.
   Auf dem Handy ist das der kritische Fall — vermutlich ein Spieler nach
   dem anderen statt einer Gesamttabelle.
@@ -155,14 +156,24 @@ nächste Mal.
   Am Punkteblatt vom 22.05.2026 nachgezählt: 16 × `1x pro Match`
   (6 fixe + 10 rotierende), 8 × `1x pro Abend` und 1 × `1x am Ende der
   Liga` (Evergreen) = 9 Deckbau. Deckt sich mit mtgbl.ch.
-- Der **Pool der rotierenden umfasst 76** Achievements (Stand
-  `Commander_Liga_Scoresheet_final_1.xlsx`), nicht „40+" wie zunächst
-  angenommen. Bei 10 pro Abend und 6 Abenden pro Saison werden also nie
-  mehr als 60 gebraucht.
-- Neben Name und Punktwert braucht ein Achievement die Felder
-  **Kategorie** (fix / Deckbau / rotierend), **Art** (pro Match / pro
-  Abend / am Ende der Liga) und **Bedingung** (der erklärende Text vom
-  Blatt).
+- **Massgeblich ist ausschliesslich die Liste auf
+  https://mtgbl.ch/liga/commander/2026/achievements.** Die Dateien in
+  `information-files/` (Konzeptdokument, xlsx-Stammliste, gedrucktes
+  Blatt) sind Hintergrund und stellenweise veraltet: die xlsx führt eine
+  siebte fixe (`−3 I'm Too Young To Die!`) und eine zehnte
+  Deckbau-Position (`Family`), die es auf der Website nicht gibt, und
+  setzt „Winner winner – chicken dinner" auf +2 statt +1. Im Zweifel
+  gewinnt die Website.
+- Der **Pool der rotierenden umfasst rund 70** Achievements. Bei 10 pro
+  Abend und 6 Abenden pro Saison werden nie mehr als 60 gebraucht.
+- Ein Achievement braucht **Punkte, Titel, Beschreibung** (die drei
+  Spalten der Website) plus die **Kategorie** (fix / Deckbau /
+  rotierend).
+- **Die Art muss nicht erfasst werden — sie folgt aus der Kategorie.**
+  Fixe und rotierende zählen pro Match, Deckbau pro Abend, einzige
+  Ausnahme ist Evergreen („über die gesamte Liga"). Am gedruckten Blatt
+  gegengezählt und exakt bestätigt: 16 × pro Match (6 fixe + 10
+  rotierende), 8 × pro Abend, 1 × am Ende der Liga.
 - Die Ziehung passiert **automatisch beim Abschluss eines Abends** und
   gilt für den nächsten. Das Ergebnis wird zum Kopieren angezeigt — die
   Veröffentlichung ist laut Konzeptdokument Pflicht, weil die Spieler ihr
