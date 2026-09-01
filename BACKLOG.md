@@ -23,10 +23,14 @@ Abschnitt 5 ab.
   Während des Abends existiert kein aktualisierter Punktestand.
 - Die **offizielle Wertung liegt auf mtgbl.ch** und bleibt dort. Die App
   löst sie nicht ab; sie liefert zu.
-- Aus dem Konzeptdokument (`information-files/`) ergänzt: Pods zu **3 bis
-  5 Spielern, Priorität 4 > 3 > 5**; Spiele auf **120 Minuten** begrenzt,
-  danach endet die Partie **unentschieden**; eine Saison umfasst **6
-  Liga-Abende** mit festen Terminen.
+- Laut https://mtgbl.ch/liga/commander/2026/regeln: Pods zu **3 bis 5
+  Spielern, Priorität 4 > 3 > 5**; Spiele auf **120 Minuten** begrenzt,
+  danach endet die Partie **unentschieden**; zwischen zwei Terminen
+  dürfen höchstens **15 Karten** getauscht werden. Eine Saison umfasst
+  **6 Liga-Abende** mit festen Terminen.
+- Die Casual-Option „5er-Tisch erlauben" (SPEC.md Abschnitt 3.1) berührt
+  die Liga **nicht** — dort wird weiterhin ohne sie gerechnet, die
+  Vereinsregel 4 > 3 > 5 gilt also unverändert.
 - **Die gezogenen rotierenden Achievements müssen nach jedem Abend
   veröffentlicht werden** — die Spieler dürfen ihr Deck anschliessend
   gezielt darauf anpassen (max. 15 Karten). Die Ziehung ist damit keine
@@ -156,8 +160,9 @@ nächste Mal.
   Am Punkteblatt vom 22.05.2026 nachgezählt: 16 × `1x pro Match`
   (6 fixe + 10 rotierende), 8 × `1x pro Abend` und 1 × `1x am Ende der
   Liga` (Evergreen) = 9 Deckbau. Deckt sich mit mtgbl.ch.
-- **Massgeblich ist ausschliesslich die Liste auf
-  https://mtgbl.ch/liga/commander/2026/achievements.** Die Dateien in
+- **Massgeblich ist ausschliesslich die Website** — die Achievements unter
+  https://mtgbl.ch/liga/commander/2026/achievements und die Regeln unter
+  https://mtgbl.ch/liga/commander/2026/regeln. Die Dateien in
   `information-files/` (Konzeptdokument, xlsx-Stammliste, gedrucktes
   Blatt) sind Hintergrund und stellenweise veraltet: die xlsx führt eine
   siebte fixe (`−3 I'm Too Young To Die!`) und eine zehnte
