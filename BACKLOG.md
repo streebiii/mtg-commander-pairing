@@ -23,6 +23,14 @@ Abschnitt 5 ab.
   Während des Abends existiert kein aktualisierter Punktestand.
 - Die **offizielle Wertung liegt auf mtgbl.ch** und bleibt dort. Die App
   löst sie nicht ab; sie liefert zu.
+- Aus dem Konzeptdokument (`information-files/`) ergänzt: Pods zu **3 bis
+  5 Spielern, Priorität 4 > 3 > 5**; Spiele auf **120 Minuten** begrenzt,
+  danach endet die Partie **unentschieden**; eine Saison umfasst **6
+  Liga-Abende** mit festen Terminen.
+- **Die gezogenen rotierenden Achievements müssen nach jedem Abend
+  veröffentlicht werden** — die Spieler dürfen ihr Deck anschliessend
+  gezielt darauf anpassen (max. 15 Karten). Die Ziehung ist damit keine
+  Bequemlichkeit, sondern Teil der Liga-Regeln.
 
 **Warum der Liga-Tab bisher ungenutzt blieb:** Die App verlangt vor
 Runde 2 für jeden Spieler ein eingetragenes Ergebnis
@@ -94,7 +102,30 @@ mtgbl.ch einfügen kannst.
   der bestehende Import liest (`| # | Spieler | F | Total | R1 | R2 | ... |`).
   Import und Export werden damit zum Spiegelbild.
 
+**Aus dem Punkteblatt übernommen** (`information-files/`, Blatt vom
+22.05.2026 — es ist die Vorlage für diese Maske):
+- Die Kopfzeile lautet `Datum | Commander | Color-ID | Art | Punkte |
+  Achievement | Abrechnung | R1 | R2`. Die beiden Spalten **R1 und R2**
+  bestätigen die Erfassung je Runde eins zu eins.
+- Jedes Achievement trägt eine **Art**: `1x pro Match`, `1x pro Abend`
+  oder `1x am Ende der Liga`. Das ist ein Feld pro Achievement, keine
+  Eigenschaft der Kategorie — die Maske entscheidet daran, ob ein
+  Achievement zwei Runden-Häkchen bekommt oder nur eines pro Abend.
+- Das Blatt summiert **nach Kategorie**: `Name | Core | Deckbau | Rotate
+  | Total`. Die Maske sollte dieselben Teilsummen zeigen, sonst lässt
+  sich die Eingabe nicht gegen den Zettel prüfen.
+- Kopfdaten pro Spieler: **Commander (welches Deck)** und **Color-ID**.
+  Die Farbidentität wird zu Saisonbeginn ausgelost, das Deck darf
+  zwischen Abenden um höchstens 15 Karten geändert werden. Die App kennt
+  beides heute nicht.
+
 **Zu beachten:**
+- **Punktwerte sind nicht einfach positive Zahlen.** Es gibt ein
+  negatives Achievement (`−3 I'm Too Young To Die!`) und zwei mit
+  variablem Wert: `+2/+1` (It's Good to Be the King/Queen — 2 für den
+  ersten Spieler, danach 1) und `+1/Spieler` (Commander Classic Win).
+  Ein `Int`-Feld reicht dafür nicht; entweder ein Betrag plus Multiplikator
+  oder ein frei eingebbarer Wert bei genau diesen Ausnahmen.
 - Die Maske wird breit: 25 Achievements × 2 Runden × alle Anwesenden.
   Auf dem Handy ist das der kritische Fall — vermutlich ein Spieler nach
   dem anderen statt einer Gesamttabelle.
@@ -120,12 +151,22 @@ nächste Mal.
 - **Katalog in der Datenbank**, in der App verwaltbar: Name, Punktwert,
   Kategorie (fix, Deckbau, rotierend). Keine Code-Änderung nötig, wenn
   sich etwas ändert.
-- Pro Abend gelten **6 fixe, 9 Deckbau und 10 rotierende** — die 25 von
-  mtgbl.ch. (In der Session fiel kurz die Zahl 15 für die rotierenden;
-  auf Nachfrage bestätigt: es bleiben 10.)
+- Pro Abend gelten **6 fixe, 9 Deckbau und 10 rotierende** — zusammen 25.
+  Am Punkteblatt vom 22.05.2026 nachgezählt: 16 × `1x pro Match`
+  (6 fixe + 10 rotierende), 8 × `1x pro Abend` und 1 × `1x am Ende der
+  Liga` (Evergreen) = 9 Deckbau. Deckt sich mit mtgbl.ch.
+- Der **Pool der rotierenden umfasst 76** Achievements (Stand
+  `Commander_Liga_Scoresheet_final_1.xlsx`), nicht „40+" wie zunächst
+  angenommen. Bei 10 pro Abend und 6 Abenden pro Saison werden also nie
+  mehr als 60 gebraucht.
+- Neben Name und Punktwert braucht ein Achievement die Felder
+  **Kategorie** (fix / Deckbau / rotierend), **Art** (pro Match / pro
+  Abend / am Ende der Liga) und **Bedingung** (der erklärende Text vom
+  Blatt).
 - Die Ziehung passiert **automatisch beim Abschluss eines Abends** und
-  gilt für den nächsten. Das Ergebnis wird zum Kopieren angezeigt, damit
-  es vorher angekündigt werden kann.
+  gilt für den nächsten. Das Ergebnis wird zum Kopieren angezeigt — die
+  Veröffentlichung ist laut Konzeptdokument Pflicht, weil die Spieler ihr
+  Deck danach gezielt anpassen dürfen.
 - **Reiner Zufall**, keine Ausschlussregel — dasselbe Achievement darf
   zweimal hintereinander gelten.
 
@@ -147,9 +188,17 @@ Abendend-Erfassung — sie braucht den Katalog.
 wie „Evergreen" (+7 für dasselbe Deck über die ganze Saison) werden
 **einmal am Saisonende** erfasst und brauchen dafür eine Stelle.
 
+**Vereinfachung aus dem Punkteblatt:** Evergreen ist dort kein Sonderfall
+neben dem Modell, sondern trägt schlicht die Art `1x am Ende der Liga` —
+denselben Mechanismus wie `1x pro Match` und `1x pro Abend`. Wer die Art
+sauber umsetzt, bekommt die Saison-Achievements ohne eigenen Weg.
+
 **Zu beachten:**
 - Heute kennt das Schema keine Saison (`Evening` steht für sich). Das ist
   die grösste Schema-Änderung der ganzen Liga-Umstellung.
+- Eine Saison umfasst **6 Abende mit festen Terminen** und hat pro Spieler
+  eine **ausgeloste Farbidentität** — beides Saison-Daten, die es heute
+  nirgends gibt. Die Farbidentität steht auf jedem Punkteblatt.
 - Ein Saisonwechsel muss den Punktestand sauber zurücksetzen können, ohne
   die alten Abende zu verlieren.
 - Hängt an nichts, blockiert aber auch nichts — kann zuletzt kommen.
