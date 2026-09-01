@@ -26,3 +26,6 @@ HANDOVER.md
 
 # Lokale Test-Hilfe, siehe src/app/dev-login/route.ts (nie committen)
 src/app/dev-login/
+
+# Arbeitsmaterial des Organisators, gehoert nicht ins oeffentliche Repo
+information-files/
