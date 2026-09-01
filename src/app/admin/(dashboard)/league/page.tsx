@@ -63,7 +63,7 @@ export default async function LeaguePage() {
       <div className="w-full max-w-2xl overflow-x-auto">
         <table className="w-full min-w-[420px] text-sm">
           <thead>
-            <tr className="border-b border-black/10 text-left dark:border-white/10">
+            <tr className="border-b border-white/10 text-left">
               <th className="py-2 pr-3">Spieler</th>
               <th className="py-2 pr-3">Punkte</th>
               <th className="py-2 pr-3">Liga-Teilnahme</th>
@@ -112,7 +112,7 @@ export default async function LeaguePage() {
               {activePlayers.map((p) => (
                 <label
                   key={p.id}
-                  className="flex min-h-9 items-center gap-1.5 rounded border border-black/20 px-3 py-2 text-sm dark:border-white/20"
+                  className="flex min-h-9 items-center gap-1.5 rounded border border-white/20 px-3 py-2 text-sm"
                 >
                   <input type="checkbox" name="playerIds" value={p.id} className="h-4 w-4" />
                   {formatPlayerName(p)} ({p.points})
@@ -173,7 +173,7 @@ export default async function LeaguePage() {
             {round.tables.map((table) => (
               <div
                 key={table.id}
-                className="w-full rounded border border-black/20 p-3 dark:border-white/20 sm:w-64"
+                className="w-full rounded border border-white/20 p-3 sm:w-64"
               >
                 <div className="mb-2 text-sm font-semibold">
                   Tisch {table.tableNumber} ({table.size} Spieler)
@@ -189,7 +189,7 @@ export default async function LeaguePage() {
                         name={`points_${a.id}`}
                         defaultValue={a.pointsAwarded ?? ""}
                         placeholder="Pkt."
-                        className="min-h-9 w-20 rounded border border-black/20 px-2 py-2 dark:border-white/20"
+                        className="min-h-9 w-20 rounded border border-white/20 px-2 py-2"
                       />
                       {round.number === evening.rounds.length && (
                         <ReassignSelect
@@ -206,7 +206,7 @@ export default async function LeaguePage() {
           </div>
           <button
             type="submit"
-            className="min-h-11 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
+            className="min-h-11 w-fit rounded border border-white/20 px-4 py-2 text-sm"
           >
             Ergebnisse Runde {round.number} speichern
           </button>
@@ -232,7 +232,7 @@ export default async function LeaguePage() {
           <button
             type="submit"
             disabled={!lastRoundComplete}
-            className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+            className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
           >
             Abend beenden
           </button>

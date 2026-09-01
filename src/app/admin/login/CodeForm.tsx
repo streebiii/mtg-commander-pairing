@@ -48,7 +48,7 @@ export default function CodeForm({ next }: { next: string }) {
           autoFocus
           aria-label={`${CODE_LENGTH}-stelliger Login-Code`}
           placeholder="••••••"
-          className="min-h-14 w-full rounded border border-black/20 px-4 py-3 text-center font-mono text-3xl tracking-[0.4em] dark:border-white/20"
+          className="min-h-14 w-full rounded border border-white/20 px-4 py-3 text-center font-mono text-3xl tracking-[0.4em]"
         />
       </label>
       <ConfirmButton disabled={code.length !== CODE_LENGTH} />

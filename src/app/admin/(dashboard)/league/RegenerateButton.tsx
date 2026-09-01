@@ -35,7 +35,7 @@ export default function RegenerateButton({
         type="button"
         disabled={isPending}
         onClick={() => setConfirming(true)}
-        className="min-h-11 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+        className="min-h-11 w-fit rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
       >
         {isPending ? "Würfle neu…" : "🎲 Neu mischen"}
       </button>
@@ -60,7 +60,7 @@ export default function RegenerateButton({
         type="button"
         onClick={() => setConfirming(false)}
         disabled={isPending}
-        className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+        className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
       >
         Abbrechen
       </button>

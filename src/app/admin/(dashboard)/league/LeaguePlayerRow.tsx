@@ -39,7 +39,7 @@ export default function LeaguePlayerRow({ player }: { player: Player }) {
   }
 
   return (
-    <tr className="border-b border-black/5 dark:border-white/5">
+    <tr className="border-b border-white/5">
       <td className="py-2 pr-3">{formatPlayerName(player)}</td>
       <td className="py-2 pr-3">
         <input
@@ -49,7 +49,7 @@ export default function LeaguePlayerRow({ player }: { player: Player }) {
             setPoints(e.target.value);
             save({ points: e.target.value });
           }}
-          className="min-h-9 w-20 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+          className="min-h-9 w-20 rounded border border-white/20 px-3 py-2"
         />
       </td>
       <td className="py-2 pr-3">

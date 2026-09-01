@@ -699,7 +699,7 @@ export default function CasualClient({
                   className={`w-full rounded border p-3 sm:w-48 ${
                     isSelectedForReshuffle
                       ? "border-blue-500 bg-blue-500/5"
-                      : "border-black/20 dark:border-white/20"
+                      : "border-white/20"
                   }`}
                 >
                   <button
@@ -711,7 +711,7 @@ export default function CasualClient({
                       Tisch {table.tableNumber} ({table.size} Spieler)
                     </span>
                     {isSelectedForReshuffle && (
-                      <span className="shrink-0 text-xs font-normal text-blue-600 dark:text-blue-400">
+                      <span className="shrink-0 text-xs font-normal text-blue-400">
                         ausgewählt
                       </span>
                     )}
@@ -728,7 +728,7 @@ export default function CasualClient({
                             className={`flex min-h-11 w-full items-center gap-2 rounded border px-3 py-2 text-left text-sm ${
                               isPicked
                                 ? "border-blue-500 bg-blue-500/10"
-                                : "border-black/10 dark:border-white/10"
+                                : "border-white/10"
                             }`}
                           >
                             <span className="truncate flex-1">{p.name}</span>
@@ -776,7 +776,7 @@ export default function CasualClient({
                         type="button"
                         disabled={reshuffling}
                         onClick={() => reshuffleSelected(false)}
-                        className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+                        className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
                       >
                         {reshuffling ? "Mische…" : "Gruppen auflösen"}
                       </button>
@@ -824,7 +824,7 @@ export default function CasualClient({
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Name eingeben…"
-              className="min-h-9 w-full max-w-sm rounded border border-black/20 px-3 py-2 dark:border-white/20"
+              className="min-h-9 w-full max-w-sm rounded border border-white/20 px-3 py-2"
             />
           </label>
 
@@ -835,7 +835,7 @@ export default function CasualClient({
             <button
               type="button"
               onClick={openAddForm}
-              className={`flex min-h-11 w-fit items-center gap-2 rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20 ${
+              className={`flex min-h-11 w-fit items-center gap-2 rounded border border-dashed border-white/20 px-3 py-2 text-left text-sm ${
                 enterCreatesNew ? "ring-2 ring-foreground/60" : ""
               }`}
             >
@@ -857,7 +857,7 @@ export default function CasualClient({
           )}
 
           {showAddForm && (
-            <div className="flex flex-wrap items-end gap-3 rounded border border-dashed border-black/20 p-3 dark:border-white/20">
+            <div className="flex flex-wrap items-end gap-3 rounded border border-dashed border-white/20 p-3">
               <label className="flex flex-col gap-1.5 text-xs">
                 Vorname
                 <input
@@ -866,7 +866,7 @@ export default function CasualClient({
                   value={newFirstName}
                   onChange={(e) => setNewFirstName(e.target.value)}
                   onKeyDown={handleAddFormKeyDown}
-                  className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+                  className="min-h-9 w-28 rounded border border-white/20 px-3 py-2"
                 />
               </label>
               <label className="flex flex-col gap-1.5 text-xs">
@@ -876,7 +876,7 @@ export default function CasualClient({
                   value={newLastName}
                   onChange={(e) => setNewLastName(e.target.value)}
                   onKeyDown={handleAddFormKeyDown}
-                  className="min-h-9 w-28 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+                  className="min-h-9 w-28 rounded border border-white/20 px-3 py-2"
                 />
               </label>
               <label className="flex flex-col gap-1.5 text-xs">
@@ -884,7 +884,7 @@ export default function CasualClient({
                 <select
                   value={newSkill}
                   onChange={(e) => setNewSkill(Number(e.target.value))}
-                  className="min-h-9 w-20 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+                  className="min-h-9 w-20 rounded border border-white/20 px-3 py-2"
                 >
                   {SKILL_LEVELS.map((level) => (
                     <option key={level} value={level}>
@@ -897,7 +897,7 @@ export default function CasualClient({
                 type="button"
                 onClick={handleAddFormSubmit}
                 disabled={!newFirstName.trim() || adding}
-                className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+                className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
               >
                 {adding ? "Lege an…" : "Anlegen"}
               </button>
@@ -940,7 +940,7 @@ export default function CasualClient({
                       ? "border-amber-500 bg-amber-500/10"
                       : isSelected
                         ? "border-blue-500 bg-blue-500/10"
-                        : "border-black/10 dark:border-white/10"
+                        : "border-white/10"
                   } ${
                     // Der Ring legt sich über den bestehenden Zustand, statt
                     // ihn zu ersetzen — eine vierte Rahmenfarbe neben amber
@@ -992,7 +992,7 @@ export default function CasualClient({
               <button
                 type="button"
                 onClick={startGroupMode}
-                className="flex min-h-11 w-full items-center rounded border border-dashed border-black/20 px-3 py-2 text-left text-sm dark:border-white/20"
+                className="flex min-h-11 w-full items-center rounded border border-dashed border-white/20 px-3 py-2 text-left text-sm"
               >
                 + Gruppe bilden
               </button>
@@ -1019,7 +1019,7 @@ export default function CasualClient({
                   <button
                     type="button"
                     onClick={cancelGroupMode}
-                    className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
+                    className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm"
                   >
                     Abbrechen
                   </button>
@@ -1043,7 +1043,7 @@ export default function CasualClient({
                   {groups.map((g, i) => (
                     <li
                       key={g.id}
-                      className="flex min-h-11 items-center gap-2 rounded border border-black/10 px-3 py-2 dark:border-white/10"
+                      className="flex min-h-11 items-center gap-2 rounded border border-white/10 px-3 py-2"
                     >
                       <span
                         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(i)}`}
@@ -1130,7 +1130,7 @@ export default function CasualClient({
               <button
                 type="button"
                 onClick={handleReset}
-                className="min-h-11 w-full rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20"
+                className="min-h-11 w-full rounded border border-white/20 px-4 py-2 text-sm"
               >
                 Zurücksetzen
               </button>

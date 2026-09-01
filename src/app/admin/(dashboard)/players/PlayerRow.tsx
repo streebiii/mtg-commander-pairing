@@ -90,14 +90,14 @@ export default function PlayerRow({ player }: { player: Player }) {
   const displayName = [firstName, lastName].filter(Boolean).join(" ");
 
   return (
-    <tr className="border-b border-black/5 dark:border-white/5">
+    <tr className="border-b border-white/5">
       <td className="py-2 pr-3">
         <input
           type="text"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           onBlur={() => save()}
-          className="min-h-9 w-32 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+          className="min-h-9 w-32 rounded border border-white/20 px-3 py-2"
         />
       </td>
       <td className="py-2 pr-3">
@@ -107,7 +107,7 @@ export default function PlayerRow({ player }: { player: Player }) {
           placeholder="(optional)"
           onChange={(e) => setLastName(e.target.value)}
           onBlur={() => save()}
-          className="min-h-9 w-32 rounded border border-black/20 px-3 py-2 dark:border-white/20"
+          className="min-h-9 w-32 rounded border border-white/20 px-3 py-2"
         />
       </td>
       <td className="py-2 pr-3">
@@ -118,7 +118,7 @@ export default function PlayerRow({ player }: { player: Player }) {
             setSkillLevel(value);
             save({ skillLevel: value });
           }}
-          className="min-h-9 w-16 rounded border border-black/20 px-2 py-2 dark:border-white/20"
+          className="min-h-9 w-16 rounded border border-white/20 px-2 py-2"
         >
           {SKILL_LEVELS.map((level) => (
             <option key={level} value={level}>
@@ -176,7 +176,7 @@ export default function PlayerRow({ player }: { player: Player }) {
               type="button"
               onClick={() => setConfirmingDelete(false)}
               disabled={isPending}
-              className="flex min-h-11 items-center rounded border border-black/20 px-3 py-2 dark:border-white/20 disabled:opacity-40"
+              className="flex min-h-11 items-center rounded border border-white/20 px-3 py-2 disabled:opacity-40"
             >
               Nein
             </button>

@@ -143,7 +143,7 @@ export default function ImportClient({
   }
 
   return (
-    <section className="flex max-w-3xl flex-col gap-4 border-t border-black/10 pt-6 dark:border-white/10">
+    <section className="flex max-w-3xl flex-col gap-4 border-t border-white/10 pt-6">
       <h2 className="text-sm font-medium">
         Rangliste aus Text importieren (Liga)
       </h2>
@@ -158,13 +158,13 @@ export default function ImportClient({
         onChange={(e) => setText(e.target.value)}
         rows={8}
         placeholder="| # | Spieler | F | Total | R1 | R2 | ... |"
-        className="w-full rounded border border-black/20 p-3 font-mono dark:border-white/20"
+        className="w-full rounded border border-white/20 p-3 font-mono"
       />
       <button
         type="button"
         onClick={preview}
         disabled={!text.trim() || loading}
-        className="min-h-11 w-fit rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+        className="min-h-11 w-fit rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
       >
         {loading ? "Verarbeite…" : "Vorschau anzeigen"}
       </button>
@@ -183,7 +183,7 @@ export default function ImportClient({
         <div className="flex flex-col gap-3">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-black/10 text-left dark:border-white/10">
+              <tr className="border-b border-white/10 text-left">
                 <th className="py-2 pr-3">Import</th>
                 <th className="py-2 pr-3">Total</th>
                 <th className="py-2 pr-3">Aktion</th>
@@ -191,7 +191,7 @@ export default function ImportClient({
             </thead>
             <tbody>
               {matches.map((m, i) => (
-                <tr key={i} className="border-b border-black/5 dark:border-white/5">
+                <tr key={i} className="border-b border-white/5">
                   <td className="py-2 pr-3">{m.importName}</td>
                   <td className="py-2 pr-3">{m.total}</td>
                   <td className="py-2 pr-3">
@@ -247,7 +247,7 @@ export default function ImportClient({
                             updateResolution(i, { action: "update", playerId: value });
                           }
                         }}
-                        className="min-h-9 rounded border border-black/20 bg-transparent px-2 py-2 text-xs dark:border-white/20"
+                        className="min-h-9 rounded border border-white/20 bg-transparent px-2 py-2 text-xs"
                       >
                         <option value="__skip__">Überspringen</option>
                         <option value="__new__">Als neuen Spieler anlegen</option>

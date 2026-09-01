@@ -37,7 +37,7 @@ export default async function PlayersPage() {
               type="text"
               name="firstName"
               required
-              className="min-h-9 w-full rounded border border-black/20 px-3 py-2 dark:border-white/20 sm:w-auto"
+              className="min-h-9 w-full rounded border border-white/20 px-3 py-2 sm:w-auto"
             />
           </label>
           <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
@@ -45,7 +45,7 @@ export default async function PlayersPage() {
             <input
               type="text"
               name="lastName"
-              className="min-h-9 w-full rounded border border-black/20 px-3 py-2 dark:border-white/20 sm:w-auto"
+              className="min-h-9 w-full rounded border border-white/20 px-3 py-2 sm:w-auto"
             />
           </label>
           <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
@@ -53,7 +53,7 @@ export default async function PlayersPage() {
             <select
               name="skillLevel"
               defaultValue={0}
-              className="min-h-9 w-full rounded border border-black/20 px-3 py-2 dark:border-white/20 sm:w-20"
+              className="min-h-9 w-full rounded border border-white/20 px-3 py-2 sm:w-20"
             >
               {SKILL_LEVELS.map((level) => (
                 <option key={level} value={level}>
@@ -93,7 +93,7 @@ export default async function PlayersPage() {
         <div className="w-full max-w-4xl overflow-x-auto">
           <table className="w-full min-w-[620px] text-sm">
             <thead>
-              <tr className="border-b border-black/10 text-left dark:border-white/10">
+              <tr className="border-b border-white/10 text-left">
                 <th className="py-2 pr-3">Vorname</th>
                 <th className="py-2 pr-3">Nachname</th>
                 <th className="py-2 pr-3">Stufe</th>

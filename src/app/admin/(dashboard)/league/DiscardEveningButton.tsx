@@ -54,7 +54,7 @@ export default function DiscardEveningButton({ eveningId }: { eveningId: string 
         type="button"
         onClick={() => setConfirming(false)}
         disabled={isPending}
-        className="min-h-11 rounded border border-black/20 px-4 py-2 text-sm dark:border-white/20 disabled:opacity-40"
+        className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
       >
         Abbrechen
       </button>
