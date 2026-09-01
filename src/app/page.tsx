@@ -71,14 +71,16 @@ export default async function Home() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
       <div className="flex items-center gap-3">
         {/* Vereinslogo von mtgbl.ch. Der Bär ist schwarz auf transparentem
-            Grund — im Dunkelmodus invertiert, damit er sichtbar bleibt. */}
+            Grund und wird invertiert, damit er auf dem dunklen Hintergrund
+            sichtbar bleibt. Die App kennt nur noch Dunkel, deshalb fest und
+            nicht mehr als `dark:`-Variante. */}
         <Image
           src="/logo.png"
           alt="MTG Baselland"
           width={213}
           height={191}
           priority
-          className="h-10 w-auto dark:invert"
+          className="h-10 w-auto invert"
         />
         <h1 className="text-2xl font-semibold">Pairings</h1>
       </div>
@@ -93,7 +95,7 @@ export default async function Home() {
           {tables.map((table) => (
             <div
               key={table.key}
-              className="w-full rounded border border-black/20 p-5 dark:border-white/20 sm:w-56"
+              className="w-full rounded border border-white/20 p-5 sm:w-56"
             >
               <div className="mb-3 text-lg font-semibold">
                 Tisch {table.tableNumber}

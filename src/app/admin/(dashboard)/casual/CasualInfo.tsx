@@ -64,7 +64,7 @@ export default function CasualInfo() {
             className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold ${
               open
                 ? "border-foreground"
-                : "border-black/40 opacity-70 dark:border-white/40"
+                : "border-white/40 opacity-70"
             }`}
           >
             i
@@ -75,7 +75,7 @@ export default function CasualInfo() {
       {open && (
         <div
           id="casual-info"
-          className="flex flex-col gap-3 rounded border border-black/20 p-4 dark:border-white/20"
+          className="flex flex-col gap-3 rounded border border-white/20 p-4"
         >
           {TOPICS.map((topic) => (
             <div key={topic.title} className="flex flex-col gap-0.5">

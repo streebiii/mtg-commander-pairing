@@ -1,15 +1,27 @@
 @import "tailwindcss";
 
+/*
+ * Die App ist durchgehend dunkel, unabhaengig von der
+ * Systemeinstellung — es gibt bewusst keinen Hellmodus mehr. Wer abends
+ * im Vereinslokal auf sein Handy schaut, soll nicht geblendet werden,
+ * und ein zweiter Farbmodus, den niemand nutzt, kostet bei jeder
+ * UI-Aenderung Aufwand.
+ *
+ * `color-scheme` sorgt dafuer, dass auch die Browser-Bedienelemente
+ * (Scrollbalken, Auswahlfelder, Datumsfelder, Checkboxen) dunkel
+ * rendern statt hell zu bleiben.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+  --background: #0a0a0a;
+  --foreground: #ededed;
   /*
    * Abgesetzte Flaeche fuer Panels, die sich vom Seitenhintergrund
    * loesen sollen (aktuell die rechte Spalte im Casual-Tab). Bewusst nur
    * eine Nuance daneben: es geht um eine sichtbare Grenze, nicht um eine
    * zweite Farbwelt.
    */
-  --surface: #f4f4f5;
+  --surface: #161616;
 }
 
 @theme inline {
@@ -18,14 +30,6 @@
   --color-surface: var(--surface);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --surface: #161616;
-  }
 }
 
 body {

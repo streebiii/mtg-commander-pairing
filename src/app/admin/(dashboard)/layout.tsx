@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
-      <header className="border-b border-black/10 px-4 py-4 dark:border-white/10">
+      <header className="border-b border-white/10 px-4 py-4">
         <nav className="mx-auto flex w-full max-w-lg text-sm font-medium">
           <Link
             href="/admin"

@@ -38,41 +38,6 @@ nur den fortlaufenden Gesamtpunktestand zu pflegen.
 **Nächster Schritt, wenn's angegangen wird:** Grill-Session zu
 Datenmodell und UI, bevor irgendwas gebaut wird.
 
-## Hellmodus komplett entfernen — App ist immer dunkel
-
-**Status:** Klar, kein Grill nötig.
-
-**Worum es geht:** Die App unterstützt aktuell beide Farbmodi und folgt
-der Systemeinstellung (`prefers-color-scheme` in
-`src/app/globals.css`). Gewünscht ist stattdessen **durchgehend dunkel**,
-unabhängig davon, was das Gerät eingestellt hat. Der Hellmodus fällt
-ersatzlos weg.
-
-**Was dazugehört:**
-- `globals.css`: `--background`/`--foreground` fest auf die dunklen Werte
-  (`#0a0a0a` / `#ededed`), den `@media (prefers-color-scheme: dark)`-Block
-  auflösen. Dasselbe gilt für `--surface` (die abgesetzte Fläche der
-  rechten Casual-Spalte): der helle Wert `#f4f4f5` fällt weg, `#161616`
-  bleibt.
-- `<html>` in `src/app/layout.tsx` bekommt `color-scheme: dark`, damit
-  Browser-Bedienelemente (Scrollbalken, Auswahlfelder, Datumsfelder)
-  ebenfalls dunkel rendern statt hell zu bleiben.
-- Die rund **47 `dark:`-Varianten in 12 Dateien** werden dadurch
-  überflüssig: `border-black/20 dark:border-white/20` wird schlicht
-  `border-white/20`. Aufräumen, sonst bleibt toter Ballast stehen, der
-  suggeriert, es gäbe noch einen zweiten Modus.
-- **Ausnahme prüfen:** das Vereinslogo auf der öffentlichen Seite trägt
-  `dark:invert` (`src/app/page.tsx`) — der Bär ist schwarz auf
-  transparentem Grund und braucht die Invertierung, damit er auf dunklem
-  Hintergrund sichtbar ist. Diese eine Stelle wird zu einem festen
-  `invert`, nicht einfach gestrichen.
-
-**Zu beachten:** Betrifft auch die öffentliche Pairing-Seite, nicht nur
-den Organisator-Bereich.
-
-**Nächster Schritt:** Direkt umsetzen, danach alle Seiten einmal
-durchklicken — inklusive Formularfeldern und der öffentlichen Seite.
-
 ## Liga: Knopf "alle Spieler auswählen"
 
 **Status:** Klar, kein Grill nötig.
