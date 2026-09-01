@@ -43,13 +43,27 @@ Genau das gibt es zu diesem Zeitpunkt nicht — die Zettel kommen erst
 später. Gleichzeitig ignoriert sie die Information, die vorliegt: wer
 gewonnen hat. Die Paarung von Hand war die einzig mögliche Reaktion.
 
-## Liga-Abend: Sieger statt Punktsumme
+## Liga-Abend: Runde 2 paart nach dem Tischsieger
 
 **Status:** Fertig gegrillt, bereit zur Umsetzung.
 
 **Worum es geht:** Der Liga-Abend wird auf den tatsächlichen Ablauf
 umgebaut. Kern ist der Wechsel des Sortierschlüssels für Runde 2: nicht
 mehr der Saison-Punktestand, sondern der Sieg aus Runde 1.
+
+**Nicht zu verwechseln:** „Sieger" meint hier ausschliesslich, wer seinen
+Tisch in Runde 1 gewonnen hat — den Sortierschlüssel für die zweite
+Paarung. Wer den Abend oder die Saison gewinnt, entscheidet weiterhin die
+höchste Punktsumme, und das bleibt Sache von mtgbl.ch.
+
+**Warum nicht nach Punktsumme sortieren?** Zwei Gründe. Erstens existiert
+sie zum Zeitpunkt der Paarung nicht — die Zettel kommen erst am Ende des
+Abends. Zweitens würde sie das Falsche messen: ein grosser Teil der
+Punkte steht fest, bevor die erste Karte liegt. Pauper (+4), Evergreen
+(+7) und No Sol Ring (+1) ergeben zusammen **+12 ohne eine gespielte
+Partie**, während ein gewonnenes Match **+1** bringt. Eine Sortierung
+nach Punktsumme würde die Spieler also nach ihrer Deckwahl an die Tische
+setzen statt nach dem Verlauf der Runde.
 
 **Entschieden:**
 - Nach jeder Partie tippst du in der Tischkachel den **Gewinner** an —
