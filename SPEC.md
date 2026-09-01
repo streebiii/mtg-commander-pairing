@@ -181,6 +181,12 @@ frei ist, weicht sie auf einen grösseren aus.
       Spieler an; danach springt der Fokus zurück ins Suchfeld.
     - mehrere Treffer → nichts, es wäre nicht entscheidbar, wer gemeint
       ist. Der Suchtext bleibt stehen.
+
+    Das jeweilige Enter-Ziel ist sichtbar hervorgehoben — die Kachel des
+    einzigen Treffers bzw. der Anlege-Knopf bekommen einen Ring und ein
+    kleines ↵. Der Ring legt sich über den bestehenden Zustand der Kachel
+    (ausgewählt, Gruppen-Kandidat), statt ihn zu ersetzen; das ↵ sorgt
+    dafür, dass die Markierung nicht allein an der Farbe hängt.
 - Ausgabe: Tischverteilung (Anzahl & Grösse der Tische) gemäss Algorithmus
   aus Abschnitt 3, plus zufällige Zuteilung der konkreten Spieler auf die
   Tische.
