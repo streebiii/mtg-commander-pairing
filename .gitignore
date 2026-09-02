@@ -29,3 +29,6 @@ src/app/dev-login/
 
 # Arbeitsmaterial des Organisators, gehoert nicht ins oeffentliche Repo
 information-files/
+
+# Sicherungspaket fuer das Netzlaufwerk - enthaelt .env, gehoert nie ins Repo
+setup-paket/
