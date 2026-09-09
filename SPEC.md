@@ -311,8 +311,8 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
   (siehe https://mtgbl.ch/liga/commander/2026/achievements — 25
   Achievements pro Abend, u. a. Teilnahme, Sieg, erste Eliminierung,
   Deckbau- und rotierende Achievements). Die App bildet **nicht** das
-  komplette Achievement-Sheet ab — der Organisator trägt nach jeder Runde
-  nur die **Gesamtpunktsumme pro Spieler** ein.
+  komplette Achievement-Sheet ab — der Organisator hält während des Abends
+  nur fest, wer seinen Tisch gewonnen hat (siehe unten).
 - **Ablauf pro Abend:**
   1. Anwesende Spieler aus den Liga-teilnehmenden Vereinsspielern auswählen
      (siehe Abschnitt 6 — nicht jeder Vereinsspieler nimmt an der Liga teil).
@@ -321,20 +321,43 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
      Abschnitt 3, Spieler in Punktereihenfolge auf die Tische verteilt
      (übliche Pairing-Logik: nach Rang gruppieren/verteilen, siehe Abschnitt
      5.1 für Detailregel).
-  3. Organisator trägt nach der Runde die erzielten Punkte pro Spieler ein.
-  4. **Runde 2 (und ggf. 3)**: Neusortierung nach **aktualisiertem**
-     Gesamt-Liga-Punktestand (bisheriger Saisonstand + Punkte aus
-     Runde 1 [+ Runde 2]). Neue Tischverteilung, unter Berücksichtigung der
-     weichen Rematch-Vermeidung (Abschnitt 5.2).
-  5. Bis zu 3 Runden pro Abend, flexibel — nach jeder Runde entscheidet der
-     Organisator, ob eine weitere Runde gepaart wird.
-- **Abend verwerfen**: solange kein einziges Ergebnis erfasst ist, lässt
-  sich ein Abend komplett verwerfen. Ohne das käme man aus einem
-  versehentlichen Start nicht mehr heraus — "Abend beenden" verlangt
-  vollständige Ergebnisse, und solange der Abend läuft, sind die
-  beteiligten Spieler nicht löschbar (Abschnitt 6.2). Sobald Ergebnisse
-  erfasst sind, ist Verwerfen gesperrt: dann hängen bereits
-  fortgeschriebene Liga-Punkte daran.
+  3. Sobald ein Tisch fertig ist, hält der Organisator fest, **wie er
+     ausgegangen ist**: Sieger antippen, oder "Unentschieden", wenn das
+     Zeitlimit von 120 Minuten erreicht wurde (Liga-Regeln auf mtgbl.ch).
+     Nochmals dieselbe Auswahl antippen macht die Erfassung rückgängig.
+     Erst wenn für **jeden** Tisch eines von beidem feststeht, lässt sich
+     Runde 2 starten oder der Abend beenden.
+  4. **Runde 2**: Sortierung nach dem **Sieg aus Runde 1** — die Gewinner
+     spielen gegeneinander. Danach dieselbe Rang-Gruppierung wie in Runde 1
+     (Abschnitt 5.1), inklusive weicher Rematch-Vermeidung (Abschnitt 5.2).
+  5. **Genau zwei Runden pro Abend** ("Pro Liga-Abend werden zwei Spiele
+     gespielt", mtgbl.ch). Danach wird der Abend beendet.
+
+**Warum der Sieg und nicht die Punktsumme?** Zwei Gründe. Die Punktsumme
+existiert zum Zeitpunkt der Paarung nicht — die Achievement-Zettel werden
+erst am Ende des Abends abgegeben. Und sie würde das Falsche messen: ein
+grosser Teil der Punkte steht vor der ersten Karte fest (Pauper +4,
+Evergreen +7, No Sol Ring +1 ergeben +12 ohne gespielte Partie), während
+ein gewonnenes Match +1 bringt. Eine Sortierung nach Punktsumme setzte die
+Spieler nach ihrer Deckwahl an die Tische statt nach dem Verlauf der Runde.
+
+**Unentschieden**: Alle an einem solchen Tisch zählen als ohne Sieg — das
+deckt sich mit der Wertung, denn "Winner winner – chicken dinner" gibt es
+nur für einen gewonnenen Match. Gehen *alle* Tische unentschieden aus, ist
+der Sortierschlüssel für jeden gleich und Runde 2 wird schlicht wieder
+zufällig.
+
+**Keine Punkteerfassung pro Runde.** Die App führt den Punktestand eines
+Abends nicht mehr fort; `Player.points` ist die über den Import gepflegte
+Kopie des Saisonstands von mtgbl.ch und dient allein der Paarung von
+Runde 1. Die Achievement-Punkte werden am Abendende erfasst (siehe
+BACKLOG.md) und wandern von dort nach mtgbl.ch.
+
+- **Abend verwerfen**: solange für keinen einzigen Tisch ein Ergebnis
+  erfasst ist, lässt sich ein Abend komplett verwerfen. Ohne das käme man
+  aus einem versehentlichen Start nicht mehr heraus — "Abend beenden"
+  verlangt vollständige Ergebnisse, und solange der Abend läuft, sind die
+  beteiligten Spieler nicht löschbar (Abschnitt 6.2).
 - **Tie-Break bei Punktegleichstand**: zufällige Reihenfolge.
 - **Rematch-Vermeidung**: weiches Kriterium, gilt nur **innerhalb desselben
   Abends** (nicht saisonübergreifend). Priorität bleibt die

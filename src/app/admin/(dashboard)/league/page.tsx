@@ -2,9 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { formatPlayerName } from "@/lib/players";
 import {
   finishEvening,
+  setTableResult,
   startEvening,
   startNextRound,
-  submitRoundResults,
 } from "./actions";
 import DiscardEveningButton from "./DiscardEveningButton";
 import ImportClient from "./ImportClient";
@@ -14,7 +14,8 @@ import RegenerateButton from "./RegenerateButton";
 
 export const dynamic = "force-dynamic";
 
-const MAX_ROUNDS = 3;
+// Zwei Spiele pro Liga-Abend, so steht es in den Regeln auf mtgbl.ch.
+const MAX_ROUNDS = 2;
 
 export default async function LeaguePage() {
   const evening = await prisma.evening.findFirst({
@@ -94,8 +95,8 @@ export default async function LeaguePage() {
         <div>
           <h1 className="text-xl font-semibold">Liga</h1>
           <p className="text-sm opacity-70">
-            Pairing anhand der Gesamt-Liga-Rangliste, bis zu 3 Runden pro
-            Abend (siehe SPEC.md Abschnitt 5).
+            Zwei Runden pro Abend. Runde 1 wird nach dem Saisonstand
+            gepaart, Runde 2 nach den Siegern der ersten Runde.
           </p>
         </div>
         <form action={startEvening} className="flex flex-col gap-4">
@@ -135,13 +136,15 @@ export default async function LeaguePage() {
   }
 
   const lastRound = evening.rounds[evening.rounds.length - 1];
-  const lastRoundComplete = lastRound.tables.every((t) =>
-    t.assignments.every((a) => a.pointsAwarded !== null),
+  // Vollständig ist eine Runde, wenn für jeden Tisch feststeht, wie er
+  // ausgegangen ist — mit Sieger oder unentschieden.
+  const lastRoundComplete = lastRound.tables.every(
+    (t) => t.resultEnteredAt !== null,
   );
   // Solange nirgends ein Ergebnis steht, lässt sich der Abend komplett
   // verwerfen — sonst käme man aus einem Fehlstart nicht mehr heraus.
   const noResultsAtAll = evening.rounds.every((r) =>
-    r.tables.every((t) => t.assignments.every((a) => a.pointsAwarded === null)),
+    r.tables.every((t) => t.resultEnteredAt === null),
   );
 
   return (
@@ -155,62 +158,120 @@ export default async function LeaguePage() {
 
       {evening.rounds.map((round) => {
         const isLastRound = round.number === evening.rounds.length;
-        const roundHasNoResults = round.tables.every((t) =>
-          t.assignments.every((a) => a.pointsAwarded === null),
+        const roundHasNoResults = round.tables.every(
+          (t) => t.resultEnteredAt === null,
         );
         return (
-        <form key={round.id} action={submitRoundResults} className="flex flex-col gap-3">
-          <input type="hidden" name="roundId" value={round.id} />
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-sm font-medium">
-              Runde {round.number} — Punkte pro Spieler eintragen
-            </h2>
-            {isLastRound && roundHasNoResults && (
-              <RegenerateButton roundId={round.id} roundNumber={round.number} />
+          <section key={round.id} className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-sm font-medium">
+                Runde {round.number} —{" "}
+                {isLastRound
+                  ? "Sieger antippen, sobald ein Tisch fertig ist"
+                  : "Ergebnis"}
+              </h2>
+              {isLastRound && roundHasNoResults && (
+                <RegenerateButton roundId={round.id} roundNumber={round.number} />
+              )}
+            </div>
+            {isLastRound && (
+              <p className="text-xs opacity-70">
+                Erreicht ein Tisch das Zeitlimit, endet die Partie ohne Sieger
+                — dann „Unentschieden“ wählen. Nochmals dieselbe Auswahl
+                antippen macht die Erfassung rückgängig.
+              </p>
             )}
-          </div>
-          <div className="flex flex-wrap gap-4">
-            {round.tables.map((table) => (
-              <div
-                key={table.id}
-                className="w-full rounded border border-white/20 p-3 sm:w-64"
-              >
-                <div className="mb-2 text-sm font-semibold">
-                  Tisch {table.tableNumber} ({table.size} Spieler)
-                </div>
-                <ul className="flex flex-col gap-2.5">
-                  {table.assignments.map((a) => (
-                    <li key={a.id} className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="w-20 truncate">
-                        {formatPlayerName(a.player)}
+            <div className="flex flex-wrap gap-4">
+              {round.tables.map((table) => {
+                const sieger = table.assignments.find((a) => a.isWinner);
+                const erfasst = table.resultEnteredAt !== null;
+                return (
+                  <div
+                    key={table.id}
+                    className={`w-full rounded border p-3 sm:w-64 ${
+                      erfasst ? "border-white/20" : "border-amber-500/60"
+                    }`}
+                  >
+                    <div className="mb-2 flex items-baseline justify-between gap-2">
+                      <span className="text-sm font-semibold">
+                        Tisch {table.tableNumber} ({table.size} Spieler)
                       </span>
-                      <input
-                        type="number"
-                        name={`points_${a.id}`}
-                        defaultValue={a.pointsAwarded ?? ""}
-                        placeholder="Pkt."
-                        className="min-h-9 w-20 rounded border border-white/20 px-2 py-2"
-                      />
-                      {round.number === evening.rounds.length && (
-                        <ReassignSelect
-                          assignmentId={a.id}
-                          currentTableId={table.id}
-                          tables={round.tables}
-                        />
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <button
-            type="submit"
-            className="min-h-11 w-fit rounded border border-white/20 px-4 py-2 text-sm"
-          >
-            Ergebnisse Runde {round.number} speichern
-          </button>
-        </form>
+                      <span className="shrink-0 text-xs opacity-70">
+                        {!erfasst
+                          ? "offen"
+                          : sieger
+                            ? "Sieger steht"
+                            : "unentschieden"}
+                      </span>
+                    </div>
+                    <ul className="flex flex-col gap-2">
+                      {table.assignments.map((a) => (
+                        <li key={a.id} className="flex flex-wrap items-center gap-2">
+                          {isLastRound ? (
+                            <form action={setTableResult} className="flex-1">
+                              <input type="hidden" name="tableId" value={table.id} />
+                              <input
+                                type="hidden"
+                                name="winnerAssignmentId"
+                                value={a.id}
+                              />
+                              <button
+                                type="submit"
+                                className={`flex min-h-11 w-full items-center gap-2 rounded border px-3 py-2 text-left text-sm ${
+                                  a.isWinner
+                                    ? "border-blue-500 bg-blue-500/10"
+                                    : "border-white/10"
+                                }`}
+                              >
+                                <span className="w-4 shrink-0" aria-hidden="true">
+                                  {a.isWinner ? "🏆" : ""}
+                                </span>
+                                <span className="truncate">
+                                  {formatPlayerName(a.player)}
+                                </span>
+                              </button>
+                            </form>
+                          ) : (
+                            <span className="flex min-h-9 flex-1 items-center gap-2 text-sm">
+                              <span className="w-4 shrink-0" aria-hidden="true">
+                                {a.isWinner ? "🏆" : ""}
+                              </span>
+                              <span className="truncate">
+                                {formatPlayerName(a.player)}
+                              </span>
+                            </span>
+                          )}
+                          {isLastRound && (
+                            <ReassignSelect
+                              assignmentId={a.id}
+                              currentTableId={table.id}
+                              tables={round.tables}
+                            />
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    {isLastRound && (
+                      <form action={setTableResult} className="mt-2">
+                        <input type="hidden" name="tableId" value={table.id} />
+                        <input type="hidden" name="winnerAssignmentId" value="" />
+                        <button
+                          type="submit"
+                          className={`min-h-11 w-full rounded border px-3 py-2 text-sm ${
+                            erfasst && !sieger
+                              ? "border-blue-500 bg-blue-500/10"
+                              : "border-dashed border-white/20"
+                          }`}
+                        >
+                          Unentschieden
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         );
       })}
 
@@ -241,8 +302,9 @@ export default async function LeaguePage() {
       </div>
       {!lastRoundComplete && (
         <p className="text-xs opacity-70">
-          Trage zuerst alle Ergebnisse der aktuellen Runde ein, bevor du die
-          nächste Runde startest oder den Abend beendest.
+          Halte zuerst für jeden Tisch fest, wie er ausgegangen ist — Sieger
+          oder unentschieden —, bevor du die nächste Runde startest oder den
+          Abend beendest.
         </p>
       )}
 
