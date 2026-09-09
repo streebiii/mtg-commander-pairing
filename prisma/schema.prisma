@@ -89,6 +89,11 @@ model Table {
   tableNumber Int
   /// Tischgröße gemäß Pairing-Algorithmus (3, 4 oder 5).
   size        Int
+  /// Gesetzt, sobald der Organisator das Ergebnis dieses Tisches erfasst
+  /// hat. Unterscheidet "unentschieden ausgegangen" (gesetzt, aber keine
+  /// Zuordnung mit isWinner) von "noch nicht erfasst" (null) — Runde 2
+  /// startet erst, wenn für jeden Tisch eines von beidem feststeht.
+  resultEnteredAt DateTime?
 
   assignments TableAssignment[]
 
@@ -107,7 +112,18 @@ model TableAssignment {
 
   /// null, solange das Ergebnis noch nicht eingetragen wurde. Bei Modus A
   /// bleibt dieses Feld immer null.
+  ///
+  /// Wird seit der Umstellung auf den Tischsieger nicht mehr befüllt: die
+  /// Punkte entstehen erst bei der Erfassung am Abendende und wandern von
+  /// dort nach mtgbl.ch (siehe BACKLOG.md). Das Feld bleibt vorerst
+  /// stehen, damit alte Abende lesbar bleiben.
   pointsAwarded Int?
+
+  /// Sieger der Partie an diesem Tisch. Höchstens eine Zuordnung pro Tisch
+  /// trägt true; sind alle false und ist `Table.resultEnteredAt` gesetzt,
+  /// ging der Tisch unentschieden aus (Zeitlimit, siehe die Liga-Regeln
+  /// auf mtgbl.ch). Sortierschlüssel für die Paarung der zweiten Runde.
+  isWinner Boolean @default(false)
 
   @@unique([tableId, playerId])
   @@map("table_assignments")

@@ -7,7 +7,23 @@ import { assignLeagueRound } from "@/lib/pairing/leagueAssignment";
 import { buildPreviousPairings } from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
 
-const MAX_ROUNDS = 3;
+/**
+ * Zwei Runden pro Liga-Abend — so steht es in den Liga-Regeln auf
+ * mtgbl.ch ("Pro Liga-Abend werden zwei Spiele gespielt").
+ */
+const MAX_ROUNDS = 2;
+
+/**
+ * Kein Zufalls-Rauschen bei der Paarung der zweiten Runde.
+ *
+ * Der Sortierschlüssel ist dort der Sieg aus Runde 1, also 1 oder 0.
+ * RANK_JITTER_POINTS (±3) ist auf den Saison-Punktestand gemünzt und wäre
+ * hier sechsmal so gross wie das Signal — die Gewinner landeten wieder
+ * zufällig verteilt und die Funktion sähe fertig aus, ohne etwas zu tun.
+ * Dass innerhalb der Gewinner und innerhalb der Übrigen zufällig gruppiert
+ * wird, besorgt ohnehin das Mischen vor dem Sortieren (rankGrouping.ts).
+ */
+const WIN_JITTER = 0;
 
 /**
  * Auto-Save für die Liga-Verwaltung: Punktestand und Liga-Teilnahme-Flag
@@ -87,54 +103,82 @@ export async function startEvening(formData: FormData) {
   revalidatePath("/");
 }
 
-/** Speichert die Rundenergebnisse (Punkte pro Spieler) und schreibt die
- * Gesamt-Liga-Punkte der Spieler fort. Erneutes Speichern korrigiert den
- * Punktestand um die Differenz zum vorherigen Wert (idempotent). */
-export async function submitRoundResults(formData: FormData) {
-  const roundId = String(formData.get("roundId") ?? "");
-  if (!roundId) return;
+/**
+ * Hält fest, wie ein Tisch ausgegangen ist: mit einem Sieger oder
+ * unentschieden.
+ *
+ * Der Sieg ist der Sortierschlüssel für die zweite Runde (siehe
+ * BACKLOG.md) — und die einzige Angabe, die direkt nach der Partie
+ * vorliegt. Die Achievement-Punkte stehen erst am Abendende auf dem
+ * abgegebenen Zettel und taugen deshalb nicht zum Paaren.
+ *
+ * `winnerAssignmentId` leer bedeutet unentschieden: bei Erreichen des
+ * Zeitlimits von 120 Minuten endet die Partie ohne Sieger (Liga-Regeln
+ * auf mtgbl.ch), dann zählen alle an diesem Tisch als ohne Sieg.
+ *
+ * Nochmals dieselbe Auswahl antippen macht die Erfassung rückgängig —
+ * der Tisch gilt danach wieder als "noch nicht erfasst".
+ */
+export async function setTableResult(formData: FormData) {
+  const tableId = String(formData.get("tableId") ?? "");
+  const winnerAssignmentId = String(formData.get("winnerAssignmentId") ?? "");
+  if (!tableId) return;
 
-  const round = await prisma.round.findUnique({
-    where: { id: roundId },
-    include: { tables: { include: { assignments: true } } },
+  const table = await prisma.table.findUnique({
+    where: { id: tableId },
+    include: {
+      assignments: { select: { id: true, isWinner: true } },
+      round: {
+        include: {
+          evening: {
+            include: {
+              rounds: { orderBy: { number: "desc" }, take: 1, select: { id: true } },
+            },
+          },
+        },
+      },
+    },
   });
-  if (!round) return;
+  if (!table) return;
+  if (table.round.evening.finishedAt) return;
+  // Nur die jeweils letzte Runde ist noch änderbar: auf dem Ergebnis von
+  // Runde 1 beruht bereits die Paarung von Runde 2.
+  if (table.round.evening.rounds[0]?.id !== table.roundId) return;
 
-  const updates: { assignmentId: string; playerId: string; newPoints: number; oldPoints: number }[] =
-    [];
-
-  for (const table of round.tables) {
-    for (const assignment of table.assignments) {
-      const raw = formData.get(`points_${assignment.id}`);
-      if (raw === null) continue;
-      const newPoints = Number.parseInt(String(raw), 10);
-      if (!Number.isFinite(newPoints)) continue;
-      updates.push({
-        assignmentId: assignment.id,
-        playerId: assignment.playerId,
-        newPoints,
-        oldPoints: assignment.pointsAwarded ?? 0,
-      });
-    }
+  const bisherigerSieger = table.assignments.find((a) => a.isWinner)?.id ?? "";
+  if (winnerAssignmentId && !table.assignments.some((a) => a.id === winnerAssignmentId)) {
+    return;
   }
 
-  await prisma.$transaction(
-    updates.flatMap(({ assignmentId, playerId, newPoints, oldPoints }) => [
-      prisma.tableAssignment.update({
-        where: { id: assignmentId },
-        data: { pointsAwarded: newPoints },
-      }),
-      prisma.player.update({
-        where: { id: playerId },
-        data: { points: { increment: newPoints - oldPoints } },
-      }),
-    ]),
-  );
+  const istWiderruf =
+    table.resultEnteredAt !== null && winnerAssignmentId === bisherigerSieger;
+
+  await prisma.$transaction([
+    prisma.tableAssignment.updateMany({
+      where: { tableId },
+      data: { isWinner: false },
+    }),
+    ...(istWiderruf || !winnerAssignmentId
+      ? []
+      : [
+          prisma.tableAssignment.update({
+            where: { id: winnerAssignmentId },
+            data: { isWinner: true },
+          }),
+        ]),
+    prisma.table.update({
+      where: { id: tableId },
+      data: { resultEnteredAt: istWiderruf ? null : new Date() },
+    }),
+  ]);
 
   revalidatePath("/admin/league");
 }
 
-/** Berechnet und erstellt die nächste Runde (bis max. 3 Runden pro Abend). */
+/**
+ * Berechnet und erstellt Runde 2 (mehr Runden gibt es pro Abend nicht).
+ * Gepaart wird nach dem Sieg aus Runde 1, nicht nach dem Saisonstand.
+ */
 export async function startNextRound(formData: FormData) {
   const eveningId = String(formData.get("eveningId") ?? "");
   if (!eveningId) return;
@@ -155,22 +199,23 @@ export async function startNextRound(formData: FormData) {
   if (!lastRound) return;
   if (lastRound.number >= MAX_ROUNDS) return;
 
-  const allEntered = lastRound.tables.every((t) =>
-    t.assignments.every((a) => a.pointsAwarded !== null),
-  );
-  if (!allEntered) return; // erst Ergebnisse der letzten Runde eintragen
+  // Für jeden Tisch muss feststehen, wie er ausgegangen ist — mit Sieger
+  // oder unentschieden. "Noch nicht erfasst" blockiert.
+  const allEntered = lastRound.tables.every((t) => t.resultEnteredAt !== null);
+  if (!allEntered) return;
 
-  const attendeeIds = lastRound.tables.flatMap((t) =>
-    t.assignments.map((a) => a.playerId),
+  // Sortierschlüssel ist der Sieg aus der letzten Runde, nicht der
+  // Saison-Punktestand: die Gewinner spielen in Runde 2 gegeneinander.
+  // Ging ein Tisch unentschieden aus, zählen alle dort als ohne Sieg;
+  // sind alle Tische unentschieden, ist der Schlüssel für jeden gleich und
+  // Runde 2 wird schlicht wieder zufällig.
+  const players = lastRound.tables.flatMap((t) =>
+    t.assignments.map((a) => ({ id: a.playerId, points: a.isWinner ? 1 : 0 })),
   );
-  const players = await prisma.player.findMany({
-    where: { id: { in: attendeeIds } },
-    select: { id: true, points: true },
-  });
 
   const sizes = computeTableSizes(players.length);
   const previousPairings = await buildPreviousPairings(eveningId);
-  const tables = assignLeagueRound(players, sizes, previousPairings);
+  const tables = assignLeagueRound(players, sizes, previousPairings, WIN_JITTER);
 
   await createRoundInDb(eveningId, lastRound.number + 1, tables);
   revalidatePath("/admin/league");
@@ -199,9 +244,7 @@ export async function regenerateRound(formData: FormData) {
   const isLastRound = round.evening.rounds[0]?.id === round.id;
   if (!isLastRound) return;
 
-  const anyResultEntered = round.tables.some((t) =>
-    t.assignments.some((a) => a.pointsAwarded !== null),
-  );
+  const anyResultEntered = round.tables.some((t) => t.resultEnteredAt !== null);
   if (anyResultEntered) return;
 
   const attendeeIds = round.tables.flatMap((t) =>
@@ -263,11 +306,8 @@ export async function discardEvening(formData: FormData) {
   const eveningId = String(formData.get("eveningId") ?? "");
   if (!eveningId) return;
 
-  const enteredResults = await prisma.tableAssignment.count({
-    where: {
-      pointsAwarded: { not: null },
-      table: { round: { eveningId } },
-    },
+  const enteredResults = await prisma.table.count({
+    where: { resultEnteredAt: { not: null }, round: { eveningId } },
   });
   if (enteredResults > 0) return;
 

@@ -4,6 +4,7 @@ import {
   pairKey,
   tablePairKeys,
   countRematches,
+  RANK_JITTER_POINTS,
   type RankedPlayer,
 } from "./leagueAssignment";
 import { computeTableSizes } from "./tableSizes";
@@ -146,5 +147,54 @@ describe("assignLeagueRound", () => {
 describe("pairKey", () => {
   it("ist unabhängig von der Reihenfolge", () => {
     expect(pairKey("a", "b")).toBe(pairKey("b", "a"));
+  });
+});
+
+describe("Paarung der zweiten Runde nach dem Sieg (SPEC.md Abschnitt 5)", () => {
+  // Runde 2 nutzt denselben Mechanismus, aber mit 1/0 statt Punkten und
+  // ohne Rauschen — siehe WIN_JITTER in league/actions.ts.
+  const alsSieg = (ids: string[], sieger: string[]) =>
+    ids.map((id) => ({ id, points: sieger.includes(id) ? 1 : 0 }));
+
+  it("setzt die drei Sieger an denselben Tisch", () => {
+    const ids = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
+    const sieger = ["c", "f", "i"];
+    for (let i = 0; i < 200; i++) {
+      const tische = assignLeagueRound(alsSieg(ids, sieger), [3, 3, 3], new Set(), 0);
+      const kopftisch = tische.find((t) => t.includes("c"))!;
+      expect([...kopftisch].sort()).toEqual(sieger);
+    }
+  });
+
+  it("verteilt zufaellig, wenn alle Tische unentschieden ausgingen", () => {
+    const ids = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
+    const zusammen = new Set<string>();
+    for (let i = 0; i < 200; i++) {
+      const tische = assignLeagueRound(alsSieg(ids, []), [3, 3, 3], new Set(), 0);
+      const tischVonA = tische.find((t) => t.includes("a"))!;
+      for (const id of tischVonA) if (id !== "a") zusammen.add(id);
+    }
+    // Ohne Sieger gibt es nichts zu sortieren: "a" muss im Lauf der
+    // Durchgaenge mit jedem anderen einmal zusammengesessen haben.
+    expect(zusammen.size).toBe(8);
+  });
+
+  it("das Rauschen der Runde 1 wuerde den Sieg-Schluessel zerstoeren", () => {
+    // Sicherung gegen einen Rueckfall: mit RANK_JITTER_POINTS (+-3) auf
+    // einer 0/1-Skala landen die Sieger wieder zufaellig verteilt.
+    const ids = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
+    const sieger = ["c", "f", "i"];
+    let zusammen = 0;
+    for (let i = 0; i < 200; i++) {
+      const tische = assignLeagueRound(
+        alsSieg(ids, sieger),
+        [3, 3, 3],
+        new Set(),
+        RANK_JITTER_POINTS,
+      );
+      const kopftisch = tische.find((t) => t.includes("c"))!;
+      if ([...kopftisch].sort().join() === sieger.join()) zusammen++;
+    }
+    expect(zusammen).toBeLessThan(100);
   });
 });
