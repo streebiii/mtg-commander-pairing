@@ -5,6 +5,29 @@ Konzept-Session zum Liga-Abend und sind entscheidungsreif — die
 Grundsatzfragen sind dort beantwortet, offen ist jeweils nur noch die
 Umsetzung.
 
+## Liga: Rang-Rauschen kann grössere Sprünge erlauben als vermutet
+
+**Status:** Noch zu besprechen, nicht dringend.
+
+**Worum es geht:** `RANG_RAUSCHEN = 10` (`leagueRanking.ts`) wird
+**pro Spieler unabhängig** gewürfelt — zwei Spieler können sich deshalb
+schon bei bis zu **2×10 = 20 Rängen** Abstand begegnen, nicht nur bei
+±10 (dokumentiert im Testkommentar `leagueAssignment.test.ts`: "2x
+RANK_JITTER_POINTS"). Beobachtet live: Marc S (Rang 1) und Danilo
+(Rang 16, Abstand 15) landeten nach beiderseitigem Sieg-Bonus am
+selben Tisch — kein Bug, aber grösser als die Faustregel "±10" vermuten
+lässt.
+
+**Zu klären, sobald es angegangen wird:**
+- Bleibt es wie es ist (bewusste Kompromiss-Entscheidung, siehe
+  Commit-Begründung mit den 28-Spieler-Messwerten), oder soll
+  `RANG_RAUSCHEN` reduziert werden?
+- Alternative: eine harte Obergrenze zusätzlich zum Rauschen, unabhängig
+  von der Zufallskomponente — bräuchte einen eigenen Grill.
+
+**Nächster Schritt:** Nach Abschluss der laufenden Liga-UI-Arbeit
+besprechen.
+
 ## Wie der Liga-Abend wirklich abläuft
 
 Ergebnis der Konzept-Session. Diese Beschreibung ist die Grundlage aller
