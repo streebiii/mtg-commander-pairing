@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 const MAX_ROUNDS = 2;
 
 export default async function LeaguePage() {
-  const evening = await prisma.evening.findFirst({
+  let evening = await prisma.evening.findFirst({
     where: { mode: "LEAGUE", finishedAt: null },
     orderBy: { createdAt: "desc" },
     include: {
@@ -42,6 +42,18 @@ export default async function LeaguePage() {
       },
     },
   });
+
+  // Ein "laufender" Abend ohne jede Runde ist ein verwaister Datensatz —
+  // z.B. wenn früher das Anlegen von Abend und Runde 1 nicht atomar war
+  // und der zweite Schritt fehlschlug (siehe startEvening in actions.ts).
+  // Ohne diese Absicherung stürzt die Seite weiter unten beim Zugriff
+  // auf `lastRound.tables` ab, dauerhaft — es gäbe dann ja auch keinen
+  // Knopf mehr, um ihn manuell zu verwerfen. Selbstheilend aufräumen und
+  // so tun, als gäbe es keinen laufenden Abend.
+  if (evening && evening.rounds.length === 0) {
+    await prisma.evening.delete({ where: { id: evening.id } });
+    evening = null;
+  }
 
   // Alle Vereinsspieler für die Verwaltung (Punkte + Teilnahme-Flag) — nicht
   // nur die aktuell teilnehmenden, damit man auch neue Spieler aktivieren

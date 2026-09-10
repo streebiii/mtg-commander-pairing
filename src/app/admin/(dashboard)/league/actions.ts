@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import { assignLeagueRound } from "@/lib/pairing/leagueAssignment";
@@ -40,12 +41,24 @@ export async function updateLeaguePlayer(formData: FormData) {
   revalidatePath("/admin/league");
 }
 
+/**
+ * @param db Übergibt entweder `prisma` direkt oder einen Transaktions-
+ *   Client — Aufrufer, die den Abend selbst gerade erst anlegen (siehe
+ *   `startEvening`), müssen beides atomar tun, sonst bliebe bei einem
+ *   Fehler zwischen den beiden Schritten ein Abend ohne jede Runde
+ *   zurück. Genau das ist einmal in Produktion passiert: die Liga-Seite
+ *   liest `evening.rounds[evening.rounds.length - 1]` und stürzte beim
+ *   Zugriff auf `.tables` einer so entstandenen `undefined`-Runde ab —
+ *   dauerhaft, denn ohne eine sichtbare Seite gibt es auch keinen Knopf
+ *   mehr, um den kaputten Abend zu verwerfen.
+ */
 async function createRoundInDb(
+  db: Prisma.TransactionClient | typeof prisma,
   eveningId: string,
   roundNumber: number,
   tables: string[][],
 ) {
-  await prisma.round.create({
+  await db.round.create({
     data: {
       eveningId,
       number: roundNumber,
@@ -91,10 +104,13 @@ export async function startEvening(formData: FormData) {
     TAUSCH_TOLERANZ_RAENGE,
   );
 
-  const evening = await prisma.evening.create({
-    data: { mode: "LEAGUE" },
+  // Abend + Runde 1 atomar anlegen (siehe createRoundInDb) — sonst bliebe
+  // bei einem Fehler zwischen den beiden Schritten ein Abend ohne jede
+  // Runde zurück, der die Liga-Seite dauerhaft zum Absturz bringt.
+  await prisma.$transaction(async (tx) => {
+    const evening = await tx.evening.create({ data: { mode: "LEAGUE" } });
+    await createRoundInDb(tx, evening.id, 1, tables);
   });
-  await createRoundInDb(evening.id, 1, tables);
 
   // Öffentlich wird immer nur eines gezeigt — eine offene Casual-Zuteilung
   // würde den Liga-Abend sonst verdecken (siehe SPEC.md Abschnitt 4).
@@ -232,7 +248,7 @@ export async function startNextRound(formData: FormData) {
     TAUSCH_TOLERANZ_RAENGE,
   );
 
-  await createRoundInDb(eveningId, lastRound.number + 1, tables);
+  await createRoundInDb(prisma, eveningId, lastRound.number + 1, tables);
   revalidatePath("/admin/league");
 }
 
