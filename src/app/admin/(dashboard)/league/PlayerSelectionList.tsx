@@ -53,7 +53,10 @@ export default function PlayerSelectionList({
       >
         {allSelected ? "Auswahl aufheben" : "Alle auswählen"}
       </button>
-      <div className="flex max-w-2xl flex-wrap gap-2">
+      {/* Gleichmässiges Raster statt loser flex-wrap-Chips — analog zur
+          Spielerliste im Casual-Tab, damit alle Kacheln dieselbe Breite
+          haben statt sich nach der Namenslänge zu richten. */}
+      <div className="grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3">
         {players.map((p) => (
           <label
             key={p.id}
@@ -65,9 +68,11 @@ export default function PlayerSelectionList({
               value={p.id}
               checked={selected.has(p.id)}
               onChange={() => toggle(p.id)}
-              className="h-4 w-4"
+              className="h-4 w-4 shrink-0"
             />
-            {p.name} ({p.points})
+            <span className="truncate">
+              {p.name} ({p.points})
+            </span>
           </label>
         ))}
       </div>

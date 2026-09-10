@@ -1,14 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { formatPlayerName } from "@/lib/players";
-import {
-  finishEvening,
-  setTableResult,
-  startEvening,
-  startNextRound,
-} from "./actions";
+import { setTableResult, startEvening } from "./actions";
 import DiscardEveningButton from "./DiscardEveningButton";
+import FinishEveningButton from "./FinishEveningButton";
 import ImportClient from "./ImportClient";
 import LeaguePlayerRow from "./LeaguePlayerRow";
+import NextRoundButton from "./NextRoundButton";
 import PlayerSelectionList from "./PlayerSelectionList";
 import ReassignSelect from "./ReassignSelect";
 import RegenerateButton from "./RegenerateButton";
@@ -294,27 +291,9 @@ export default async function LeaguePage() {
 
       <div className="flex flex-wrap gap-3">
         {lastRound.number < MAX_ROUNDS && (
-          <form action={startNextRound}>
-            <input type="hidden" name="eveningId" value={evening.id} />
-            <button
-              type="submit"
-              disabled={!lastRoundComplete}
-              className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
-            >
-              Nächste Runde starten
-            </button>
-          </form>
+          <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
         )}
-        <form action={finishEvening}>
-          <input type="hidden" name="eveningId" value={evening.id} />
-          <button
-            type="submit"
-            disabled={!lastRoundComplete}
-            className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
-          >
-            Abend beenden
-          </button>
-        </form>
+        <FinishEveningButton eveningId={evening.id} disabled={!lastRoundComplete} />
         {noResultsAtAll && <DiscardEveningButton eveningId={evening.id} />}
       </div>
       {!lastRoundComplete && (
