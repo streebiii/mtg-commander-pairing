@@ -236,31 +236,6 @@ sauber umsetzt, bekommt die Saison-Achievements ohne eigenen Weg.
 **Nächster Schritt:** Eigene Grill-Session zu Schema und Saisonwechsel,
 bevor gebaut wird.
 
-## Liga: Knopf "alle Spieler auswählen"
-
-**Status:** Klar, kein Grill nötig.
-
-**Worum es geht:** Beim Start eines Liga-Abends muss der Organisator
-aktuell jeden anwesenden Spieler einzeln antippen (Checkbox-Liste in
-`src/app/admin/(dashboard)/league/page.tsx`). Bei fast vollständiger
-Anwesenheit ist das viel Klickarbeit. Gewünscht ist ein Knopf, der alle
-auf einmal auswählt.
-
-**Zu beachten bei der Umsetzung:**
-- Die Auswahl steckt in einem klassischen `<form>` mit
-  `<input type="checkbox" name="playerIds">`, gerendert von einer
-  **Server-Komponente**. Ein Umschalten braucht Zustand, also eine kleine
-  Client-Komponente — entweder für den Knopf allein (setzt die Checkboxen
-  im umgebenden Formular) oder für die ganze Liste.
-- Sinnvoll als **Umschalter**: "alle auswählen" bzw. "Auswahl aufheben",
-  je nachdem ob schon alle angehakt sind. Sonst braucht es zwei Knöpfe.
-- Es erscheinen ohnehin nur Liga-teilnehmende Spieler in der Liste
-  (`leagueActive`), "alle" heisst also "alle Teilnehmenden" — nicht das
-  gesamte Vereins-Roster.
-- 44px Klickfläche wie überall.
-
-**Nächster Schritt:** Direkt umsetzen.
-
 ## Liga-Verwaltung zeigt nur noch Liga-Teilnehmer
 
 **Status:** Klar, kein Grill nötig.

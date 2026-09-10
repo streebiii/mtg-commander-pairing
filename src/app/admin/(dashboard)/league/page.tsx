@@ -9,6 +9,7 @@ import {
 import DiscardEveningButton from "./DiscardEveningButton";
 import ImportClient from "./ImportClient";
 import LeaguePlayerRow from "./LeaguePlayerRow";
+import PlayerSelectionList from "./PlayerSelectionList";
 import ReassignSelect from "./ReassignSelect";
 import RegenerateButton from "./RegenerateButton";
 
@@ -117,17 +118,13 @@ export default async function LeaguePage() {
               zuerst welche unten in der Liga-Verwaltung.
             </p>
           ) : (
-            <div className="flex max-w-2xl flex-wrap gap-2">
-              {activePlayers.map((p) => (
-                <label
-                  key={p.id}
-                  className="flex min-h-9 items-center gap-1.5 rounded border border-white/20 px-3 py-2 text-sm"
-                >
-                  <input type="checkbox" name="playerIds" value={p.id} className="h-4 w-4" />
-                  {formatPlayerName(p)} ({p.points})
-                </label>
-              ))}
-            </div>
+            <PlayerSelectionList
+              players={activePlayers.map((p) => ({
+                id: p.id,
+                name: formatPlayerName(p),
+                points: p.points,
+              }))}
+            />
           )}
           <button
             type="submit"
