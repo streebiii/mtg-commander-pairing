@@ -79,6 +79,11 @@ model Round {
   evening   Evening  @relation(fields: [eveningId], references: [id], onDelete: Cascade)
   number    Int
   createdAt DateTime @default(now())
+  /// Gesetzt, sobald diese Runde auf der öffentlichen Seite sichtbar
+  /// gemacht wurde ("Live schalten"). null = Warteraum — nur der
+  /// Organisator sieht die Zuteilung, die öffentliche Seite zeigt
+  /// weiterhin die zuletzt veröffentlichte Runde (siehe Grill-Notizen).
+  publishedAt DateTime?
 
   tables Table[]
 

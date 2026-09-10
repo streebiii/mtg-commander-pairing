@@ -161,6 +161,10 @@ export async function setTableResult(formData: FormData) {
   // Nur die jeweils letzte Runde ist noch änderbar: auf dem Ergebnis von
   // Runde 1 beruht bereits die Paarung von Runde 2.
   if (table.round.evening.rounds[0]?.id !== table.roundId) return;
+  // Sieger ergeben erst Sinn, sobald die Runde öffentlich sichtbar ist —
+  // vorher sitzen die Spieler ja noch nicht am (angezeigten) Tisch. Der
+  // Warteraum dient nur der Kontrolle/dem Tausch der Zuteilung.
+  if (!table.round.publishedAt) return;
 
   const bisherigerSieger = table.assignments.find((a) => a.isWinner)?.id ?? "";
   if (winnerAssignmentId && !table.assignments.some((a) => a.id === winnerAssignmentId)) {
@@ -256,8 +260,8 @@ export async function startNextRound(formData: FormData) {
  * Würfelt die Tischzuteilung einer Runde neu aus (gleicher Spieler-Pool,
  * neue Zufallsziehung inkl. Rang-Jitter, siehe SPEC.md Abschnitt 5.1).
  * Nur für die jeweils letzte Runde eines Abends möglich, und nur solange
- * noch keine Ergebnisse für sie eingetragen wurden — sonst würden bereits
- * erfasste Punkte ihre Zuordnung verlieren.
+ * sie noch im Warteraum ist (nicht veröffentlicht) — einmal live, hängen
+ * ggf. schon Ergebnisse dran, und die Spieler kennen ihren Tisch bereits.
  */
 export async function regenerateRound(formData: FormData) {
   const roundId = String(formData.get("roundId") ?? "");
@@ -275,8 +279,7 @@ export async function regenerateRound(formData: FormData) {
   const isLastRound = round.evening.rounds[0]?.id === round.id;
   if (!isLastRound) return;
 
-  const anyResultEntered = round.tables.some((t) => t.resultEnteredAt !== null);
-  if (anyResultEntered) return;
+  if (round.publishedAt) return;
 
   const attendeeIds = round.tables.flatMap((t) =>
     t.assignments.map((a) => a.playerId),
@@ -331,17 +334,104 @@ export async function regenerateRound(formData: FormData) {
   revalidatePath("/admin/league");
 }
 
-/** Verschiebt einen Spieler manuell an einen anderen Tisch derselben Runde. */
-export async function reassignTable(formData: FormData) {
-  const assignmentId = String(formData.get("assignmentId") ?? "");
-  const newTableId = String(formData.get("newTableId") ?? "");
-  if (!assignmentId || !newTableId) return;
+/**
+ * Tauscht zwei Spieler zwischen (oder innerhalb) ihrer Tische — ersetzt
+ * das frühere Tisch-Auswahl-Dropdown durch Antippen (siehe
+ * Grill-Notizen): zwei Spieler antippen statt einen Tisch aus einer
+ * Liste zu wählen, analog zum Casual-Tab.
+ *
+ * Funktioniert unabhängig vom Warteraum-/Live-Status der Runde — nur
+ * die jeweils letzte Runde eines laufenden Abends ist überhaupt
+ * änderbar.
+ *
+ * Bewusst kein Zurücksetzen von `isWinner`/`resultEnteredAt` beim
+ * Tausch: das gab es beim alten Dropdown genauso wenig. Wer nach einer
+ * Sieger-Erfassung noch tauscht, muss das Ergebnis ggf. selbst
+ * korrigieren — ein seltener Sonderfall, kein neues Verhalten.
+ */
+export async function swapPlayers(formData: FormData) {
+  const assignmentAId = String(formData.get("assignmentAId") ?? "");
+  const assignmentBId = String(formData.get("assignmentBId") ?? "");
+  if (!assignmentAId || !assignmentBId || assignmentAId === assignmentBId) return;
 
-  await prisma.tableAssignment.update({
-    where: { id: assignmentId },
-    data: { tableId: newTableId },
-  });
+  const [a, b] = await Promise.all([
+    prisma.tableAssignment.findUnique({
+      where: { id: assignmentAId },
+      select: {
+        tableId: true,
+        table: {
+          select: {
+            roundId: true,
+            round: {
+              select: {
+                eveningId: true,
+                evening: {
+                  select: {
+                    finishedAt: true,
+                    rounds: { orderBy: { number: "desc" }, take: 1, select: { id: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.tableAssignment.findUnique({
+      where: { id: assignmentBId },
+      select: { tableId: true, table: { select: { roundId: true } } },
+    }),
+  ]);
+  if (!a || !b) return;
+  // Beide müssen in derselben Runde sitzen — und nur die jeweils letzte
+  // Runde eines noch laufenden Abends ist änderbar.
+  if (a.table.roundId !== b.table.roundId) return;
+  if (a.table.round.evening.finishedAt) return;
+  if (a.table.round.evening.rounds[0]?.id !== a.table.roundId) return;
+  if (a.tableId === b.tableId) return; // gleicher Tisch — nichts zu tauschen
+
+  await prisma.$transaction([
+    prisma.tableAssignment.update({
+      where: { id: assignmentAId },
+      data: { tableId: b.tableId },
+    }),
+    prisma.tableAssignment.update({
+      where: { id: assignmentBId },
+      data: { tableId: a.tableId },
+    }),
+  ]);
   revalidatePath("/admin/league");
+}
+
+/**
+ * Schaltet eine Runde live: ab jetzt sieht die öffentliche Seite diese
+ * Zuteilung statt der vorherigen, und Sieger lassen sich erfassen
+ * (siehe setTableResult). Vorher war sie nur im Organisator-Warteraum
+ * sichtbar — Absicht: Tische in Ruhe kontrollieren/tauschen, bevor die
+ * Spieler sie sehen.
+ */
+export async function publishRound(formData: FormData) {
+  const roundId = String(formData.get("roundId") ?? "");
+  if (!roundId) return;
+
+  const round = await prisma.round.findUnique({
+    where: { id: roundId },
+    include: {
+      evening: { include: { rounds: { orderBy: { number: "desc" }, take: 1 } } },
+    },
+  });
+  if (!round) return;
+  if (round.evening.finishedAt) return;
+  if (round.evening.rounds[0]?.id !== round.id) return;
+  if (round.publishedAt) return; // schon live
+
+  await prisma.round.update({
+    where: { id: roundId },
+    data: { publishedAt: new Date() },
+  });
+
+  revalidatePath("/admin/league");
+  revalidatePath("/");
 }
 
 /**
