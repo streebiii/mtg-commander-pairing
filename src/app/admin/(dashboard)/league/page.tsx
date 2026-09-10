@@ -1,14 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { formatPlayerName } from "@/lib/players";
-import { setTableResult, startEvening } from "./actions";
+import { rankValues } from "@/lib/pairing/leagueRanking";
+import { startEvening } from "./actions";
 import DiscardEveningButton from "./DiscardEveningButton";
 import FinishEveningButton from "./FinishEveningButton";
 import ImportClient from "./ImportClient";
 import LeaguePlayerRow from "./LeaguePlayerRow";
 import NextRoundButton from "./NextRoundButton";
 import PlayerSelectionList from "./PlayerSelectionList";
-import ReassignSelect from "./ReassignSelect";
+import PublishRoundButton from "./PublishRoundButton";
 import RegenerateButton from "./RegenerateButton";
+import RoundBoard from "./RoundBoard";
 
 export const dynamic = "force-dynamic";
 
@@ -165,119 +167,107 @@ export default async function LeaguePage() {
 
       {evening.rounds.map((round) => {
         const isLastRound = round.number === evening.rounds.length;
-        const roundHasNoResults = round.tables.every(
-          (t) => t.resultEnteredAt === null,
-        );
+        const isPublished = round.publishedAt !== null;
+
+        // Warteraum: die jeweils letzte Runde, solange noch nicht live
+        // geschaltet — der Organisator prüft/tauscht in Ruhe, bevor die
+        // Spieler die Zuteilung sehen (siehe Grill-Notizen).
+        if (isLastRound && !isPublished) {
+          const attendeeIds = new Set(
+            round.tables.flatMap((t) => t.assignments.map((a) => a.playerId)),
+          );
+          const standings = allPlayers.filter((p) => attendeeIds.has(p.id));
+          const nameById = new Map(standings.map((p) => [p.id, formatPlayerName(p)]));
+          // Sieger der Vorrunde für eine realistische Rang-Vorschau bei
+          // Runde 2 — bereits geladen, keine zusätzliche Abfrage nötig.
+          const vorrunde = round.number > 1 ? evening.rounds[round.number - 2] : null;
+          const sieger = new Set(
+            vorrunde?.tables.flatMap((t) =>
+              t.assignments.filter((a) => a.isWinner).map((a) => a.playerId),
+            ) ?? [],
+          );
+          const ranked = rankValues(standings, sieger);
+
+          return (
+            <section key={round.id} className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-sm font-medium">
+                  Runde {round.number} — Warteraum
+                </h2>
+                <RegenerateButton roundId={round.id} roundNumber={round.number} />
+              </div>
+              <p className="text-xs opacity-70">
+                Diese Zuteilung ist noch nicht auf der öffentlichen Seite
+                sichtbar. Tippe zwei Spieler an, um sie zu tauschen. Passt
+                alles: „Live schalten“.
+              </p>
+              <RoundBoard tables={round.tables} mode="draft" />
+              <PublishRoundButton roundId={round.id} />
+
+              <details className="text-xs opacity-70">
+                <summary className="cursor-pointer">
+                  Rangfolge zur Kontrolle (Paarungs-Basis, ohne Zufalls-Rauschen)
+                </summary>
+                <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+                  {ranked.map((r, i) => (
+                    <li key={r.id}>
+                      {i + 1}. {nameById.get(r.id) ?? "?"}
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            </section>
+          );
+        }
+
         return (
           <section key={round.id} className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-sm font-medium">
-                Runde {round.number} —{" "}
-                {isLastRound
-                  ? "Sieger antippen, sobald ein Tisch fertig ist"
-                  : "Ergebnis"}
-              </h2>
-              {isLastRound && roundHasNoResults && (
-                <RegenerateButton roundId={round.id} roundNumber={round.number} />
-              )}
-            </div>
+            <h2 className="text-sm font-medium">
+              Runde {round.number} —{" "}
+              {isLastRound
+                ? "Sieger antippen, sobald ein Tisch fertig ist"
+                : "Ergebnis"}
+            </h2>
             {isLastRound && (
               <p className="text-xs opacity-70">
+                Tippe zwei Spieler an, um sie zu tauschen. Tippe einen Spieler
+                an und dann die Krone 👑, um ihn als Sieger zu markieren.
                 Erreicht ein Tisch das Zeitlimit, endet die Partie ohne Sieger
                 — dann „Unentschieden“ wählen. Nochmals dieselbe Auswahl
                 antippen macht die Erfassung rückgängig.
               </p>
             )}
-            <div className="flex flex-wrap gap-4">
-              {round.tables.map((table) => {
-                const sieger = table.assignments.find((a) => a.isWinner);
-                const erfasst = table.resultEnteredAt !== null;
-                return (
+            {isLastRound ? (
+              <RoundBoard tables={round.tables} mode="live" />
+            ) : (
+              <div className="flex flex-wrap gap-4">
+                {round.tables.map((table) => (
                   <div
                     key={table.id}
-                    className={`w-full rounded border p-3 sm:w-64 ${
-                      erfasst ? "border-white/20" : "border-amber-500/60"
-                    }`}
+                    className="w-full rounded border border-white/20 p-3 sm:w-64"
                   >
-                    <div className="mb-2 flex items-baseline justify-between gap-2">
-                      <span className="text-sm font-semibold">
-                        Tisch {table.tableNumber} ({table.size} Spieler)
-                      </span>
-                      <span className="shrink-0 text-xs opacity-70">
-                        {!erfasst
-                          ? "offen"
-                          : sieger
-                            ? "Sieger steht"
-                            : "unentschieden"}
-                      </span>
+                    <div className="mb-2 text-sm font-semibold">
+                      Tisch {table.tableNumber} ({table.size} Spieler)
                     </div>
                     <ul className="flex flex-col gap-2">
                       {table.assignments.map((a) => (
-                        <li key={a.id} className="flex flex-wrap items-center gap-2">
-                          {isLastRound ? (
-                            <form action={setTableResult} className="flex-1">
-                              <input type="hidden" name="tableId" value={table.id} />
-                              <input
-                                type="hidden"
-                                name="winnerAssignmentId"
-                                value={a.id}
-                              />
-                              <button
-                                type="submit"
-                                className={`flex min-h-11 w-full items-center gap-2 rounded border px-3 py-2 text-left text-sm ${
-                                  a.isWinner
-                                    ? "border-blue-500 bg-blue-500/10"
-                                    : "border-white/10"
-                                }`}
-                              >
-                                <span className="w-4 shrink-0" aria-hidden="true">
-                                  {a.isWinner ? "🏆" : ""}
-                                </span>
-                                <span className="truncate">
-                                  {formatPlayerName(a.player)}
-                                </span>
-                              </button>
-                            </form>
-                          ) : (
-                            <span className="flex min-h-9 flex-1 items-center gap-2 text-sm">
-                              <span className="w-4 shrink-0" aria-hidden="true">
-                                {a.isWinner ? "🏆" : ""}
-                              </span>
-                              <span className="truncate">
-                                {formatPlayerName(a.player)}
-                              </span>
-                            </span>
-                          )}
-                          {isLastRound && (
-                            <ReassignSelect
-                              assignmentId={a.id}
-                              currentTableId={table.id}
-                              tables={round.tables}
-                            />
-                          )}
+                        <li
+                          key={a.id}
+                          className="flex min-h-9 items-center gap-2 text-sm"
+                        >
+                          <span className="w-4 shrink-0" aria-hidden="true">
+                            {a.isWinner ? "🏆" : ""}
+                          </span>
+                          <span className="truncate">
+                            {formatPlayerName(a.player)}
+                          </span>
                         </li>
                       ))}
                     </ul>
-                    {isLastRound && (
-                      <form action={setTableResult} className="mt-2">
-                        <input type="hidden" name="tableId" value={table.id} />
-                        <input type="hidden" name="winnerAssignmentId" value="" />
-                        <button
-                          type="submit"
-                          className={`min-h-11 w-full rounded border px-3 py-2 text-sm ${
-                            erfasst && !sieger
-                              ? "border-blue-500 bg-blue-500/10"
-                              : "border-dashed border-white/20"
-                          }`}
-                        >
-                          Unentschieden
-                        </button>
-                      </form>
-                    )}
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
         );
       })}

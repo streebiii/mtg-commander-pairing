@@ -36,6 +36,11 @@ export default async function Home() {
       orderBy: { createdAt: "desc" },
       include: {
         rounds: {
+          // Nur veröffentlichte Runden — eine gerade im Warteraum
+          // geprüfte Zuteilung ist bewusst noch nicht öffentlich
+          // sichtbar (siehe Grill-Notizen). Solange die neueste Runde
+          // noch nicht live ist, bleibt hier die vorherige stehen.
+          where: { publishedAt: { not: null } },
           orderBy: { number: "desc" },
           take: 1,
           include: {
