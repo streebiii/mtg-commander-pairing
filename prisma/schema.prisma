@@ -20,6 +20,12 @@ model Player {
   /// Aktueller Gesamt-Liga-Punktestand (Saison). Wird nach jeder Modus-B-
   /// Runde um die eingetragenen pointsAwarded erhöht. Modus A ändert dies nie.
   points       Int       @default(0)
+  /// An wie vielen Liga-Abenden der Spieler teilgenommen hat, aus den
+  /// Rundenspalten der importierten Rangliste gezaehlt. Die Paarung
+  /// sortiert nach Punkten **pro Abend**, nicht nach der Gesamtsumme —
+  /// sonst landet, wer Abende verpasst hat, systematisch an den unteren
+  /// Tischen, unabhaengig von seiner Staerke (siehe SPEC.md 5.1).
+  attendedEvenings Int   @default(0)
   /// Subjektive Skill-Einstufung 0-5 (0 = unbekannt, 1 = blutiger Anfänger,
   /// 5 = langjähriger Commander/Magic-Spieler). Nur für die skill-
   /// balancierte Gruppierung in Modus A verwendet (siehe SPEC.md

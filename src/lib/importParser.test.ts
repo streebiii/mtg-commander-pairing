@@ -17,12 +17,12 @@ describe("parseLeagueImport", () => {
     const { rows, warnings } = parseLeagueImport(SAMPLE);
     expect(warnings).toEqual([]);
     expect(rows).toEqual([
-      { importName: "Marc S.", total: 50 },
-      { importName: "Thomas S.", total: 44 },
-      { importName: "Tyrone", total: 40 },
-      { importName: "Rafael S.", total: 39 },
-      { importName: "Georg", total: 36 },
-      { importName: "Fabian", total: 36 },
+      { importName: "Marc S.", total: 50, attendedEvenings: 3 },
+      { importName: "Thomas S.", total: 44, attendedEvenings: 3 },
+      { importName: "Tyrone", total: 40, attendedEvenings: 3 },
+      { importName: "Rafael S.", total: 39, attendedEvenings: 3 },
+      { importName: "Georg", total: 36, attendedEvenings: 3 },
+      { importName: "Fabian", total: 36, attendedEvenings: 3 },
     ]);
   });
 
@@ -33,12 +33,14 @@ describe("parseLeagueImport", () => {
 
   it("funktioniert unabhängig von der Spaltenreihenfolge, solange die Header stimmen", () => {
     const reordered = `
-| Total | Spieler |
-|:-----:|:--------|
-| 50    | Marc S. |
+| Total | Spieler | R1 |
+|:-----:|:--------|:--:|
+| 50    | Marc S. | 14 |
 `;
     const { rows } = parseLeagueImport(reordered);
-    expect(rows).toEqual([{ importName: "Marc S.", total: 50 }]);
+    expect(rows).toEqual([
+      { importName: "Marc S.", total: 50, attendedEvenings: 1 },
+    ]);
   });
 
   it("meldet einen Fehler, wenn Spalten 'Spieler'/'Total' fehlen", () => {
@@ -49,13 +51,15 @@ describe("parseLeagueImport", () => {
 
   it("überspringt Zeilen mit nicht-numerischem Total und warnt", () => {
     const withBye = `
-| Spieler | Total |
-|:--------|:-----:|
-| Marc S. | 50    |
-| Pausiert | -    |
+| Spieler | Total | R1 |
+|:--------|:-----:|:--:|
+| Marc S. | 50    | 14 |
+| Pausiert | -    | -  |
 `;
     const { rows, warnings } = parseLeagueImport(withBye);
-    expect(rows).toEqual([{ importName: "Marc S.", total: 50 }]);
+    expect(rows).toEqual([
+      { importName: "Marc S.", total: 50, attendedEvenings: 1 },
+    ]);
     expect(warnings.length).toBe(1);
   });
 
@@ -63,5 +67,35 @@ describe("parseLeagueImport", () => {
     const { rows, warnings } = parseLeagueImport("kein tabellen text hier");
     expect(rows).toEqual([]);
     expect(warnings.length).toBe(1);
+  });
+
+  it("zaehlt nur Rundenspalten mit einer Zahl als besuchten Abend", () => {
+    // Fehlende Abende stehen als Strich oder leer in der Tabelle.
+    const teilweise = `
+| Spieler | Total | R1 | R2 | R3 |
+|:--------|:-----:|:--:|:--:|:--:|
+| David   | 11    | —  | —  | 11 |
+| Mario   | 21    | 11 | 10 |    |
+| Marc S. | 50    | 14 | 18 | 18 |
+`;
+    const { rows } = parseLeagueImport(teilweise);
+    expect(rows.map((r) => [r.importName, r.attendedEvenings])).toEqual([
+      ["David", 1],
+      ["Mario", 2],
+      ["Marc S.", 3],
+    ]);
+  });
+
+  it("warnt, wenn die Tabelle gar keine Rundenspalten hat", () => {
+    const ohneRunden = `
+| Spieler | Total |
+|:--------|:-----:|
+| Marc S. | 50    |
+`;
+    const { rows, warnings } = parseLeagueImport(ohneRunden);
+    expect(rows).toEqual([
+      { importName: "Marc S.", total: 50, attendedEvenings: 0 },
+    ]);
+    expect(warnings.some((w) => w.includes("Rundenspalten"))).toBe(true);
   });
 });

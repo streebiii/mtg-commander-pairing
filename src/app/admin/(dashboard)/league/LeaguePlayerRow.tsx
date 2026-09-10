@@ -9,11 +9,17 @@ interface Player {
   firstName: string;
   lastName: string | null;
   points: number;
+  attendedEvenings: number;
   leagueActive: boolean;
 }
 
 /**
  * Eine Zeile in der Liga-Verwaltung mit Auto-Save (Punkte + Teilnahme-Flag).
+ * Die besuchten Abende stehen nur lesend daneben: sie kommen aus dem
+ * Import und bestimmen zusammen mit den Punkten die Rangfolge für die
+ * Paarung (siehe SPEC.md Abschnitt 5.1). Sichtbar, damit ein Import, der
+ * die Rundenspalten nicht erkannt hat, sofort auffällt — sonst würde die
+ * App still auf Gesamtpunkte zurückfallen.
  * Name und Stufe werden hier bewusst nicht angezeigt/editiert — das lebt im
  * Spieler-Tab (siehe SPEC.md Abschnitt 6).
  */
@@ -41,6 +47,19 @@ export default function LeaguePlayerRow({ player }: { player: Player }) {
   return (
     <tr className="border-b border-white/5">
       <td className="py-2 pr-3">{formatPlayerName(player)}</td>
+      <td className="py-2 pr-3 whitespace-nowrap">
+        {player.attendedEvenings > 0 ? (
+          <>
+            {player.attendedEvenings}
+            <span className="opacity-50">
+              {" "}
+              · ⌀ {(player.points / player.attendedEvenings).toFixed(1)}
+            </span>
+          </>
+        ) : (
+          <span className="text-amber-500">keine</span>
+        )}
+      </td>
       <td className="py-2 pr-3">
         <input
           type="number"

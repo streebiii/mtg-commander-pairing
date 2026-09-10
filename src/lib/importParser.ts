@@ -9,11 +9,20 @@
  * Die Spalten "Spieler" und "Total" werden anhand des Spaltenkopfs erkannt
  * (nicht anhand der Position), damit variierende Rundenanzahlen (R1..R6)
  * keine Rolle spielen.
+ *
+ * Die Rundenspalten (R1, R2, ...) werden mitgelesen, aber nur gezählt: aus
+ * ihnen ergibt sich, an wie vielen Abenden ein Spieler dabei war. Das
+ * braucht die Paarung, weil sie nach Punkten **pro Abend** sortiert und
+ * nicht nach der Gesamtsumme — sonst landet, wer Abende verpasst hat,
+ * systematisch an den unteren Tischen, unabhängig von seiner Stärke
+ * (siehe SPEC.md Abschnitt 5.1).
  */
 
 export interface ParsedImportRow {
   importName: string;
   total: number;
+  /** Anzahl Rundenspalten mit einer Zahl — also besuchte Liga-Abende. */
+  attendedEvenings: number;
 }
 
 export interface ParseResult {
@@ -46,6 +55,11 @@ export function parseLeagueImport(text: string): ParseResult {
   const headerCells = splitTableRow(lines[0]).map((c) => c.toLowerCase());
   const nameIdx = headerCells.findIndex((c) => c.includes("spieler"));
   const totalIdx = headerCells.findIndex((c) => c.includes("total"));
+  // Rundenspalten heissen R1, R2, ... — Leerzeichen und Grossschreibung egal.
+  const roundIdxs = headerCells
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => /^r\s*\d+$/.test(c))
+    .map(({ i }) => i);
 
   if (nameIdx === -1 || totalIdx === -1) {
     return {
@@ -54,6 +68,13 @@ export function parseLeagueImport(text: string): ParseResult {
         "Spalten 'Spieler' und/oder 'Total' wurden im Tabellenkopf nicht gefunden.",
       ],
     };
+  }
+
+  if (roundIdxs.length === 0) {
+    warnings.push(
+      "Keine Rundenspalten (R1, R2, ...) gefunden — die Paarung sortiert dann " +
+        "nach Gesamtpunkten statt nach Punkten pro Abend.",
+    );
   }
 
   const rows: ParsedImportRow[] = [];
@@ -76,7 +97,13 @@ export function parseLeagueImport(text: string): ParseResult {
       continue;
     }
 
-    rows.push({ importName, total });
+    // Ein Abend zählt als besucht, sobald in seiner Spalte eine Zahl steht.
+    // Leere Zellen und Platzhalter wie "—" bedeuten: nicht dabei gewesen.
+    const attendedEvenings = roundIdxs.filter((idx) =>
+      Number.isFinite(Number.parseInt(cells[idx]?.trim() ?? "", 10)),
+    ).length;
+
+    rows.push({ importName, total, attendedEvenings });
   }
 
   return { rows, warnings };

@@ -5,12 +5,15 @@ interface UpdateResolution {
   action: "update";
   playerId: string;
   total: number;
+  /** Besuchte Abende aus den Rundenspalten; fehlt bei alten Aufrufen. */
+  attendedEvenings?: number;
 }
 interface CreateResolution {
   action: "create";
   firstName: string;
   lastName: string | null;
   total: number;
+  attendedEvenings?: number;
 }
 interface SkipResolution {
   action: "skip";
@@ -61,7 +64,11 @@ export async function POST(request: Request) {
     if (resolution.action === "update") {
       await prisma.player.update({
         where: { id: resolution.playerId },
-        data: { points: resolution.total, leagueActive: true },
+        data: {
+          points: resolution.total,
+          attendedEvenings: resolution.attendedEvenings ?? 0,
+          leagueActive: true,
+        },
       });
       updated++;
     } else if (resolution.action === "create") {
@@ -70,6 +77,7 @@ export async function POST(request: Request) {
           firstName: resolution.firstName,
           lastName: resolution.lastName,
           points: resolution.total,
+          attendedEvenings: resolution.attendedEvenings ?? 0,
           leagueActive: true,
         },
       });

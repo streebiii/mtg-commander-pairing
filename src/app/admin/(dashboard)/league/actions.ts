@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import { assignLeagueRound } from "@/lib/pairing/leagueAssignment";
+import {
+  RANG_RAUSCHEN,
+  TAUSCH_TOLERANZ_RAENGE,
+  rankValues,
+} from "@/lib/pairing/leagueRanking";
 import { buildPreviousPairings } from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
 
@@ -13,17 +18,6 @@ import { clearCasualPairing } from "@/lib/casualPairing";
  */
 const MAX_ROUNDS = 2;
 
-/**
- * Kein Zufalls-Rauschen bei der Paarung der zweiten Runde.
- *
- * Der Sortierschlüssel ist dort der Sieg aus Runde 1, also 1 oder 0.
- * RANK_JITTER_POINTS (±3) ist auf den Saison-Punktestand gemünzt und wäre
- * hier sechsmal so gross wie das Signal — die Gewinner landeten wieder
- * zufällig verteilt und die Funktion sähe fertig aus, ohne etwas zu tun.
- * Dass innerhalb der Gewinner und innerhalb der Übrigen zufällig gruppiert
- * wird, besorgt ohnehin das Mischen vor dem Sortieren (rankGrouping.ts).
- */
-const WIN_JITTER = 0;
 
 /**
  * Auto-Save für die Liga-Verwaltung: Punktestand und Liga-Teilnahme-Flag
@@ -83,12 +77,19 @@ export async function startEvening(formData: FormData) {
   // Liga-Abend aufgenommen werden (siehe SPEC.md Abschnitt 6).
   const players = await prisma.player.findMany({
     where: { id: { in: playerIds }, leagueActive: true, archivedAt: null },
-    select: { id: true, points: true },
+    select: { id: true, points: true, attendedEvenings: true },
   });
   if (players.length !== playerIds.length) return;
 
   const sizes = computeTableSizes(players.length);
-  const tables = assignLeagueRound(players, sizes); // Runde 1: keine Historie
+  // Runde 1: nach der Rangfolge, keine Historie, noch keine Sieger.
+  const tables = assignLeagueRound(
+    rankValues(players),
+    sizes,
+    new Set(),
+    RANG_RAUSCHEN,
+    TAUSCH_TOLERANZ_RAENGE,
+  );
 
   const evening = await prisma.evening.create({
     data: { mode: "LEAGUE" },
@@ -204,18 +205,32 @@ export async function startNextRound(formData: FormData) {
   const allEntered = lastRound.tables.every((t) => t.resultEnteredAt !== null);
   if (!allEntered) return;
 
-  // Sortierschlüssel ist der Sieg aus der letzten Runde, nicht der
-  // Saison-Punktestand: die Gewinner spielen in Runde 2 gegeneinander.
-  // Ging ein Tisch unentschieden aus, zählen alle dort als ohne Sieg;
-  // sind alle Tische unentschieden, ist der Schlüssel für jeden gleich und
-  // Runde 2 wird schlicht wieder zufällig.
-  const players = lastRound.tables.flatMap((t) =>
-    t.assignments.map((a) => ({ id: a.playerId, points: a.isWinner ? 1 : 0 })),
+  // Runde 2 paart nach derselben Rangfolge wie Runde 1, aber die Sieger
+  // rücken um SIEG_BONUS_RAENGE nach oben — sie treffen damit auf die
+  // Sieger ihrer Umgebung, nicht auf die Ligaspitze. Ging ein Tisch
+  // unentschieden aus, zählen alle dort als ohne Sieg.
+  const attendeeIds = lastRound.tables.flatMap((t) =>
+    t.assignments.map((a) => a.playerId),
   );
+  const sieger = new Set(
+    lastRound.tables.flatMap((t) =>
+      t.assignments.filter((a) => a.isWinner).map((a) => a.playerId),
+    ),
+  );
+  const standings = await prisma.player.findMany({
+    where: { id: { in: attendeeIds } },
+    select: { id: true, points: true, attendedEvenings: true },
+  });
 
-  const sizes = computeTableSizes(players.length);
+  const sizes = computeTableSizes(standings.length);
   const previousPairings = await buildPreviousPairings(eveningId);
-  const tables = assignLeagueRound(players, sizes, previousPairings, WIN_JITTER);
+  const tables = assignLeagueRound(
+    rankValues(standings, sieger),
+    sizes,
+    previousPairings,
+    RANG_RAUSCHEN,
+    TAUSCH_TOLERANZ_RAENGE,
+  );
 
   await createRoundInDb(eveningId, lastRound.number + 1, tables);
   revalidatePath("/admin/league");
@@ -252,15 +267,36 @@ export async function regenerateRound(formData: FormData) {
   );
   const players = await prisma.player.findMany({
     where: { id: { in: attendeeIds } },
-    select: { id: true, points: true },
+    select: { id: true, points: true, attendedEvenings: true },
   });
+
+  // Beim Neuwürfeln von Runde 2 zählen die Sieger der Vorrunde weiterhin —
+  // sonst käme eine Zuteilung heraus, die nach anderen Regeln entstanden
+  // wäre als die, die sie ersetzt.
+  const vorrunde =
+    round.number > 1
+      ? await prisma.tableAssignment.findMany({
+          where: {
+            isWinner: true,
+            table: { round: { eveningId: round.eveningId, number: round.number - 1 } },
+          },
+          select: { playerId: true },
+        })
+      : [];
+  const sieger = new Set(vorrunde.map((a) => a.playerId));
 
   const sizes = computeTableSizes(players.length);
   const previousPairings = await buildPreviousPairings(
     round.eveningId,
     round.number,
   );
-  const tables = assignLeagueRound(players, sizes, previousPairings);
+  const tables = assignLeagueRound(
+    rankValues(players, sieger),
+    sizes,
+    previousPairings,
+    RANG_RAUSCHEN,
+    TAUSCH_TOLERANZ_RAENGE,
+  );
 
   await prisma.$transaction([
     prisma.table.deleteMany({ where: { roundId: round.id } }),
