@@ -135,13 +135,6 @@ export default async function LeaguePage() {
               }))}
             />
           )}
-          <button
-            type="submit"
-            disabled={activePlayers.length < 3}
-            className="min-h-11 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
-          >
-            Abend starten — Runde 1 berechnen
-          </button>
         </form>
 
         {managementSection}

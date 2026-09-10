@@ -76,6 +76,17 @@ export default function PlayerSelectionList({
           </label>
         ))}
       </div>
+      {/* Lebt hier statt in der Server-Komponente page.tsx, weil das
+          Aktivieren von der tatsächlichen Auswahl abhängt (mindestens 3
+          angehakte Spieler) — nicht von der Grösse des ganzen
+          Liga-Kaders, wie es vorher fälschlich der Fall war. */}
+      <button
+        type="submit"
+        disabled={selected.size < 3}
+        className="min-h-11 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-40"
+      >
+        Abend starten — Runde 1 berechnen
+      </button>
     </div>
   );
 }
