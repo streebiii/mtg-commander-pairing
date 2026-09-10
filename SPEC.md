@@ -369,23 +369,46 @@ BACKLOG.md) und wandern von dort nach mtgbl.ch.
 
 ### 5.1 Sortier-/Gruppierungsregel für die Tischzuteilung
 
-Spieler werden nach Punktestand absteigend sortiert, wobei ein kleines
-Zufalls-Rauschen (`RANK_JITTER_POINTS`, aktuell ±3 Punkte) auf den
-Punktestand addiert wird, bevor sortiert wird. Danach werden sie gemäss
-der berechneten Tischgrössen (Abschnitt 3) in aufeinanderfolgende Blöcke
-eingeteilt (Spieler 1–4 an Tisch 1, 5–8 an Tisch 2 usw., je nach
-Tischgrösse) — analog zu einer Swiss-Pairing-Gruppierung nach Rang. Bei
-Punktegleichstand (oder durch das Rauschen entstandenem Beinahe-
-Gleichstand) am Blockrand wird zufällig entschieden, wer in welchem
-Block landet.
+Gerechnet wird in **Rängen**, nicht in Punkten. Tische sind das Ergebnis
+der Sortierung, keine Eingabegrösse.
 
-Das Rauschen sorgt dafür, dass benachbarte Ränge sich gelegentlich die
-Plätze tauschen — es spielen also nicht jeden Abend zwangsläufig exakt
-dieselben Spieler 1–4 zusammen, 5–8 zusammen usw., auch wenn sich die
-Punktestände zwischen den Abenden kaum ändern. Spieler mit grossem
-Punkteabstand (mehr als ca. 2× das Rauschen) werden dabei nie
-miteinander gemischt — die grundsätzliche "stärkere Spieler spielen
-eher gegeneinander"-Logik bleibt erhalten.
+**Die Rangfolge entsteht aus Punkten pro besuchtem Abend, nicht aus der
+Gesamtsumme** (`src/lib/pairing/leagueRanking.ts`). Die Gesamtsumme misst
+zu einem guten Teil Anwesenheit statt Stärke: im Stand nach drei Abenden
+2026 stand David mit 11 Punkten auf Platz 23 von 28 — aus einem einzigen
+Abend, an dem er mehr geholt hat als die Hälfte des Feldes im Schnitt.
+Nach Gesamtpunkten zu paaren hätte ihn an den letzten Tisch gesetzt, und
+weil dieselben Leute regelmässig fehlen, säßen unten jeden Abend
+dieselben zusammen. Die offizielle Wertung auf mtgbl.ch bleibt davon
+unberührt — dort zählt weiterhin die Gesamtsumme.
+
+Der Schnitt wird **gedämpft**: jedem Spieler werden `DAEMPFUNG_ABENDE`
+(2) fiktive Abende zum Ligadurchschnitt gutgeschrieben. Ein einzelner
+guter Abend hebt damit niemanden weit nach oben — bei einer einzigen
+Messung ist der Schnitt schlicht nicht belastbar. Die Anzahl besuchter
+Abende stammt aus den Rundenspalten der importierten Rangliste
+(Abschnitt 7).
+
+Auf den so gewonnenen Rangplatz kommen zwei Zuschläge:
+
+- **Zufalls-Rauschen `RANG_RAUSCHEN` (±10 Ränge).** Der Regler gegen
+  "immer dieselben Gegner". Gemessen über eine Saison mit 28 Spielern:
+  ohne Rauschen sitzt man mit seinem häufigsten Gegner 9 von 12
+  Zuteilungen zusammen, bei ±10 nur noch 4,5, und man trifft 17,9 statt
+  12,8 verschiedene Leute.
+- **Sieg-Bonus `SIEG_BONUS_RAENGE` (3 Ränge)** in Runde 2 für alle, die
+  ihren Tisch in Runde 1 gewonnen haben (Abschnitt 5). Bewusst endlich:
+  ein Sieg soll heben, aber nicht an die Spitze katapultieren. Wer an
+  einem hinteren Tisch gewinnt, trifft auf die Sieger seiner Umgebung.
+
+Danach werden die Spieler gemäss der berechneten Tischgrössen
+(Abschnitt 3) in aufeinanderfolgende Blöcke eingeteilt.
+
+**Es gibt bewusst keine harte Obergrenze** für den Rangabstand an einem
+Tisch: die Sortierung selbst begrenzt, wer zusammenkommen kann. Der Preis
+des grosszügigen Rauschens sind rund fünf Tische pro Saison, an denen
+jemand aus dem obersten Viertel mit jemandem aus dem untersten sitzt —
+gegen den Gewinn an Abwechslung abgewogen und angenommen.
 
 Der Organisator kann eine Runde ausserdem jederzeit (solange noch keine
 Ergebnisse für sie eingetragen wurden) neu auswürfeln lassen ("Neu
@@ -453,9 +476,12 @@ Beide Fälle werden über denselben Bestätigungsdialog abgefragt.
 
 ### 6.3 Liga-Tab (siehe Abschnitt 5)
 
-- Enthält je Spieler den aktuellen Gesamt-Liga-Punktestand (wird durch
-  Ergebniserfassung in der Liga fortgeschrieben, hier aber auch manuell
-  editierbar) sowie — wie der Spieler-Tab — die **Liga-Teilnahme-Flag**.
+- Enthält je Spieler den aktuellen Gesamt-Liga-Punktestand (Kopie des
+  Standes von mtgbl.ch, gepflegt über den Import aus Abschnitt 7, hier
+  aber auch manuell editierbar) sowie — wie der Spieler-Tab — die
+  **Liga-Teilnahme-Flag**. Dazu die Anzahl besuchter Abende, die aus
+  denselben Importdaten stammt und in die Paarung eingeht
+  (Abschnitt 5.1).
 - Die Teilnahme-Flag wirkt rein zukunftsgerichtet: sie filtert nur die
   Auswahlliste beim Start eines neuen Liga-Abends — bestehende Abende und
   Ergebnisse bleiben beim Deaktivieren unberührt.
@@ -475,10 +501,25 @@ bestätigt den Vorgang. Gilt für beide Tabs.
 
 ## 7. Datenimport zu Beginn
 
-- Die aktuelle Saison-Rangliste (Spielernamen + Punktestand) liegt aktuell
-  nur einsehbar auf mtgbl.ch vor. Der Organisator trägt Spieler und
-  Punktestand **manuell** einmalig in die neue App ein — kein
-  automatisierter Import/Scraping.
+- Die aktuelle Saison-Rangliste liegt auf mtgbl.ch. Der Organisator
+  kopiert die Tabelle als Text in den Import-Dialog des Liga-Tabs — kein
+  automatisiertes Scraping. Erkannt werden die Spalten **Spieler** und
+  **Total** anhand des Tabellenkopfs (nicht anhand der Position) sowie
+  die **Rundenspalten** `R1`, `R2`, … :
+
+  ```
+  | # | Spieler | F | Total | R1 | R2 | R3 |
+  ```
+
+- Aus den Rundenspalten wird gezählt, an wie vielen Abenden ein Spieler
+  teilgenommen hat: jede Zelle mit einer Zahl ist ein besuchter Abend,
+  ein Strich oder eine leere Zelle nicht. Diese Zahl geht in die
+  Rangfolge für die Paarung ein (Abschnitt 5.1) — ohne sie würde die
+  App nach Gesamtpunkten sortieren und damit nach Anwesenheit statt nach
+  Stärke.
+- Der Import ist **kein Aufaddieren**: er setzt Punktestand und
+  Abendzahl auf die importierten Werte und markiert die Spieler als
+  liga-teilnehmend. Er kann vor jedem Abend wiederholt werden.
 
 ## 8. Verlauf / Historie
 

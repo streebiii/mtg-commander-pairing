@@ -16,18 +16,21 @@ export type ImportMatch =
   | {
       importName: string;
       total: number;
+      attendedEvenings: number;
       matchType: "exact";
       matchedPlayerId: string;
     }
   | {
       importName: string;
       total: number;
+      attendedEvenings: number;
       matchType: "ambiguous";
       candidates: MatchCandidate[];
     }
   | {
       importName: string;
       total: number;
+      attendedEvenings: number;
       matchType: "new";
       suggestedFirstName: string;
       suggestedLastName: string | null;
@@ -85,6 +88,7 @@ export function matchImportRows(
       return {
         importName: row.importName,
         total: row.total,
+        attendedEvenings: row.attendedEvenings,
         matchType: "new",
         suggestedFirstName: first,
         suggestedLastName: lastToken ? normalizeLastTokenForStorage(lastToken) : null,
@@ -99,6 +103,7 @@ export function matchImportRows(
       return {
         importName: row.importName,
         total: row.total,
+        attendedEvenings: row.attendedEvenings,
         matchType: "exact",
         matchedPlayerId: narrowed[0].id,
       };
@@ -112,6 +117,7 @@ export function matchImportRows(
       return {
         importName: row.importName,
         total: row.total,
+        attendedEvenings: row.attendedEvenings,
         matchType: "ambiguous",
         candidates: sameFirstName,
       };
@@ -120,6 +126,7 @@ export function matchImportRows(
     return {
       importName: row.importName,
       total: row.total,
+      attendedEvenings: row.attendedEvenings,
       matchType: "ambiguous",
       candidates: narrowed.length > 0 ? narrowed : sameFirstName,
     };

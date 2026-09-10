@@ -71,6 +71,7 @@ export function assignLeagueRound(
   tableSizes: readonly number[],
   previousPairings: ReadonlySet<string> = new Set(),
   rankJitterPoints: number = RANK_JITTER_POINTS,
+  swapTolerance = 0,
 ): string[][] {
   // Schritt 1+2: nach Punkten (+ Zufalls-Rauschen) absteigend sortieren und
   // in Blöcke gemäß Tischgrößen einteilen (gemeinsamer Kern, siehe
@@ -84,16 +85,24 @@ export function assignLeagueRound(
 
   // Schritt 3: lokale Verbesserung durch Tausch punktegleicher Spieler.
   if (previousPairings.size > 0) {
-    improveRematches(tables, players, previousPairings);
+    improveRematches(tables, players, previousPairings, swapTolerance);
   }
 
   return tables;
 }
 
+/**
+ * @param swapTolerance Wie weit die Sortierwerte zweier Spieler
+ *   auseinanderliegen dürfen, damit sie getauscht werden dürfen. 0 heisst
+ *   "nur bei exakt gleichem Wert" — mit echten Punkteständen kommt das
+ *   praktisch nie vor, die Vermeidung fand dann schlicht nichts zu tun.
+ *   Die Liga übergibt eine Toleranz in Rängen (siehe leagueRanking.ts).
+ */
 function improveRematches(
   tables: string[][],
   players: readonly RankedPlayer[],
   previousPairings: ReadonlySet<string>,
+  swapTolerance: number,
 ): void {
   const pointsById = new Map(players.map((p) => [p.id, p.points]));
   const MAX_PASSES = 20;
@@ -111,9 +120,12 @@ function improveRematches(
             const playerA = tableA[ai];
             const playerB = tableB[bi];
 
-            // Nur tauschen, wenn beide denselben Punktestand haben — das
-            // erhält die Rang-Gruppierung aus Schritt 2 unverändert.
-            if (pointsById.get(playerA) !== pointsById.get(playerB)) continue;
+            // Nur tauschen, wenn die Sortierwerte nah beieinander liegen —
+            // das erhält die Rang-Gruppierung aus Schritt 2 im Wesentlichen.
+            const abstand = Math.abs(
+              pointsById.get(playerA)! - pointsById.get(playerB)!,
+            );
+            if (abstand > swapTolerance) continue;
 
             const before =
               countRematches(tableA, previousPairings) +

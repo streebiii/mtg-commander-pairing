@@ -14,6 +14,7 @@ type MatchType = "exact" | "ambiguous" | "new";
 interface BaseMatch {
   importName: string;
   total: number;
+  attendedEvenings: number;
   matchType: MatchType;
 }
 interface ExactMatch extends BaseMatch {
@@ -110,13 +111,19 @@ export default function ImportClient({
         const m = matches[i];
         if (r.action === "skip") return { action: "skip" as const };
         if (r.action === "update") {
-          return { action: "update" as const, playerId: r.playerId!, total: m.total };
+          return {
+            action: "update" as const,
+            playerId: r.playerId!,
+            total: m.total,
+            attendedEvenings: m.attendedEvenings,
+          };
         }
         return {
           action: "create" as const,
           firstName: r.firstName!,
           lastName: r.lastName ?? null,
           total: m.total,
+          attendedEvenings: m.attendedEvenings,
         };
       });
       const res = await fetch("/api/admin/players/import/apply", {

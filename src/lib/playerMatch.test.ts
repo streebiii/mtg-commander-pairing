@@ -6,7 +6,7 @@ describe("matchImportRows", () => {
     const players: ExistingPlayer[] = [
       { id: "p1", firstName: "Tyrone", lastName: null },
     ];
-    const [match] = matchImportRows([{ importName: "Tyrone", total: 40 }], players);
+    const [match] = matchImportRows([{ importName: "Tyrone", total: 40, attendedEvenings: 1 }], players);
     expect(match).toMatchObject({ matchType: "exact", matchedPlayerId: "p1" });
   });
 
@@ -14,7 +14,7 @@ describe("matchImportRows", () => {
     const players: ExistingPlayer[] = [
       { id: "p1", firstName: "Marc", lastName: "Strebel" },
     ];
-    const [match] = matchImportRows([{ importName: "Marc S.", total: 50 }], players);
+    const [match] = matchImportRows([{ importName: "Marc S.", total: 50, attendedEvenings: 1 }], players);
     expect(match).toMatchObject({ matchType: "exact", matchedPlayerId: "p1" });
   });
 
@@ -22,7 +22,7 @@ describe("matchImportRows", () => {
     const players: ExistingPlayer[] = [
       { id: "p1", firstName: "Alice", lastName: null },
     ];
-    const [match] = matchImportRows([{ importName: "Georg", total: 36 }], players);
+    const [match] = matchImportRows([{ importName: "Georg", total: 36, attendedEvenings: 1 }], players);
     expect(match).toMatchObject({
       matchType: "new",
       suggestedFirstName: "Georg",
@@ -31,7 +31,7 @@ describe("matchImportRows", () => {
   });
 
   it("übernimmt den abgekürzten Nachnamen (ohne Punkt) als Vorschlag bei 'new'", () => {
-    const [match] = matchImportRows([{ importName: "Rafael S.", total: 39 }], []);
+    const [match] = matchImportRows([{ importName: "Rafael S.", total: 39, attendedEvenings: 1 }], []);
     expect(match).toMatchObject({
       matchType: "new",
       suggestedFirstName: "Rafael",
@@ -44,7 +44,7 @@ describe("matchImportRows", () => {
       { id: "p1", firstName: "Marc", lastName: "Strebel" },
       { id: "p2", firstName: "Marc", lastName: "Suter" },
     ];
-    const [match] = matchImportRows([{ importName: "Marc S.", total: 50 }], players);
+    const [match] = matchImportRows([{ importName: "Marc S.", total: 50, attendedEvenings: 1 }], players);
     expect(match.matchType).toBe("ambiguous");
     if (match.matchType === "ambiguous") {
       expect(match.candidates.map((c) => c.id).sort()).toEqual(["p1", "p2"]);
@@ -56,7 +56,7 @@ describe("matchImportRows", () => {
       { id: "p1", firstName: "Marc", lastName: "Strebel" },
       { id: "p2", firstName: "Marc", lastName: "Meier" },
     ];
-    const [match] = matchImportRows([{ importName: "Marc S.", total: 50 }], players);
+    const [match] = matchImportRows([{ importName: "Marc S.", total: 50, attendedEvenings: 1 }], players);
     expect(match).toMatchObject({ matchType: "exact", matchedPlayerId: "p1" });
   });
 
@@ -64,7 +64,7 @@ describe("matchImportRows", () => {
     const players: ExistingPlayer[] = [
       { id: "p1", firstName: "Marc", lastName: "Strebel" },
     ];
-    const [match] = matchImportRows([{ importName: "Marc K.", total: 50 }], players);
+    const [match] = matchImportRows([{ importName: "Marc K.", total: 50, attendedEvenings: 1 }], players);
     expect(match.matchType).toBe("ambiguous");
   });
 
@@ -72,7 +72,7 @@ describe("matchImportRows", () => {
     const players: ExistingPlayer[] = [
       { id: "p1", firstName: "Fabian", lastName: null },
     ];
-    const [match] = matchImportRows([{ importName: "Fabian", total: 36 }], players);
+    const [match] = matchImportRows([{ importName: "Fabian", total: 36, attendedEvenings: 1 }], players);
     expect(match).toMatchObject({ matchType: "exact", matchedPlayerId: "p1" });
   });
 });

@@ -48,7 +48,14 @@ export default async function LeaguePage() {
   const allPlayers = await prisma.player.findMany({
     where: { archivedAt: null },
     orderBy: [{ points: "desc" }, { firstName: "asc" }],
-    select: { id: true, firstName: true, lastName: true, points: true, leagueActive: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      points: true,
+      attendedEvenings: true,
+      leagueActive: true,
+    },
   });
 
   const managementSection = (
@@ -66,6 +73,7 @@ export default async function LeaguePage() {
           <thead>
             <tr className="border-b border-white/10 text-left">
               <th className="py-2 pr-3">Spieler</th>
+              <th className="py-2 pr-3">Abende</th>
               <th className="py-2 pr-3">Punkte</th>
               <th className="py-2 pr-3">Liga-Teilnahme</th>
               <th className="py-2 pr-3"></th>
