@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
+import { PrimaryButton, SecondaryButton } from "@/components/Button";
 
 interface PlayerOption {
   id: string;
@@ -28,6 +30,11 @@ export default function PlayerSelectionList({
   players: PlayerOption[];
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // useFormStatus liest den Pending-Zustand des umgebenden <form> mit —
+  // funktioniert, weil diese Komponente als Kind des Formulars in
+  // page.tsx gerendert wird (gleiches Muster wie SubmitButton in
+  // admin/login/CodeForm.tsx).
+  const { pending } = useFormStatus();
 
   const allSelected = players.length > 0 && selected.size === players.length;
 
@@ -46,13 +53,9 @@ export default function PlayerSelectionList({
 
   return (
     <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        onClick={toggleAll}
-        className="flex min-h-11 w-fit items-center rounded border border-white/20 px-4 py-2 text-sm"
-      >
+      <SecondaryButton onClick={toggleAll} className="w-fit" disabled={pending}>
         {allSelected ? "Auswahl aufheben" : "Alle auswählen"}
-      </button>
+      </SecondaryButton>
       {/* Gleichmässiges Raster statt loser flex-wrap-Chips — analog zur
           Spielerliste im Casual-Tab, damit alle Kacheln dieselbe Breite
           haben statt sich nach der Namenslänge zu richten. */}
@@ -68,6 +71,7 @@ export default function PlayerSelectionList({
               value={p.id}
               checked={selected.has(p.id)}
               onChange={() => toggle(p.id)}
+              disabled={pending}
               className="h-4 w-4 shrink-0"
             />
             <span className="truncate">
@@ -80,13 +84,14 @@ export default function PlayerSelectionList({
           Aktivieren von der tatsächlichen Auswahl abhängt (mindestens 3
           angehakte Spieler) — nicht von der Grösse des ganzen
           Liga-Kaders, wie es vorher fälschlich der Fall war. */}
-      <button
+      <PrimaryButton
         type="submit"
+        className="w-fit"
         disabled={selected.size < 3}
-        className="min-h-11 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-40"
+        loading={pending}
       >
-        Abend starten — Runde 1 berechnen
-      </button>
+        {pending ? "Starte…" : "Abend starten — Runde 1 berechnen"}
+      </PrimaryButton>
     </div>
   );
 }

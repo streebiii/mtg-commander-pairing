@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PrimaryButton, SecondaryButton } from "@/components/Button";
 
 interface ExistingPlayer {
   id: string;
@@ -167,14 +168,14 @@ export default function ImportClient({
         placeholder="| # | Spieler | F | Total | R1 | R2 | ... |"
         className="w-full rounded border border-white/20 p-3 font-mono"
       />
-      <button
-        type="button"
+      <SecondaryButton
         onClick={preview}
-        disabled={!text.trim() || loading}
-        className="min-h-11 w-fit rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
+        disabled={!text.trim()}
+        loading={loading}
+        className="w-fit"
       >
         {loading ? "Verarbeite…" : "Vorschau anzeigen"}
-      </button>
+      </SecondaryButton>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       {result && <p className="text-sm">{result}</p>}
@@ -270,14 +271,9 @@ export default function ImportClient({
               ))}
             </tbody>
           </table>
-          <button
-            type="button"
-            onClick={apply}
-            disabled={loading}
-            className="min-h-11 w-fit rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
-          >
-            Import bestätigen
-          </button>
+          <PrimaryButton onClick={apply} loading={loading} className="w-fit">
+            {loading ? "Importiere…" : "Import bestätigen"}
+          </PrimaryButton>
         </div>
       )}
     </section>

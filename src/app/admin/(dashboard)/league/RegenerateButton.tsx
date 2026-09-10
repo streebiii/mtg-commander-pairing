@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { PrimaryButton, SecondaryButton } from "@/components/Button";
 import { regenerateRound } from "./actions";
 
 /**
@@ -31,14 +32,13 @@ export default function RegenerateButton({
 
   if (!confirming) {
     return (
-      <button
-        type="button"
-        disabled={isPending}
+      <SecondaryButton
         onClick={() => setConfirming(true)}
-        className="min-h-11 w-fit rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
+        disabled={isPending}
+        className="w-fit"
       >
-        {isPending ? "Würfle neu…" : "🎲 Neu mischen"}
-      </button>
+        🎲 Neu mischen
+      </SecondaryButton>
     );
   }
 
@@ -48,22 +48,12 @@ export default function RegenerateButton({
         Runde {roundNumber} neu auswürfeln? Die aktuelle Tischzuteilung geht
         dabei verloren.
       </span>
-      <button
-        type="button"
-        onClick={regenerate}
-        disabled={isPending}
-        className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
-      >
+      <PrimaryButton onClick={regenerate} loading={isPending}>
         {isPending ? "Würfle neu…" : "Ja, neu mischen"}
-      </button>
-      <button
-        type="button"
-        onClick={() => setConfirming(false)}
-        disabled={isPending}
-        className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
-      >
+      </PrimaryButton>
+      <SecondaryButton onClick={() => setConfirming(false)} disabled={isPending}>
         Abbrechen
-      </button>
+      </SecondaryButton>
     </span>
   );
 }

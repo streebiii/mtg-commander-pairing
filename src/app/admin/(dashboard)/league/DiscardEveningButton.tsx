@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { DangerButton, SecondaryButton } from "@/components/Button";
 import { discardEvening } from "./actions";
 
 /**
@@ -26,13 +27,9 @@ export default function DiscardEveningButton({ eveningId }: { eveningId: string 
 
   if (!confirming) {
     return (
-      <button
-        type="button"
-        onClick={() => setConfirming(true)}
-        className="min-h-11 rounded border border-red-600/40 px-4 py-2 text-sm text-red-600"
-      >
+      <DangerButton onClick={() => setConfirming(true)}>
         Abend verwerfen
-      </button>
+      </DangerButton>
     );
   }
 
@@ -42,22 +39,12 @@ export default function DiscardEveningButton({ eveningId }: { eveningId: string 
         Abend verwerfen? Die Zuteilung geht verloren, Spieler und Punktestände
         bleiben unverändert.
       </span>
-      <button
-        type="button"
-        onClick={discard}
-        disabled={isPending}
-        className="min-h-11 rounded bg-red-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-      >
+      <DangerButton onClick={discard} loading={isPending}>
         {isPending ? "Verwerfe…" : "Ja, verwerfen"}
-      </button>
-      <button
-        type="button"
-        onClick={() => setConfirming(false)}
-        disabled={isPending}
-        className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
-      >
+      </DangerButton>
+      <SecondaryButton onClick={() => setConfirming(false)} disabled={isPending}>
         Abbrechen
-      </button>
+      </SecondaryButton>
     </span>
   );
 }
