@@ -70,9 +70,16 @@ export async function isRateLimited(): Promise<boolean> {
 /**
  * Erzeugt einen neuen Einmal-Code. Gibt den Code im Klartext zurück (für
  * die Email) — in der Datenbank landet nur dessen Hash.
+ *
+ * Ausserhalb von Produktion ist der Code fest "123456" — erspart das
+ * Ablesen aus dem Server-Log bei jedem lokalen Test. Derselbe
+ * NODE_ENV-Schutz wie beim SMTP-Fallback in email.ts und der
+ * /dev-login-Route: in Produktion greift das nie, dort bleibt der Code
+ * immer echt zufällig.
  */
 export async function createLoginCode(): Promise<string> {
-  const code = randomCode();
+  const code =
+    process.env.NODE_ENV === "production" ? randomCode() : "123456";
   const tokenHash = await hashCode(code);
   await prisma.loginToken.create({
     data: { tokenHash, expiresAt: new Date(Date.now() + TOKEN_TTL_MS) },
