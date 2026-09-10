@@ -1,13 +1,10 @@
 "use client";
 
 import { useTransition } from "react";
+import { SecondaryButton } from "@/components/Button";
 import { finishEvening } from "./actions";
 
-/**
- * "Abend beenden" — bisher ein einfacher `<button type="submit">` ohne
- * jeden Pending-Zustand. Jetzt mit Hover/Pressed/Loading, analog zu
- * RegenerateButton/DiscardEveningButton.
- */
+/** "Abend beenden" — mit Ladetext, Hover/Pressed via SecondaryButton. */
 export default function FinishEveningButton({
   eveningId,
   disabled,
@@ -26,13 +23,8 @@ export default function FinishEveningButton({
   }
 
   return (
-    <button
-      type="button"
-      onClick={submit}
-      disabled={disabled || isPending}
-      className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm transition-colors hover:bg-white/5 active:bg-white/10 disabled:opacity-40"
-    >
+    <SecondaryButton onClick={submit} disabled={disabled} loading={isPending}>
       {isPending ? "Beende…" : "Abend beenden"}
-    </button>
+    </SecondaryButton>
   );
 }
