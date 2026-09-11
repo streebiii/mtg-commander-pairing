@@ -18,29 +18,50 @@ export const dynamic = "force-dynamic";
 const MAX_ROUNDS = 2;
 
 export default async function LeaguePage() {
-  let evening = await prisma.evening.findFirst({
-    where: { mode: "LEAGUE", finishedAt: null },
-    orderBy: { createdAt: "desc" },
-    include: {
-      rounds: {
-        orderBy: { number: "asc" },
-        include: {
-          tables: {
-            orderBy: { tableNumber: "asc" },
-            include: {
-              assignments: {
-                include: { player: true },
-                orderBy: [
-                  { player: { firstName: "asc" } },
-                  { player: { lastName: "asc" } },
-                ],
+  // Unabhängige Top-Level-Abfragen parallel starten statt nacheinander zu
+  // warten — spart bei jedem Seitenaufbau (auch nach jeder Aktion durch
+  // revalidatePath) eine volle Round-Trip-Latenz zur DB.
+  const [eveningResult, allPlayers] = await Promise.all([
+    prisma.evening.findFirst({
+      where: { mode: "LEAGUE", finishedAt: null },
+      orderBy: { createdAt: "desc" },
+      include: {
+        rounds: {
+          orderBy: { number: "asc" },
+          include: {
+            tables: {
+              orderBy: { tableNumber: "asc" },
+              include: {
+                assignments: {
+                  include: { player: true },
+                  orderBy: [
+                    { player: { firstName: "asc" } },
+                    { player: { lastName: "asc" } },
+                  ],
+                },
               },
             },
           },
         },
       },
-    },
-  });
+    }),
+    // Alle Vereinsspieler für die Verwaltung (Punkte + Teilnahme-Flag) —
+    // nicht nur die aktuell teilnehmenden, damit man auch neue Spieler
+    // aktivieren kann (siehe SPEC.md Abschnitt 6).
+    prisma.player.findMany({
+      where: { archivedAt: null },
+      orderBy: [{ points: "desc" }, { firstName: "asc" }],
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        points: true,
+        attendedEvenings: true,
+        leagueActive: true,
+      },
+    }),
+  ]);
+  let evening = eveningResult;
 
   // Ein "laufender" Abend ohne jede Runde ist ein verwaister Datensatz —
   // z.B. wenn früher das Anlegen von Abend und Runde 1 nicht atomar war
@@ -53,22 +74,6 @@ export default async function LeaguePage() {
     await prisma.evening.delete({ where: { id: evening.id } });
     evening = null;
   }
-
-  // Alle Vereinsspieler für die Verwaltung (Punkte + Teilnahme-Flag) — nicht
-  // nur die aktuell teilnehmenden, damit man auch neue Spieler aktivieren
-  // kann (siehe SPEC.md Abschnitt 6).
-  const allPlayers = await prisma.player.findMany({
-    where: { archivedAt: null },
-    orderBy: [{ points: "desc" }, { firstName: "asc" }],
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      points: true,
-      attendedEvenings: true,
-      leagueActive: true,
-    },
-  });
 
   const managementSection = (
     <section className="flex flex-col gap-3">
@@ -145,6 +150,7 @@ export default async function LeaguePage() {
   }
 
   const lastRound = evening.rounds[evening.rounds.length - 1];
+  const lastRoundPublished = lastRound.publishedAt !== null;
   // Vollständig ist eine Runde, wenn für jeden Tisch feststeht, wie er
   // ausgegangen ist — mit Sieger oder unentschieden.
   const lastRoundComplete = lastRound.tables.every(
@@ -202,7 +208,6 @@ export default async function LeaguePage() {
                 alles: „Live schalten“.
               </p>
               <RoundBoard tables={round.tables} mode="draft" />
-              <PublishRoundButton roundId={round.id} />
 
               <details className="text-xs opacity-70">
                 <summary className="cursor-pointer">
@@ -273,17 +278,29 @@ export default async function LeaguePage() {
       })}
 
       <div className="flex flex-wrap gap-3">
-        {lastRound.number < MAX_ROUNDS && (
-          <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
+        {/* Solange die letzte Runde noch im Warteraum ist, steht hier
+            statt "Nächste Runde starten" der Live-schalten-Knopf — beide
+            sind exklusiv (vor dem Publizieren gibt es noch keine
+            Ergebnisse, "Nächste Runde" wäre also ohnehin gesperrt) und
+            teilen sich deshalb denselben Platz in der Reihe. */}
+        {!lastRoundPublished ? (
+          <PublishRoundButton roundId={lastRound.id} />
+        ) : (
+          lastRound.number < MAX_ROUNDS && (
+            <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
+          )
         )}
-        <FinishEveningButton eveningId={evening.id} disabled={!lastRoundComplete} />
+        {/* Bewusst nie durch fehlende Ergebnisse gesperrt: der Abend muss
+            sich auch beenden lassen, wenn Runde 2 nicht (mehr) ausgewertet
+            wird — z.B. weil an dem Abend keine Achievement-Punkte für
+            Runde 2 vergeben werden. */}
+        <FinishEveningButton eveningId={evening.id} disabled={false} />
         {noResultsAtAll && <DiscardEveningButton eveningId={evening.id} />}
       </div>
-      {!lastRoundComplete && (
+      {lastRoundPublished && !lastRoundComplete && lastRound.number < MAX_ROUNDS && (
         <p className="text-xs opacity-70">
           Halte zuerst für jeden Tisch fest, wie er ausgegangen ist — Sieger
-          oder unentschieden —, bevor du die nächste Runde startest oder den
-          Abend beendest.
+          oder unentschieden —, bevor du die nächste Runde startest.
         </p>
       )}
 
