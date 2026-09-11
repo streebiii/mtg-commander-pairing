@@ -7,26 +7,27 @@ Umsetzung.
 
 ## Liga: Rang-Rauschen kann grössere Sprünge erlauben als vermutet
 
-**Status:** Noch zu besprechen, nicht dringend.
+**Status:** Entschieden — `RANG_RAUSCHEN` auf ±7 reduziert (vorher ±10),
+siehe PR #15.
 
-**Worum es geht:** `RANG_RAUSCHEN = 10` (`leagueRanking.ts`) wird
-**pro Spieler unabhängig** gewürfelt — zwei Spieler können sich deshalb
-schon bei bis zu **2×10 = 20 Rängen** Abstand begegnen, nicht nur bei
-±10 (dokumentiert im Testkommentar `leagueAssignment.test.ts`: "2x
-RANK_JITTER_POINTS"). Beobachtet live: Marc S (Rang 1) und Danilo
-(Rang 16, Abstand 15) landeten nach beiderseitigem Sieg-Bonus am
+**Worum es geht:** `RANG_RAUSCHEN` wird **pro Spieler unabhängig**
+gewürfelt — zwei Spieler können sich deshalb schon bei bis zu
+**2×RANG_RAUSCHEN Rängen** Abstand begegnen, nicht nur bei ±RANG_RAUSCHEN
+(dokumentiert im Testkommentar `leagueAssignment.test.ts`: "2x
+RANK_JITTER_POINTS"). Beobachtet live bei ±10: Marc S (Rang 1) und
+Danilo (Rang 16, Abstand 15) landeten nach beiderseitigem Sieg-Bonus am
 selben Tisch — kein Bug, aber grösser als die Faustregel "±10" vermuten
 lässt.
 
-**Zu klären, sobald es angegangen wird:**
-- Bleibt es wie es ist (bewusste Kompromiss-Entscheidung, siehe
-  Commit-Begründung mit den 28-Spieler-Messwerten), oder soll
-  `RANG_RAUSCHEN` reduziert werden?
-- Alternative: eine harte Obergrenze zusätzlich zum Rauschen, unabhängig
-  von der Zufallskomponente — bräuchte einen eigenen Grill.
-
-**Nächster Schritt:** Nach Abschluss der laufenden Liga-UI-Arbeit
-besprechen.
+**Entscheidung:** `RANG_RAUSCHEN` auf 7 reduziert (Durchmischungsgrenze
+neu bei 14 statt 20 Rängen). Die Alternative — eine zusätzliche harte
+Obergrenze unabhängig vom Rauschen (z.B. "nie mehr als 9 Ränge
+Abstand") — wurde diskutiert und bewusst verworfen: mit reinem
+symmetrischem Rauschen lässt sich "Abstand 9 noch möglich, Abstand 10
+nie" nicht exakt abbilden (bräuchte einen eigenen Nachbearbeitungs-Pass
+mit Tausch-Logik, siehe Session vom 11.09.2026) — als zu aufwändig für
+den Nutzen eingestuft. Die reduzierte Zufallskomponente gilt als
+ausreichend.
 
 ## Wie der Liga-Abend wirklich abläuft
 
