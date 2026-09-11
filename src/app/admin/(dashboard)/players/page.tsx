@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { SKILL_LEVELS } from "@/lib/players";
 import { createPlayer } from "./actions";
+import CreatePlayerButton from "./CreatePlayerButton";
 import PlayerRow from "./PlayerRow";
 
 // Admin-Seiten lesen immer den aktuellen DB-Stand, kein statisches Caching.
@@ -66,12 +67,7 @@ export default async function PlayersPage() {
             <input type="checkbox" name="leagueActive" className="h-4 w-4" />
             Nimmt an der Liga teil
           </label>
-          <button
-            type="submit"
-            className="min-h-11 w-full rounded bg-foreground px-4 py-2 text-sm font-medium text-background sm:w-auto"
-          >
-            Anlegen
-          </button>
+          <CreatePlayerButton />
         </form>
         <p className="text-xs opacity-70">
           Die Stufe ist nur hier sichtbar und dient allein der ausgewogenen

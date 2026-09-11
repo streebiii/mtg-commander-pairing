@@ -2,20 +2,16 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import { PrimaryButton } from "@/components/Button";
 import { CODE_LENGTH } from "@/lib/loginToken";
 import { submitLoginCode } from "./actions";
 
 function ConfirmButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={disabled || pending}
-      aria-busy={pending}
-      className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
-    >
+    <PrimaryButton type="submit" disabled={disabled} loading={pending}>
       {pending ? "Prüfe Code…" : "Anmelden"}
-    </button>
+    </PrimaryButton>
   );
 }
 

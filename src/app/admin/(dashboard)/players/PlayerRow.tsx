@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { DangerButton, SecondaryButton } from "@/components/Button";
 import { SKILL_LEVELS } from "@/lib/players";
 import { deletePlayer, updatePlayer } from "./actions";
 
@@ -164,22 +165,15 @@ export default function PlayerRow({ player }: { player: Player }) {
         ) : confirmingDelete ? (
           <span className="flex items-center gap-2 text-xs">
             <span className="opacity-70">Löschen?</span>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={isPending}
-              className="flex min-h-11 items-center rounded bg-red-600 px-3 py-2 font-medium text-white disabled:opacity-40"
-            >
+            <DangerButton onClick={handleDelete} loading={isPending}>
               {isPending ? "…" : "Ja"}
-            </button>
-            <button
-              type="button"
+            </DangerButton>
+            <SecondaryButton
               onClick={() => setConfirmingDelete(false)}
               disabled={isPending}
-              className="flex min-h-11 items-center rounded border border-white/20 px-3 py-2 disabled:opacity-40"
             >
               Nein
-            </button>
+            </SecondaryButton>
           </span>
         ) : (
           <button
