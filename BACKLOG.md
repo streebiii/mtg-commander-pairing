@@ -5,29 +5,56 @@ Konzept-Session zum Liga-Abend und sind entscheidungsreif — die
 Grundsatzfragen sind dort beantwortet, offen ist jeweils nur noch die
 Umsetzung.
 
-## Liga: Rang-Rauschen kann grössere Sprünge erlauben als vermutet
+## Liga: Rang-Rauschen durch Hälften-Zuteilung ersetzt
 
-**Status:** Entschieden — `RANG_RAUSCHEN` auf ±7 reduziert (vorher ±10),
-siehe PR #15.
+**Status:** Entschieden und umgesetzt — Rang-Rauschen komplett entfernt,
+siehe `src/lib/pairing/leagueAssignment.ts` (`assignLeagueRound`).
 
-**Worum es geht:** `RANG_RAUSCHEN` wird **pro Spieler unabhängig**
-gewürfelt — zwei Spieler können sich deshalb schon bei bis zu
-**2×RANG_RAUSCHEN Rängen** Abstand begegnen, nicht nur bei ±RANG_RAUSCHEN
-(dokumentiert im Testkommentar `leagueAssignment.test.ts`: "2x
-RANK_JITTER_POINTS"). Beobachtet live bei ±10: Marc S (Rang 1) und
-Danilo (Rang 16, Abstand 15) landeten nach beiderseitigem Sieg-Bonus am
-selben Tisch — kein Bug, aber grösser als die Faustregel "±10" vermuten
-lässt.
+**Vorgeschichte:** Ursprünglich sortierte die Zuteilung nach Rang +
+Zufalls-Rauschen (`RANG_RAUSCHEN`) und teilte in aufeinanderfolgende
+Rang-Blöcke ein. Zwei Probleme kamen dabei ans Licht:
 
-**Entscheidung:** `RANG_RAUSCHEN` auf 7 reduziert (Durchmischungsgrenze
-neu bei 14 statt 20 Rängen). Die Alternative — eine zusätzliche harte
-Obergrenze unabhängig vom Rauschen (z.B. "nie mehr als 9 Ränge
-Abstand") — wurde diskutiert und bewusst verworfen: mit reinem
-symmetrischem Rauschen lässt sich "Abstand 9 noch möglich, Abstand 10
-nie" nicht exakt abbilden (bräuchte einen eigenen Nachbearbeitungs-Pass
-mit Tausch-Logik, siehe Session vom 11.09.2026) — als zu aufwändig für
-den Nutzen eingestuft. Die reduzierte Zufallskomponente gilt als
-ausreichend.
+1. Zwei Spieler konnten sich bei bis zu **2×RANG_RAUSCHEN** Rängen
+   Abstand begegnen, nicht nur bei ±RANG_RAUSCHEN — beobachtet live bei
+   ±10: Marc S (Rang 1) und Danilo (Rang 16, Abstand 15) sassen nach
+   beiderseitigem Sieg-Bonus zusammen. `RANG_RAUSCHEN` wurde daraufhin
+   von 10 auf 7 reduziert.
+2. **Die eigentlich wichtigere Erkenntnis (Session vom 11.09.2026):**
+   die besten Ränge häuften sich weiterhin extrem oft an einem Tisch —
+   eine Simulation zeigte >80% Chance, dass mindestens 3 der besten 5
+   Spieler zusammensitzen, selbst bei ±15 Rauschen. Eine
+   Kontrollmessung mit rein zufälliger Verteilung (ganz ohne Rang-Bezug)
+   lag bei nur ~16% — der Effekt lag also an der Rang-Block-Paarung
+   selbst, nicht an der Rauschstärke. Genauer: es ist ein **Rand-Effekt**
+   — Spitze und Tabellenende eines begrenzten Feldes häufen sich fast
+   identisch stark (beide ~83%), das Mittelfeld deutlich weniger (~27%),
+   weil Rand-Positionen nur von einer Seite "Verkehr" durch Mitbewerber
+   bekommen. Zwei naheliegende Gegenmassnahmen (Rauschen an den Rändern
+   verstärken, Rand-Spiegelung/Phantom-Kandidaten) wurden simuliert und
+   verworfen: Ersteres bräuchte unpraktikabel grosses Rauschen, um die
+   Mitte zu erreichen; Letzteres funktionierte technisch gar nicht
+   (Phantome ohne echten Sitzplatz beeinflussen die relative Sortierung
+   echter Spieler nicht).
+
+**Entscheidung:** Das gesamte Rausch-Modell wurde durch ein einfacheres,
+empirisch deutlich besseres Modell ersetzt (inspiriert von einer
+bewährten manuellen Praxis des Organisators): das Feld wird nach Rang in
+eine obere und eine untere Hälfte geteilt (die untere spielt nie gegen
+die obere), innerhalb jeder Hälfte wird komplett zufällig zugeteilt.
+Die Grenze liegt dabei nicht stur bei der exakten Mitte, sondern dort,
+wo insgesamt die wenigsten Nicht-4er-Tische entstehen (siehe
+`waehleHaelftenGrenze` in leagueAssignment.ts — ein früher Entwurf mit
+fixer Mitte + kleiner Zufalls-Verschiebung erzeugte bei durch 4 teilbaren
+Anwesendenzahlen wie 28 unnötige 3er-Tische, 14/14 statt 12/16). Gibt es
+mehrere gleichwertige Grenzen, wird zufällig eine gewählt — das sorgt
+nebenbei dafür, dass Spieler direkt an der Grenze (z.B. Rang 14/15 bei 28
+Anwesenden) sich nicht künstlich nie begegnen. Ergebnis (Simulation
+gegen den echten Code): Top-5-Häufung sinkt von 83% auf ~24%, während
+Rang 1 in 100'000 Testziehungen kein einziges Mal auf die untersten
+Ränge trifft. `RANG_RAUSCHEN` und `TAUSCH_TOLERANZ_RAENGE` entfallen
+ersatzlos; `SIEG_BONUS_RAENGE` bleibt (auf 4 Ränge leicht erhöht), wirkt
+sich jetzt aber primär an der Hälften-Grenze aus, nicht mehr durchgehend
+über die ganze Rangliste.
 
 ## Wie der Liga-Abend wirklich abläuft
 

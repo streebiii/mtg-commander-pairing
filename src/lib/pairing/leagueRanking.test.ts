@@ -126,13 +126,12 @@ describe("rankValues", () => {
       ...werte.filter((w) => w.id !== "Joshua").map((w) => w.points),
     );
     // Joshua steht auch nach seinem Sieg 19 Ränge unter der Spitze — der
-    // Bonus von 3 Rängen holt davon nur einen Bruchteil auf.
+    // Sieg-Bonus holt davon nur einen Bruchteil auf.
     expect(bester - joshua.points).toBeGreaterThan(15);
     expect(bester - joshua.points).toBeGreaterThan(SIEG_BONUS_RAENGE * 4);
-    // Bewusst NICHT behauptet, dass ihm die Spitze verwehrt bleibt: das
-    // Rauschen von RANG_RAUSCHEN kann diesen Abstand in seltenen Fällen
-    // überbrücken. Gemessen rund fünfmal pro Saison — als Preis für die
-    // Durchmischung angenommen (siehe SPEC.md Abschnitt 5.1).
+    // assignLeagueRound teilt danach ohnehin in obere/untere Hälfte auf
+    // (siehe leagueAssignment.ts) — bei so grossem Abstand bleibt Joshua
+    // sicher in der unteren Hälfte, unabhängig vom Sieg-Bonus.
   });
 
   it("fällt ohne Abend-Angaben auf die Reihenfolge der Gesamtpunkte zurück", () => {
