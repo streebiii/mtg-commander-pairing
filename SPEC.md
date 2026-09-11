@@ -413,13 +413,18 @@ Hälften-Teilung mit vollständig zufälliger Verteilung darin senkt diesen
 Wert auf unter ein Viertel, bei exakt gleicher Sicherheit gegen extreme
 Fehlpaarungen (oberstes Viertel trifft nie das unterste).
 
-Die Trennlinie zwischen den Hälften verschiebt sich bei jeder Ziehung um
-bis zu `GRENZ_UNSCHAERFE` (1) Rang zufällig — ohne diese Unschärfe würden
-zwei fast gleich starke Spieler direkt an der Hälften-Grenze (z.B. Rang
-14 und 15 bei 28 Anwesenden) sich nie begegnen, während zwei Spieler eine
-Position weiter innen sich wie jedes andere Paar ihrer Hälfte begegnen —
-eine willkürliche Härte, die die kleine Verschiebung auflöst, ohne die
-Sicherheit an den Extremen zu gefährden.
+**Wo genau die Grenze liegt**, entscheidet in erster Linie die
+Tischgrössen-Regel (Abschnitt 3): gewählt wird die Aufteilung, die
+insgesamt die wenigsten Nicht-4er-Tische ergibt — geht die Gesamtzahl der
+Anwesenden rechnerisch komplett in 4er-Tische auf (z.B. 28 Spieler →
+7×4), darf die Halbierung selbst keine unnötigen 3er-Tische erzeugen
+(eine exakte Hälfte von 14/14 ergäbe sonst pro Seite `[4,4,3,3]` statt
+der mit 12/16 möglichen reinen 4er-Aufteilung). Erst danach zählt die
+Nähe zur exakten Mitte. Gibt es mehrere gleichwertige Aufteilungen (wie
+12/16 und 16/12 bei 28 Anwesenden), wird zufällig eine davon gewählt —
+das sorgt nebenbei dafür, dass zwei fast gleich starke Spieler direkt an
+der Grenze sich nicht künstlich nie begegnen, ohne die Sicherheit an den
+Extremen zu gefährden.
 
 Der Organisator kann eine Runde ausserdem jederzeit (solange noch keine
 Ergebnisse für sie eingetragen wurden) neu auswürfeln lassen ("Neu

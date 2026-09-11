@@ -41,8 +41,13 @@ empirisch deutlich besseres Modell ersetzt (inspiriert von einer
 bewährten manuellen Praxis des Organisators): das Feld wird nach Rang in
 eine obere und eine untere Hälfte geteilt (die untere spielt nie gegen
 die obere), innerhalb jeder Hälfte wird komplett zufällig zugeteilt.
-Die Trennlinie verschiebt sich pro Ziehung um `GRENZ_UNSCHAERFE` (1) Rang
-zufällig, damit Spieler direkt an der Grenze (z.B. Rang 14/15 bei 28
+Die Grenze liegt dabei nicht stur bei der exakten Mitte, sondern dort,
+wo insgesamt die wenigsten Nicht-4er-Tische entstehen (siehe
+`waehleHaelftenGrenze` in leagueAssignment.ts — ein früher Entwurf mit
+fixer Mitte + kleiner Zufalls-Verschiebung erzeugte bei durch 4 teilbaren
+Anwesendenzahlen wie 28 unnötige 3er-Tische, 14/14 statt 12/16). Gibt es
+mehrere gleichwertige Grenzen, wird zufällig eine gewählt — das sorgt
+nebenbei dafür, dass Spieler direkt an der Grenze (z.B. Rang 14/15 bei 28
 Anwesenden) sich nicht künstlich nie begegnen. Ergebnis (Simulation
 gegen den echten Code): Top-5-Häufung sinkt von 83% auf ~24%, während
 Rang 1 in 100'000 Testziehungen kein einziges Mal auf die untersten

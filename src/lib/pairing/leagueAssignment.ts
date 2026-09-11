@@ -30,21 +30,6 @@ function countRematches(table: string[], previousPairings: ReadonlySet<string>):
   return count;
 }
 
-/**
- * Um wie viele Ränge sich die Trennlinie zwischen oberer und unterer
- * Hälfte bei jeder Ziehung zufällig verschiebt (siehe `assignLeagueRound`).
- *
- * Ohne diese Unschärfe (0) wäre die Grenze eine harte Kante: zwei fast
- * gleich starke Spieler direkt an der Mitte (z.B. Rang 14 und 15 bei 28
- * Anwesenden) würden sich NIE begegnen, während zwei Spieler eine Position
- * weiter innen (Rang 13/14) sich wie jedes andere Paar ihrer Hälfte
- * begegnen. Eine Simulation zeigt: mit ±1 Rang Unschärfe treffen sich
- * Rang 14 und 15 in ~13% der Ziehungen (statt 0%), während die Sicherheit
- * an den Extremen erhalten bleibt — Rang 1 trifft in 100'000 simulierten
- * Ziehungen kein einziges Mal auf die untersten Ränge (siehe BACKLOG.md).
- */
-export const GRENZ_UNSCHAERFE = 1;
-
 /** Tische brauchen mindestens 3 Spieler — siehe `computeTableSizes`. */
 const MIN_HAELFTE = 3;
 
@@ -61,24 +46,55 @@ function assignRandomly(ids: readonly string[], tableSizes: readonly number[]): 
   return tables;
 }
 
+/** Wie viele Tische einer Grösse ungleich 4 eine Tischgrössen-Liste enthält. */
+function nichtVierer(sizes: readonly number[]): number {
+  return sizes.filter((size) => size !== 4).length;
+}
+
+/**
+ * Bestimmt, wie viele Spieler die obere Hälfte bekommt.
+ *
+ * Bevorzugt wird — vor allem anderen — die Aufteilung, die *insgesamt*
+ * (über beide Hälften) die wenigsten Nicht-4er-Tische ergibt: geht die
+ * Gesamtzahl der Anwesenden rein rechnerisch komplett in 4er-Tische auf
+ * (z.B. 28 Spieler → 7×4), darf die Halbierung selbst keine unnötigen
+ * 3er-Tische erzeugen — eine exakte Hälfte von 14/14 ergäbe sonst pro
+ * Seite `[4,4,3,3]" statt der mit 12/16 möglichen reinen 4er-Aufteilung.
+ *
+ * Erst unter den so gefundenen, tischgrössen-optimalen Aufteilungen wird
+ * die gewählt, die am nächsten an der exakten Mitte liegt (möglichst
+ * ausgeglichene Hälften). Gibt es mehrere gleichwertige Aufteilungen,
+ * wird zufällig eine davon gewählt — das liefert dieselbe Abwechslung an
+ * der Grenze, die zuvor eine feste Unschärfe künstlich erzeugen musste,
+ * jetzt aber nie auf Kosten der Tischgrössen.
+ */
+function waehleHaelftenGrenze(n: number): number {
+  const kandidaten: { grenze: number; nichtVierer: number; distanz: number }[] = [];
+  for (let grenze = MIN_HAELFTE; grenze <= n - MIN_HAELFTE; grenze++) {
+    kandidaten.push({
+      grenze,
+      nichtVierer:
+        nichtVierer(computeTableSizes(grenze)) + nichtVierer(computeTableSizes(n - grenze)),
+      distanz: Math.abs(grenze - n / 2),
+    });
+  }
+
+  const minNichtVierer = Math.min(...kandidaten.map((k) => k.nichtVierer));
+  const beiMinNichtVierer = kandidaten.filter((k) => k.nichtVierer === minNichtVierer);
+  const minDistanz = Math.min(...beiMinNichtVierer.map((k) => k.distanz));
+  const beste = beiMinNichtVierer.filter((k) => k.distanz === minDistanz);
+
+  return beste[Math.floor(Math.random() * beste.length)].grenze;
+}
+
 /**
  * Teilt die (bereits nach Punkten sortierten) Spieler in eine obere und
- * eine untere Hälfte, mit einer kleinen zufälligen Verschiebung der
- * Trennlinie um bis zu `unschaerfe` Ränge (siehe `GRENZ_UNSCHAERFE`).
- *
- * Die Grenze bleibt dabei immer mindestens `MIN_HAELFTE` von beiden
- * Rändern entfernt, damit keine der beiden Hälften zu klein für eine
- * gültige Tischgrößen-Verteilung wird.
+ * eine untere Hälfte (siehe `waehleHaelftenGrenze`).
  */
 function splitInHalves(
   sortedPlayers: readonly RankedPlayer[],
-  unschaerfe: number,
 ): [RankedPlayer[], RankedPlayer[]] {
-  const n = sortedPlayers.length;
-  const mitte = Math.ceil(n / 2);
-  const offset =
-    unschaerfe === 0 ? 0 : Math.floor(Math.random() * (2 * unschaerfe + 1)) - unschaerfe;
-  const grenze = Math.min(n - MIN_HAELFTE, Math.max(MIN_HAELFTE, mitte + offset));
+  const grenze = waehleHaelftenGrenze(sortedPlayers.length);
   return [sortedPlayers.slice(0, grenze), sortedPlayers.slice(grenze)];
 }
 
@@ -88,9 +104,10 @@ function splitInHalves(
  * Vorgehen (siehe SPEC.md Abschnitt 5.1 und 5.2, sowie BACKLOG.md für die
  * Herleitung):
  * 1. Spieler nach Punkten absteigend sortieren.
- * 2. In eine obere und eine untere Hälfte teilen (mit leicht verschobener
- *    Trennlinie, siehe `GRENZ_UNSCHAERFE`) — die stärkere Hälfte spielt
- *    nie gegen die schwächere.
+ * 2. In eine obere und eine untere Hälfte teilen (siehe
+ *    `waehleHaelftenGrenze`) — die stärkere Hälfte spielt nie gegen die
+ *    schwächere. Die Trennlinie liegt nicht stur bei der exakten Mitte,
+ *    sondern dort, wo insgesamt die wenigsten Nicht-4er-Tische entstehen.
  * 3. Innerhalb jeder Hälfte komplett zufällig auf die Tische verteilen —
  *    kein Rang-Bezug mehr. Das verhindert, dass sich dieselbe kleine
  *    Gruppe (z.B. die besten 4-5) immer wieder an einem Tisch häuft, ein
@@ -109,14 +126,11 @@ function splitInHalves(
  *   (siehe `rankValues` in leagueRanking.ts).
  * @param previousPairings Set von pairKey(a,b) für Spieler, die an diesem
  *   Abend in einer früheren Runde bereits am selben Tisch saßen.
- * @param grenzUnschaerfe Override für `GRENZ_UNSCHAERFE` (v.a. für Tests
- *   nützlich, um die Verschiebung gezielt an- oder auszuschalten).
  * @returns Array von Tischen (jeweils ein Array von Spieler-IDs).
  */
 export function assignLeagueRound(
   players: readonly RankedPlayer[],
   previousPairings: ReadonlySet<string> = new Set(),
-  grenzUnschaerfe: number = GRENZ_UNSCHAERFE,
 ): string[][] {
   const sortiert = [...players].sort((a, b) => b.points - a.points);
 
@@ -129,7 +143,7 @@ export function assignLeagueRound(
     return tables;
   }
 
-  const [oben, unten] = splitInHalves(sortiert, grenzUnschaerfe);
+  const [oben, unten] = splitInHalves(sortiert);
   const obenTables = assignRandomly(
     oben.map((p) => p.id),
     computeTableSizes(oben.length),

@@ -26,15 +26,28 @@ describe("assignLeagueRound", () => {
     }
   });
 
-  it("teilt das Feld in eine obere und eine untere Hälfte — die obere bekommt bei ungerader Anzahl die zusätzliche Person", () => {
-    // 0 Unschärfe, damit die Grenze exakt bei der Mitte liegt (deterministisch testbar).
-    const players = makePlayers(Array.from({ length: 11 }, (_, i) => 100 - i)); // N=11, Ceil(11/2)=6
-    const tables = assignLeagueRound(players, new Set(), 0);
+  it("erzeugt bei einer durch 4 teilbaren Gesamtzahl keine unnötigen Nicht-4er-Tische", () => {
+    // 28 Spieler: die exakte Mitte (14/14) ergäbe pro Hälfte [4,4,3,3] —
+    // 4 Nicht-4er-Tische, obwohl das Gesamtfeld rein rechnerisch 7×4
+    // hergibt (12/16 oder 16/12 teilt fehlerfrei auf). Genau das war der
+    // gemeldete Bug: die Grenze darf nicht stur bei n/2 liegen.
+    const players = makePlayers(Array.from({ length: 28 }, (_, i) => 100 - i));
+    for (let i = 0; i < 100; i++) {
+      const tables = assignLeagueRound(players);
+      for (const table of tables) {
+        expect(table.length).toBe(4);
+      }
+    }
+  });
 
-    // p0..p5 (obere Haelfte, 6 Spieler) duerfen nie mit p6..p10 (untere
-    // Haelfte, 5 Spieler) am selben Tisch sitzen.
-    const oben = new Set(["p0", "p1", "p2", "p3", "p4", "p5"]);
-    const unten = new Set(["p6", "p7", "p8", "p9", "p10"]);
+  it("teilt das Feld in eine obere und eine untere Hälfte — die Grenze liegt dort, wo am wenigsten Nicht-4er-Tische entstehen", () => {
+    // N=10: einzige optimale Grenze ist exakt die Mitte (5/5) — bei 4/6
+    // oder 6/4 entstünde je ein zusätzlicher Nicht-4er-Tisch.
+    const players = makePlayers(Array.from({ length: 10 }, (_, i) => 100 - i));
+    const tables = assignLeagueRound(players);
+
+    const oben = new Set(["p0", "p1", "p2", "p3", "p4"]);
+    const unten = new Set(["p5", "p6", "p7", "p8", "p9"]);
     for (const table of tables) {
       const hatOben = table.some((id) => oben.has(id));
       const hatUnten = table.some((id) => unten.has(id));
@@ -44,15 +57,12 @@ describe("assignLeagueRound", () => {
 
   it("garantiert über viele Ziehungen: die obere Hälfte trifft nie die untere Hälfte", () => {
     const players = makePlayers(Array.from({ length: 28 }, (_, i) => 100 - i)); // N=28
-    // Mit Standard-Unschaerfe (GRENZ_UNSCHAERFE=1), nicht 0 — genau das
-    // soll real vorkommende Verhalten pruefen, nicht nur den Idealfall.
-    // Mitte liegt bei 14, die Grenze kann also zwischen 13 und 15 liegen
-    // (siehe GRENZ_UNSCHAERFE-Dokumentation) — mit Sicherheitsabstand
-    // dazu gewaehlt, damit die Testgruppen selbst bei maximaler
-    // Verschiebung nie ineinander uebergehen.
-    const oben = new Set(Array.from({ length: 12 }, (_, i) => `p${i}`)); // p0-p11
+    // Optimale Grenzen liegen bei 12 oder 16 (siehe Test oben) — mit
+    // Sicherheitsabstand dazu gewählt, damit die Testgruppen unabhängig
+    // davon, welche der beiden gezogen wird, nie ineinander übergehen.
+    const oben = new Set(Array.from({ length: 10 }, (_, i) => `p${i}`)); // p0-p9
     const weitUnten = new Set(
-      Array.from({ length: 12 }, (_, i) => `p${16 + i}`), // p16-p27
+      Array.from({ length: 10 }, (_, i) => `p${18 + i}`), // p18-p27
     );
 
     for (let i = 0; i < 300; i++) {
@@ -65,49 +75,36 @@ describe("assignLeagueRound", () => {
     }
   });
 
+  it("wählt bei mehreren gleichwertigen Grenzen zufällig eine davon", () => {
+    // N=11: sowohl 4/7 als auch 7/4 ergeben gleich viele Nicht-4er-Tische
+    // (je einen) und liegen gleich weit von der exakten Mitte entfernt —
+    // beide Grenzen sollten über genügend Ziehungen vorkommen.
+    const players = makePlayers(Array.from({ length: 11 }, (_, i) => 100 - i));
+    let p4MitP9 = 0; // nur möglich, wenn die Grenze bei 4 liegt (p4 dann unten)
+    const trials = 500;
+    for (let i = 0; i < trials; i++) {
+      const tables = assignLeagueRound(players);
+      const tableMitP4 = tables.find((t) => t.includes("p4"))!;
+      if (tableMitP4.includes("p9")) p4MitP9++;
+    }
+    // Läge die Grenze immer bei 7 (p4 stets in der oberen Hälfte), könnte
+    // p4 nie mit p9 (immer unten) am selben Tisch sitzen.
+    expect(p4MitP9).toBeGreaterThan(0);
+  });
+
   it("verteilt innerhalb einer Hälfte komplett zufällig, nicht nach Rang", () => {
-    // Enge, aber unterscheidbare Punkteabstaende innerhalb der oberen
-    // Haelfte (p0..p5 bei N=11).
     const players = makePlayers([10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
 
     const seenArrangements = new Set<string>();
     for (let i = 0; i < 100; i++) {
-      const tables = assignLeagueRound(players, new Set(), 0);
+      const tables = assignLeagueRound(players);
       const tableMitP0 = tables.find((t) => t.includes("p0"))!;
       seenArrangements.add([...tableMitP0].sort().join(","));
     }
 
-    // Waere die Verteilung innerhalb der Haelfte weiterhin nach Rang
-    // sortiert (wie frueher, Block+Jitter), saehe man kaum Variation.
-    // Komplett zufaellig muss p0 im Lauf vieler Ziehungen mit ganz
-    // unterschiedlichen Tischnachbarn aus der oberen Haelfte landen.
+    // Wäre die Verteilung innerhalb der Hälfte weiterhin nach Rang
+    // sortiert (wie früher, Block+Jitter), sähe man kaum Variation.
     expect(seenArrangements.size).toBeGreaterThan(3);
-  });
-
-  it("lässt die Trennlinie bei GRENZ_UNSCHAERFE=0 nie verrutschen (Grenzfall exakt reproduzierbar)", () => {
-    const players = makePlayers(Array.from({ length: 10 }, (_, i) => 100 - i)); // N=10, Mitte=5
-    for (let i = 0; i < 50; i++) {
-      const tables = assignLeagueRound(players, new Set(), 0);
-      const tableMitP4 = tables.find((t) => t.includes("p4"))!; // letzter der oberen Haelfte
-      // p4 darf nie mit jemandem aus der unteren Haelfte (p5..p9) sitzen.
-      expect(tableMitP4.some((id) => ["p5", "p6", "p7", "p8", "p9"].includes(id))).toBe(
-        false,
-      );
-    }
-  });
-
-  it("mit Unschärfe kann die Grenze knapp benachbarte Ränge gelegentlich zusammenbringen", () => {
-    const players = makePlayers(Array.from({ length: 10 }, (_, i) => 100 - i)); // N=10, Mitte=5
-    let p4TrifftP5 = 0;
-    const trials = 400;
-    for (let i = 0; i < trials; i++) {
-      const tables = assignLeagueRound(players, new Set(), 1); // Unschaerfe 1
-      const tableMitP4 = tables.find((t) => t.includes("p4"))!;
-      if (tableMitP4.includes("p5")) p4TrifftP5++;
-    }
-    // Bei GRENZ_UNSCHAERFE=0 waere das immer 0 — mit Unschaerfe muss es
-    // in einem spuerbaren Teil der Ziehungen vorkommen.
-    expect(p4TrifftP5).toBeGreaterThan(0);
   });
 
   it("bleibt bei sehr kleinen Abenden (< 6 Anwesende) eine einzige Gruppe, ohne Fehler", () => {
@@ -125,14 +122,14 @@ describe("assignLeagueRound", () => {
   });
 
   it("reduziert Rematches durch Tausch innerhalb einer Hälfte", () => {
-    // 16 Spieler -> obere Haelfte (Mitte=8) p0..p7, verteilt auf 2 Tische
-    // zu je 4 — erst ab zwei Tischen pro Haelfte gibt es zwischen ihnen
-    // ueberhaupt etwas zu tauschen (bei genau 4 waere es ein einziger
-    // Tisch, an dem sich nichts aendern liesse).
+    // 16 Spieler -> einzige optimale Grenze ist die exakte Mitte (8/8),
+    // verteilt auf je 2 Tische zu 4 — erst ab zwei Tischen pro Hälfte
+    // gibt es zwischen ihnen überhaupt etwas zu tauschen (bei genau 4
+    // wäre es ein einziger Tisch, an dem sich nichts ändern liesse).
     const players = makePlayers(
       Array.from({ length: 16 }, (_, i) => 100 - i),
     );
-    // Eine konkrete Vierergruppe aus der oberen Haelfte, die schon einmal
+    // Eine konkrete Vierergruppe aus der oberen Hälfte, die schon einmal
     // zusammensass.
     const previousPairings = new Set(tablePairKeys(["p0", "p1", "p2", "p3"]));
 
@@ -140,12 +137,12 @@ describe("assignLeagueRound", () => {
     let totalRematchesOhneVermeidung = 0;
     const trials = 500;
     for (let i = 0; i < trials; i++) {
-      const mit = assignLeagueRound(players, previousPairings, 0);
+      const mit = assignLeagueRound(players, previousPairings);
       totalRematchesMitVermeidung += mit.reduce(
         (s, t) => s + countRematches(t, previousPairings),
         0,
       );
-      const ohne = assignLeagueRound(players, new Set(), 0);
+      const ohne = assignLeagueRound(players, new Set());
       totalRematchesOhneVermeidung += ohne.reduce(
         (s, t) => s + countRematches(t, previousPairings),
         0,
@@ -155,15 +152,15 @@ describe("assignLeagueRound", () => {
   });
 
   it("tauscht bei der Rematch-Vermeidung nie über die Hälften-Grenze hinweg", () => {
-    // p0..p3 obere Haelfte, p4..p7 untere Haelfte. Simuliere eine
-    // Vorrunde, in der (hypothetisch) alle in der oberen Haelfte
-    // zusammen sassen — die Vermeidung darf trotzdem niemanden aus der
-    // unteren Haelfte heranziehen.
+    // 8 Spieler -> einzige optimale Grenze ist die exakte Mitte (4/4).
+    // Simuliere eine Vorrunde, in der (hypothetisch) alle in der oberen
+    // Hälfte zusammensassen — die Vermeidung darf trotzdem niemanden aus
+    // der unteren Hälfte heranziehen.
     const players = makePlayers([100, 90, 80, 70, 60, 50, 40, 30]);
     const previousPairings = new Set(tablePairKeys(["p0", "p1", "p2", "p3"]));
 
     for (let i = 0; i < 100; i++) {
-      const tables = assignLeagueRound(players, previousPairings, 0);
+      const tables = assignLeagueRound(players, previousPairings);
       const oben = new Set(["p0", "p1", "p2", "p3"]);
       const unten = new Set(["p4", "p5", "p6", "p7"]);
       for (const table of tables) {
@@ -184,6 +181,8 @@ describe("pairKey", () => {
 describe("Paarung der zweiten Runde nach dem Sieg (SPEC.md Abschnitt 5)", () => {
   // Der Sieg-Bonus wirkt sich vor allem an der Grenze zwischen oberer und
   // unterer Haelfte aus (siehe SIEG_BONUS_RAENGE in leagueRanking.ts).
+  // N=10: einzige optimale Grenze ist die exakte Mitte (5/5, siehe Test
+  // oben), damit bleiben diese Tests deterministisch auswertbar.
   const alsSieg = (ids: string[], sieger: string[]) =>
     ids.map((id, i) => ({ id, points: -i + (sieger.includes(id) ? 4 : 0) }));
 
@@ -194,7 +193,7 @@ describe("Paarung der zweiten Runde nach dem Sieg (SPEC.md Abschnitt 5)", () => 
     // p4, der als schwaechster der ehemals oberen Haelfte verdraengt wird).
     const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
     const bewertet = alsSieg(ids, ["p5"]);
-    const tables = assignLeagueRound(bewertet, new Set(), 0);
+    const tables = assignLeagueRound(bewertet);
 
     const oben = new Set(["p0", "p1", "p5", "p2", "p3"]);
     const unten = new Set(["p4", "p6", "p7", "p8", "p9"]);
@@ -215,7 +214,7 @@ describe("Paarung der zweiten Runde nach dem Sieg (SPEC.md Abschnitt 5)", () => 
     const bewertet = alsSieg(ids, ["p9"]);
 
     for (let i = 0; i < 100; i++) {
-      const tables = assignLeagueRound(bewertet, new Set(), 0);
+      const tables = assignLeagueRound(bewertet);
       const tableMitP9 = tables.find((t) => t.includes("p9"))!;
       // p9 darf trotz Sieg nie mit der Spitze (p0) am selben Tisch sitzen.
       expect(tableMitP9.includes("p0")).toBe(false);
@@ -225,7 +224,7 @@ describe("Paarung der zweiten Runde nach dem Sieg (SPEC.md Abschnitt 5)", () => 
   it("ohne Sieger verhält sich Runde 2 wie Runde 1 (reine Rangfolge)", () => {
     const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
     const bewertet = alsSieg(ids, []);
-    const tables = assignLeagueRound(bewertet, new Set(), 0);
+    const tables = assignLeagueRound(bewertet);
     const oben = new Set(["p0", "p1", "p2", "p3", "p4"]);
     const unten = new Set(["p5", "p6", "p7", "p8", "p9"]);
     for (const table of tables) {
