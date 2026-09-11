@@ -63,7 +63,11 @@ export default function PlayerSelectionList({
         {players.map((p) => (
           <label
             key={p.id}
-            className="flex min-h-11 items-center gap-1.5 rounded border border-white/20 px-3 py-2 text-sm"
+            className={`flex min-h-11 items-center gap-1.5 rounded border px-3 py-2 text-sm transition-colors ${
+              selected.has(p.id)
+                ? "border-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
+                : "border-white/20 hover:bg-white/5"
+            }`}
           >
             <input
               type="checkbox"

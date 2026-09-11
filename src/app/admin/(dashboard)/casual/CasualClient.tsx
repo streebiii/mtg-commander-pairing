@@ -726,10 +726,10 @@ export default function CasualClient({
                           <button
                             type="button"
                             onClick={() => handlePlayerClick(table.tableNumber, p.id)}
-                            className={`flex min-h-11 w-full items-center gap-2 rounded border px-3 py-2 text-left text-sm ${
+                            className={`flex min-h-11 w-full items-center gap-2 rounded border px-3 py-2 text-left text-sm transition-colors ${
                               isPicked
-                                ? "border-blue-500 bg-blue-500/10"
-                                : "border-white/10"
+                                ? "border-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
+                                : "border-white/10 hover:bg-white/5"
                             }`}
                           >
                             <span className="truncate flex-1">{p.name}</span>
@@ -919,12 +919,12 @@ export default function CasualClient({
                   key={p.id}
                   type="button"
                   onClick={() => handleRowTap(p.id)}
-                  className={`flex min-h-11 w-full items-center gap-1.5 rounded border px-3 py-2 text-left text-sm ${
+                  className={`flex min-h-11 w-full items-center gap-1.5 rounded border px-3 py-2 text-left text-sm transition-colors ${
                     isPending
-                      ? "border-amber-500 bg-amber-500/10"
+                      ? "border-amber-500 bg-amber-500/10 hover:bg-amber-500/20"
                       : isSelected
-                        ? "border-blue-500 bg-blue-500/10"
-                        : "border-white/10"
+                        ? "border-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
+                        : "border-white/10 hover:bg-white/5"
                   } ${
                     // Der Ring legt sich über den bestehenden Zustand, statt
                     // ihn zu ersetzen — eine vierte Rahmenfarbe neben amber
