@@ -7,6 +7,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import { DangerButton, PrimaryButton, SecondaryButton } from "@/components/Button";
 import { SKILL_LEVELS } from "@/lib/players";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import {
@@ -764,40 +765,28 @@ export default function CasualClient({
                       Gruppe sitzt — sonst täten beide Knöpfe dasselbe. */}
                   {betroffeneGruppen > 0 ? (
                     <>
-                      <button
-                        type="button"
-                        disabled={reshuffling || !!reshuffleGroupConflict}
+                      <PrimaryButton
+                        disabled={!!reshuffleGroupConflict}
+                        loading={reshuffling}
                         onClick={() => reshuffleSelected(true)}
-                        className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
                       >
                         {reshuffling ? "Mische…" : "Gruppen behalten"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={reshuffling}
+                      </PrimaryButton>
+                      <SecondaryButton
+                        loading={reshuffling}
                         onClick={() => reshuffleSelected(false)}
-                        className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
                       >
                         {reshuffling ? "Mische…" : "Gruppen auflösen"}
-                      </button>
+                      </SecondaryButton>
                     </>
                   ) : (
-                    <button
-                      type="button"
-                      disabled={reshuffling}
-                      onClick={() => reshuffleSelected(true)}
-                      className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
-                    >
+                    <PrimaryButton loading={reshuffling} onClick={() => reshuffleSelected(true)}>
                       {reshuffling ? "Mische…" : "Neu mischen"}
-                    </button>
+                    </PrimaryButton>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedForReshuffle(new Set())}
-                    className="min-h-11 rounded border border-transparent px-3 py-2 text-sm opacity-70"
-                  >
+                  <SecondaryButton onClick={() => setSelectedForReshuffle(new Set())}>
                     Auswahl aufheben
-                  </button>
+                  </SecondaryButton>
                 </div>
               )}
               {reshuffleGroupConflict && (
@@ -893,21 +882,16 @@ export default function CasualClient({
                   ))}
                 </select>
               </label>
-              <button
-                type="button"
+              <PrimaryButton
+                disabled={!newFirstName.trim()}
+                loading={adding}
                 onClick={handleAddFormSubmit}
-                disabled={!newFirstName.trim() || adding}
-                className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
               >
                 {adding ? "Lege an…" : "Anlegen"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="min-h-11 rounded border border-transparent px-4 py-2 text-sm opacity-70"
-              >
+              </PrimaryButton>
+              <SecondaryButton onClick={() => setShowAddForm(false)}>
                 Abbrechen
-              </button>
+              </SecondaryButton>
             </div>
           )}
           {addError && <p className="text-sm text-red-600">{addError}</p>}
@@ -1008,21 +992,15 @@ export default function CasualClient({
                   <p className="text-xs text-red-600">{groupModeHint}</p>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={finishGroupMode}
+                  <PrimaryButton
                     disabled={pendingGroupMembers.length < MIN_GROUP_SIZE}
-                    className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
+                    onClick={finishGroupMode}
                   >
                     Fertig
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelGroupMode}
-                    className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm"
-                  >
+                  </PrimaryButton>
+                  <SecondaryButton onClick={cancelGroupMode}>
                     Abbrechen
-                  </button>
+                  </SecondaryButton>
                 </div>
               </div>
             )}
@@ -1118,22 +1096,18 @@ export default function CasualClient({
           </div>
 
           <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              disabled={selectedCount < 3 || loading || !!groupConflict}
+            <PrimaryButton
+              className="w-full"
+              disabled={selectedCount < 3 || !!groupConflict}
+              loading={loading}
               onClick={computePairing}
-              className="min-h-11 w-full rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40"
             >
               {loading ? "Berechne…" : "Tische berechnen"}
-            </button>
+            </PrimaryButton>
             {tables && (
-              <button
-                type="button"
-                onClick={handleReset}
-                className="min-h-11 w-full rounded border border-white/20 px-4 py-2 text-sm"
-              >
+              <DangerButton className="w-full" onClick={handleReset}>
                 Zurücksetzen
-              </button>
+              </DangerButton>
             )}
             {selectedCount > 0 && selectedCount < 3 && (
               <p className="text-xs opacity-70">Mindestens 3 Spieler nötig.</p>

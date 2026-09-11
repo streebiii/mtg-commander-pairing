@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
+import { PrimaryButton } from "@/components/Button";
 
 /**
  * Absende-Button des Login-Formulars mit Ladezustand. Muss eine eigene
@@ -13,13 +14,8 @@ export default function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      aria-busy={pending}
-      className="min-h-11 rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-60"
-    >
+    <PrimaryButton type="submit" loading={pending}>
       {pending ? "Code wird gesendet…" : "Login-Code anfordern"}
-    </button>
+    </PrimaryButton>
   );
 }
