@@ -150,6 +150,7 @@ export default async function LeaguePage() {
   }
 
   const lastRound = evening.rounds[evening.rounds.length - 1];
+  const lastRoundPublished = lastRound.publishedAt !== null;
   // Vollständig ist eine Runde, wenn für jeden Tisch feststeht, wie er
   // ausgegangen ist — mit Sieger oder unentschieden.
   const lastRoundComplete = lastRound.tables.every(
@@ -207,7 +208,6 @@ export default async function LeaguePage() {
                 alles: „Live schalten“.
               </p>
               <RoundBoard tables={round.tables} mode="draft" />
-              <PublishRoundButton roundId={round.id} />
 
               <details className="text-xs opacity-70">
                 <summary className="cursor-pointer">
@@ -278,8 +278,17 @@ export default async function LeaguePage() {
       })}
 
       <div className="flex flex-wrap gap-3">
-        {lastRound.number < MAX_ROUNDS && (
-          <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
+        {/* Solange die letzte Runde noch im Warteraum ist, steht hier
+            statt "Nächste Runde starten" der Live-schalten-Knopf — beide
+            sind exklusiv (vor dem Publizieren gibt es noch keine
+            Ergebnisse, "Nächste Runde" wäre also ohnehin gesperrt) und
+            teilen sich deshalb denselben Platz in der Reihe. */}
+        {!lastRoundPublished ? (
+          <PublishRoundButton roundId={lastRound.id} />
+        ) : (
+          lastRound.number < MAX_ROUNDS && (
+            <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
+          )
         )}
         {/* Bewusst nie durch fehlende Ergebnisse gesperrt: der Abend muss
             sich auch beenden lassen, wenn Runde 2 nicht (mehr) ausgewertet
@@ -288,7 +297,7 @@ export default async function LeaguePage() {
         <FinishEveningButton eveningId={evening.id} disabled={false} />
         {noResultsAtAll && <DiscardEveningButton eveningId={evening.id} />}
       </div>
-      {!lastRoundComplete && lastRound.number < MAX_ROUNDS && (
+      {lastRoundPublished && !lastRoundComplete && lastRound.number < MAX_ROUNDS && (
         <p className="text-xs opacity-70">
           Halte zuerst für jeden Tisch fest, wie er ausgegangen ist — Sieger
           oder unentschieden —, bevor du die nächste Runde startest.
