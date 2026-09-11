@@ -371,7 +371,7 @@ BACKLOG.md) und wandern von dort nach mtgbl.ch.
 ### 5.1 Sortier-/Gruppierungsregel für die Tischzuteilung
 
 Gerechnet wird in **Rängen**, nicht in Punkten. Tische sind das Ergebnis
-der Sortierung, keine Eingabegrösse.
+der Zuteilung, keine Eingabegrösse.
 
 **Die Rangfolge entsteht aus Punkten pro besuchtem Abend, nicht aus der
 Gesamtsumme** (`src/lib/pairing/leagueRanking.ts`). Die Gesamtsumme misst
@@ -390,26 +390,36 @@ Messung ist der Schnitt schlicht nicht belastbar. Die Anzahl besuchter
 Abende stammt aus den Rundenspalten der importierten Rangliste
 (Abschnitt 7).
 
-Auf den so gewonnenen Rangplatz kommen zwei Zuschläge:
+In Runde 2 kommt ein **Sieg-Bonus `SIEG_BONUS_RAENGE` (4 Ränge)** dazu,
+für alle, die ihren Tisch in Runde 1 gewonnen haben. Er wirkt sich vor
+allem an der Grenze zwischen oberer und unterer Hälfte aus (siehe
+unten) — er entscheidet, ob ein Sieg knapp an der Grenze liegende
+Spieler in die stärkere Hälfte hebt. Weiter innerhalb einer Hälfte
+spielt der genaue Rang keine Rolle mehr.
 
-- **Zufalls-Rauschen `RANG_RAUSCHEN` (±10 Ränge).** Der Regler gegen
-  "immer dieselben Gegner". Gemessen über eine Saison mit 28 Spielern:
-  ohne Rauschen sitzt man mit seinem häufigsten Gegner 9 von 12
-  Zuteilungen zusammen, bei ±10 nur noch 4,5, und man trifft 17,9 statt
-  12,8 verschiedene Leute.
-- **Sieg-Bonus `SIEG_BONUS_RAENGE` (3 Ränge)** in Runde 2 für alle, die
-  ihren Tisch in Runde 1 gewonnen haben (Abschnitt 5). Bewusst endlich:
-  ein Sieg soll heben, aber nicht an die Spitze katapultieren. Wer an
-  einem hinteren Tisch gewinnt, trifft auf die Sieger seiner Umgebung.
+**Zuteilung — Hälften statt Rang-Blöcke.** Die sortierten Spieler werden
+in eine obere (stärkere) und eine untere (schwächere) Hälfte geteilt —
+die schwächere Hälfte spielt nie gegen die stärkere. Innerhalb jeder
+Hälfte werden die Tische **komplett zufällig** besetzt, ganz ohne
+weiteren Rang-Bezug.
 
-Danach werden die Spieler gemäss der berechneten Tischgrössen
-(Abschnitt 3) in aufeinanderfolgende Blöcke eingeteilt.
+Das ersetzt ein früheres Modell mit durchgehendem Zufalls-Rauschen auf
+eine einzige, fortlaufende Rangliste. Eine Simulation zeigte: selbst mit
+grosszügigem Rauschen häufen sich die besten Ränge weiterhin extrem
+stark an einem einzigen Tisch (>80% Chance, dass mindestens 3 der besten
+5 zusammensitzen) — ein struktureller Effekt der Rang-Block-Paarung an
+den Rändern der Liste, kein Tuning-Problem (siehe BACKLOG.md). Die
+Hälften-Teilung mit vollständig zufälliger Verteilung darin senkt diesen
+Wert auf unter ein Viertel, bei exakt gleicher Sicherheit gegen extreme
+Fehlpaarungen (oberstes Viertel trifft nie das unterste).
 
-**Es gibt bewusst keine harte Obergrenze** für den Rangabstand an einem
-Tisch: die Sortierung selbst begrenzt, wer zusammenkommen kann. Der Preis
-des grosszügigen Rauschens sind rund fünf Tische pro Saison, an denen
-jemand aus dem obersten Viertel mit jemandem aus dem untersten sitzt —
-gegen den Gewinn an Abwechslung abgewogen und angenommen.
+Die Trennlinie zwischen den Hälften verschiebt sich bei jeder Ziehung um
+bis zu `GRENZ_UNSCHAERFE` (1) Rang zufällig — ohne diese Unschärfe würden
+zwei fast gleich starke Spieler direkt an der Hälften-Grenze (z.B. Rang
+14 und 15 bei 28 Anwesenden) sich nie begegnen, während zwei Spieler eine
+Position weiter innen sich wie jedes andere Paar ihrer Hälfte begegnen —
+eine willkürliche Härte, die die kleine Verschiebung auflöst, ohne die
+Sicherheit an den Extremen zu gefährden.
 
 Der Organisator kann eine Runde ausserdem jederzeit (solange noch keine
 Ergebnisse für sie eingetragen wurden) neu auswürfeln lassen ("Neu
@@ -417,12 +427,12 @@ mischen"-Button), falls ihm der erste Vorschlag nicht zusagt.
 
 ### 5.2 Rematch-Vermeidung — Umsetzung
 
-Bei der Neupaarung für Runde 2/3 wird, wenn mehrere Spieler mit
-(näherungsweise) gleichem Punktestand für die Randposition eines
-Tisch-Blocks infrage kommen, derjenige bevorzugt, der in der/den
-vorherigen Runde(n) dieses Abends noch nicht mit den anderen Spielern des
-Ziel-Tisches zusammen gespielt hat. Die Tischgrössenverteilung selbst
-(Abschnitt 3) bleibt davon unberührt.
+Bei der Neupaarung für Runde 2/3 wird, wenn Spieler *derselben Hälfte*
+für zwei verschiedene Tische infrage kommen, ein Tausch bevorzugt, der
+eine Wiederholungsbegegnung (Rematch) aus einer vorherigen Runde dieses
+Abends auflöst. Die Vermeidung tauscht dabei nie über die Hälften-Grenze
+hinweg — die Tischgrössenverteilung selbst (Abschnitt 3) bleibt davon
+unberührt.
 
 ## 6. Spielerverwaltung
 

@@ -27,37 +27,18 @@
 export const DAEMPFUNG_ABENDE = 2;
 
 /**
- * Zufalls-Rauschen auf den Rangplatz, in Rängen.
- *
- * Der Regler gegen "immer dieselben Gegner". Gemessen über eine Saison mit
- * 28 Spielern: ohne Rauschen sitzt man mit seinem häufigsten Gegner 9 von
- * 12 Zuteilungen zusammen, bei ±10 nur noch 4,5, und man trifft 17,9 statt
- * 12,8 verschiedene Leute. Der Preis sind rund fünf Begegnungen pro Saison
- * zwischen oberem und unterem Viertel — bewusst in Kauf genommen.
- *
- * Auf ±7 reduziert (vorher ±10), nachdem in der Praxis Rang 1 und Rang 16
- * zusammensassen — ein Abstand von 15, innerhalb der tatsächlichen
- * Durchmischungsgrenze von 2×RANG_RAUSCHEN. Mit ±7 liegt diese Grenze bei
- * 14 Rängen statt 20. Kein hartes Limit — nur seltener und kleiner als
- * zuvor (siehe BACKLOG.md für die verworfene Alternative mit zusätzlicher
- * harter Abstandsgrenze).
- */
-export const RANG_RAUSCHEN = 7;
-
-/**
  * Wie viele Ränge ein Rundensieg für die Paarung der zweiten Runde zählt.
  *
  * Bewusst endlich: ein Sieg soll heben, aber nicht an die Spitze
- * katapultieren. Wer an einem der hinteren Tische gewinnt, trifft in
- * Runde 2 auf die Sieger seiner Umgebung, nicht auf die Ligaspitze.
+ * katapultieren. Da die Zuteilung innerhalb der beiden Hälften komplett
+ * zufällig ist (siehe `assignLeagueRound` in leagueAssignment.ts), wirkt
+ * sich der Bonus vor allem an der Grenze zwischen oberer und unterer
+ * Hälfte aus: er entscheidet, ob ein Sieg knapp an der Hälften-Grenze
+ * liegende Spieler in die stärkere Hälfte hebt. Weiter innerhalb einer
+ * Hälfte spielt der genaue Rang keine Rolle mehr — dort sitzen Sieger und
+ * Nicht-Sieger gleichermassen zufällig zusammen.
  */
-export const SIEG_BONUS_RAENGE = 3;
-
-/**
- * Wie weit zwei Spieler im Rang auseinanderliegen dürfen, damit die
- * Rematch-Vermeidung sie tauschen darf (siehe `assignLeagueRound`).
- */
-export const TAUSCH_TOLERANZ_RAENGE = 4;
+export const SIEG_BONUS_RAENGE = 4;
 
 export interface LeaguePlayerStanding {
   id: string;
@@ -91,12 +72,12 @@ export function dampedAverage(
 /**
  * Übersetzt die Spieler in Sortierwerte für `assignLeagueRound`.
  *
- * Der Wert ist der **negative Rangplatz** (0 = bester Spieler), damit das
- * Rauschen und der Sieg-Bonus in Rängen gerechnet werden können und nicht
- * in Punkten: Punktabstände sind in der Rangliste extrem ungleich verteilt
- * — an der Spitze liegen 4 bis 6 Punkte zwischen den Plätzen, im
- * Mittelfeld oft null. Ein Regler in Punkten würde deshalb oben fast nichts
- * und in der Mitte sehr viel bewegen.
+ * Der Wert ist der **negative Rangplatz** (0 = bester Spieler), damit der
+ * Sieg-Bonus in Rängen gerechnet werden kann und nicht in Punkten:
+ * Punktabstände sind in der Rangliste extrem ungleich verteilt — an der
+ * Spitze liegen 4 bis 6 Punkte zwischen den Plätzen, im Mittelfeld oft
+ * null. Ein Bonus in Punkten würde deshalb oben fast nichts und in der
+ * Mitte sehr viel bewegen.
  *
  * @param sieger IDs der Spieler, die ihre letzte Runde gewonnen haben.
  *   Sie bekommen `SIEG_BONUS_RAENGE` gutgeschrieben.

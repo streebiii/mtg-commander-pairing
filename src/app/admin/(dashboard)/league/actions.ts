@@ -3,13 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import { assignLeagueRound } from "@/lib/pairing/leagueAssignment";
-import {
-  RANG_RAUSCHEN,
-  TAUSCH_TOLERANZ_RAENGE,
-  rankValues,
-} from "@/lib/pairing/leagueRanking";
+import { rankValues } from "@/lib/pairing/leagueRanking";
 import { buildPreviousPairings } from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
 
@@ -18,7 +13,6 @@ import { clearCasualPairing } from "@/lib/casualPairing";
  * mtgbl.ch ("Pro Liga-Abend werden zwei Spiele gespielt").
  */
 const MAX_ROUNDS = 2;
-
 
 /**
  * Auto-Save für die Liga-Verwaltung: Punktestand und Liga-Teilnahme-Flag
@@ -94,15 +88,8 @@ export async function startEvening(formData: FormData) {
   });
   if (players.length !== playerIds.length) return;
 
-  const sizes = computeTableSizes(players.length);
   // Runde 1: nach der Rangfolge, keine Historie, noch keine Sieger.
-  const tables = assignLeagueRound(
-    rankValues(players),
-    sizes,
-    new Set(),
-    RANG_RAUSCHEN,
-    TAUSCH_TOLERANZ_RAENGE,
-  );
+  const tables = assignLeagueRound(rankValues(players));
 
   // Abend + Runde 1 atomar anlegen (siehe createRoundInDb) — sonst bliebe
   // bei einem Fehler zwischen den beiden Schritten ein Abend ohne jede
@@ -226,9 +213,10 @@ export async function startNextRound(formData: FormData) {
   if (!allEntered) return;
 
   // Runde 2 paart nach derselben Rangfolge wie Runde 1, aber die Sieger
-  // rücken um SIEG_BONUS_RAENGE nach oben — sie treffen damit auf die
-  // Sieger ihrer Umgebung, nicht auf die Ligaspitze. Ging ein Tisch
-  // unentschieden aus, zählen alle dort als ohne Sieg.
+  // rücken um SIEG_BONUS_RAENGE nach oben — das entscheidet vor allem an
+  // der Grenze zwischen oberer und unterer Hälfte (siehe assignLeagueRound
+  // in leagueAssignment.ts). Ging ein Tisch unentschieden aus, zählen
+  // alle dort als ohne Sieg.
   const attendeeIds = lastRound.tables.flatMap((t) =>
     t.assignments.map((a) => a.playerId),
   );
@@ -242,15 +230,8 @@ export async function startNextRound(formData: FormData) {
     select: { id: true, points: true, attendedEvenings: true },
   });
 
-  const sizes = computeTableSizes(standings.length);
   const previousPairings = await buildPreviousPairings(eveningId);
-  const tables = assignLeagueRound(
-    rankValues(standings, sieger),
-    sizes,
-    previousPairings,
-    RANG_RAUSCHEN,
-    TAUSCH_TOLERANZ_RAENGE,
-  );
+  const tables = assignLeagueRound(rankValues(standings, sieger), previousPairings);
 
   await createRoundInDb(prisma, eveningId, lastRound.number + 1, tables);
   revalidatePath("/admin/league");
@@ -258,7 +239,8 @@ export async function startNextRound(formData: FormData) {
 
 /**
  * Würfelt die Tischzuteilung einer Runde neu aus (gleicher Spieler-Pool,
- * neue Zufallsziehung inkl. Rang-Jitter, siehe SPEC.md Abschnitt 5.1).
+ * neue Zufallsziehung innerhalb der beiden Hälften, siehe SPEC.md
+ * Abschnitt 5.1).
  * Nur für die jeweils letzte Runde eines Abends möglich, und nur solange
  * sie noch im Warteraum ist (nicht veröffentlicht) — einmal live, hängen
  * ggf. schon Ergebnisse dran, und die Spieler kennen ihren Tisch bereits.
@@ -304,18 +286,11 @@ export async function regenerateRound(formData: FormData) {
       : [];
   const sieger = new Set(vorrunde.map((a) => a.playerId));
 
-  const sizes = computeTableSizes(players.length);
   const previousPairings = await buildPreviousPairings(
     round.eveningId,
     round.number,
   );
-  const tables = assignLeagueRound(
-    rankValues(players, sieger),
-    sizes,
-    previousPairings,
-    RANG_RAUSCHEN,
-    TAUSCH_TOLERANZ_RAENGE,
-  );
+  const tables = assignLeagueRound(rankValues(players, sieger), previousPairings);
 
   await prisma.$transaction([
     prisma.table.deleteMany({ where: { roundId: round.id } }),

@@ -4,10 +4,8 @@ import {
   pairKey,
   tablePairKeys,
   countRematches,
-  RANK_JITTER_POINTS,
   type RankedPlayer,
 } from "./leagueAssignment";
-import { computeTableSizes } from "./tableSizes";
 import { PairingError } from "./errors";
 
 function makePlayers(pointsList: number[]): RankedPlayer[] {
@@ -15,131 +13,164 @@ function makePlayers(pointsList: number[]): RankedPlayer[] {
 }
 
 describe("assignLeagueRound", () => {
-  it("teilt alle Spieler auf die richtige Anzahl Tische mit den korrekten Größen auf", () => {
+  it("teilt alle Spieler auf gültige Tischgrößen auf, ohne Duplikate oder Verlust", () => {
     const players = makePlayers([10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]); // N=11
-    const sizes = computeTableSizes(players.length); // [4,4,3]
-    const tables = assignLeagueRound(players, sizes);
+    const tables = assignLeagueRound(players);
 
-    expect(tables.map((t) => t.length).sort()).toEqual([...sizes].sort());
     const allAssigned = tables.flat();
     expect(allAssigned.length).toBe(players.length);
     expect(new Set(allAssigned).size).toBe(players.length); // keine Duplikate
+    for (const table of tables) {
+      expect(table.length).toBeGreaterThanOrEqual(3);
+      expect(table.length).toBeLessThanOrEqual(5);
+    }
   });
 
-  it("gruppiert nach Rang: die Top-N Spieler landen an den vorderen Tischen", () => {
-    const players = makePlayers([100, 90, 80, 70, 60, 50, 40]); // N=7 -> [4,3]
-    const sizes = computeTableSizes(players.length);
-    const tables = assignLeagueRound(players, sizes);
+  it("teilt das Feld in eine obere und eine untere Hälfte — die obere bekommt bei ungerader Anzahl die zusätzliche Person", () => {
+    // 0 Unschärfe, damit die Grenze exakt bei der Mitte liegt (deterministisch testbar).
+    const players = makePlayers(Array.from({ length: 11 }, (_, i) => 100 - i)); // N=11, Ceil(11/2)=6
+    const tables = assignLeagueRound(players, new Set(), 0);
 
-    // Tisch mit Größe 4 sollte die 4 höchsten Punktestände enthalten (p0..p3)
-    const fourTable = tables.find((t) => t.length === 4)!;
-    const threeTable = tables.find((t) => t.length === 3)!;
-    expect(new Set(fourTable)).toEqual(new Set(["p0", "p1", "p2", "p3"]));
-    expect(new Set(threeTable)).toEqual(new Set(["p4", "p5", "p6"]));
+    // p0..p5 (obere Haelfte, 6 Spieler) duerfen nie mit p6..p10 (untere
+    // Haelfte, 5 Spieler) am selben Tisch sitzen.
+    const oben = new Set(["p0", "p1", "p2", "p3", "p4", "p5"]);
+    const unten = new Set(["p6", "p7", "p8", "p9", "p10"]);
+    for (const table of tables) {
+      const hatOben = table.some((id) => oben.has(id));
+      const hatUnten = table.some((id) => unten.has(id));
+      expect(hatOben && hatUnten).toBe(false);
+    }
   });
 
-  it("wirft PairingError bei nicht passender Tischgrößen-Summe", () => {
-    const players = makePlayers([1, 2, 3]);
-    expect(() => assignLeagueRound(players, [4])).toThrow(PairingError);
-  });
-
-  it("nutzt punktegleiche Randspieler, um eine vermeidbare Rematch-Paarung aufzulösen", () => {
-    // 8 Spieler -> Tischgrößen [4,4]. p4 und p5 liegen genau auf der
-    // Block-Grenze und haben denselben Punktestand, sind also austauschbar,
-    // ohne die Rang-Gruppierung zu verletzen.
-    const players: RankedPlayer[] = [
-      { id: "p1", points: 100 },
-      { id: "p2", points: 90 },
-      { id: "p3", points: 80 },
-      { id: "p4", points: 70 },
-      { id: "p5", points: 70 }, // gleicher Punktestand wie p4
-      { id: "p6", points: 60 },
-      { id: "p7", points: 50 },
-      { id: "p8", points: 40 },
-    ];
-    const sizes = computeTableSizes(players.length); // [4,4]
-
-    // Eine frühere Runde hatte exakt {p1,p2,p3,p4} an einem Tisch.
-    const previousPairings = new Set<string>(
-      tablePairKeys(["p1", "p2", "p3", "p4"]),
+  it("garantiert über viele Ziehungen: die obere Hälfte trifft nie die untere Hälfte", () => {
+    const players = makePlayers(Array.from({ length: 28 }, (_, i) => 100 - i)); // N=28
+    // Mit Standard-Unschaerfe (GRENZ_UNSCHAERFE=1), nicht 0 — genau das
+    // soll real vorkommende Verhalten pruefen, nicht nur den Idealfall.
+    // Mitte liegt bei 14, die Grenze kann also zwischen 13 und 15 liegen
+    // (siehe GRENZ_UNSCHAERFE-Dokumentation) — mit Sicherheitsabstand
+    // dazu gewaehlt, damit die Testgruppen selbst bei maximaler
+    // Verschiebung nie ineinander uebergehen.
+    const oben = new Set(Array.from({ length: 12 }, (_, i) => `p${i}`)); // p0-p11
+    const weitUnten = new Set(
+      Array.from({ length: 12 }, (_, i) => `p${16 + i}`), // p16-p27
     );
 
-    const round2 = assignLeagueRound(players, sizes, previousPairings);
-
-    const rematches = round2.reduce(
-      (sum, table) => sum + countRematches(table, previousPairings),
-      0,
-    );
-
-    // p1, p2 und p3 sitzen durch die Rang-Gruppierung zwangsläufig auch in
-    // Runde 2 zusammen (waren es schon in Runde 1) — das sind 3 unvermeidbare
-    // Rematches (p1p2, p1p3, p2p3). Vermeidbar sind nur die drei Paarungen
-    // mit p4 (p1p4, p2p4, p3p4), wenn stattdessen p5 an den Tisch kommt.
-    // Ohne den Tausch punktegleicher Randspieler wären es 6 Rematches
-    // (p4 bleibt beim Top-Tisch); mit optimalem Tausch sind es minimal 3.
-    // Egal wie die Zufalls-Tiebreak-Reihenfolge zwischen p4/p5 zu Beginn
-    // ausfällt, muss der Algorithmus dieses Minimum erreichen.
-    expect(rematches).toBe(3);
-
-    // Die Rang-Gruppierung bleibt dabei erhalten: p1,p2,p3 sitzen weiterhin
-    // zusammen an einem Tisch, ergänzt um genau einen der punktegleichen
-    // Spieler p4/p5.
-    const topTable = round2.find((t) => t.includes("p1"))!;
-    expect(topTable).toHaveLength(4);
-    expect(topTable).toEqual(expect.arrayContaining(["p1", "p2", "p3"]));
-    expect(
-      topTable.filter((id) => id === "p4" || id === "p5"),
-    ).toHaveLength(1);
+    for (let i = 0; i < 300; i++) {
+      const tables = assignLeagueRound(players);
+      for (const table of tables) {
+        const hatOben = table.some((id) => oben.has(id));
+        const hatWeitUnten = table.some((id) => weitUnten.has(id));
+        expect(hatOben && hatWeitUnten).toBe(false);
+      }
+    }
   });
 
-  it("tauscht niemals Spieler mit unterschiedlichem Punktestand (Rang-Gruppierung bleibt erhalten)", () => {
-    // Große Abstände (Vielfache von 100), damit das Zufalls-Rauschen
-    // (RANK_JITTER_POINTS) die Rang-Reihenfolge nicht durcheinanderbringt —
-    // dieser Test prüft gezielt Schritt 3 (Tausch-Logik), nicht Schritt 1.
-    const players = makePlayers([1000, 900, 800, 700, 600, 500, 400]);
-    const sizes = computeTableSizes(players.length);
-    const previousPairings = new Set(["p0|p1"]); // erzwingt einen Verbesserungsversuch
-    const tables = assignLeagueRound(players, sizes, previousPairings);
-
-    const pointsById = new Map(players.map((p) => [p.id, p.points]));
-    // Die Menge der Punktestände pro Tischgröße darf sich durch Tausch nicht
-    // ändern, da nur punktegleiche Spieler getauscht werden dürfen — hier
-    // gibt es aber gar keine Punktegleichheit, also darf sich nichts ändern.
-    const fourTable = tables.find((t) => t.length === 4)!;
-    expect(new Set(fourTable.map((id) => pointsById.get(id)))).toEqual(
-      new Set([1000, 900, 800, 700]),
-    );
-  });
-
-  it("nutzt RANK_JITTER_POINTS, um die Tischzuteilung von Abend zu Abend zu variieren", () => {
-    // Eng beieinanderliegende Punktestände (1 Punkt Abstand) sollen dank
-    // Jitter NICHT immer zur exakt gleichen Tischaufteilung führen.
-    const players = makePlayers([10, 9, 8, 7, 6, 5, 4, 3]); // N=8 -> [4,4]
-    const sizes = computeTableSizes(players.length);
+  it("verteilt innerhalb einer Hälfte komplett zufällig, nicht nach Rang", () => {
+    // Enge, aber unterscheidbare Punkteabstaende innerhalb der oberen
+    // Haelfte (p0..p5 bei N=11).
+    const players = makePlayers([10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
 
     const seenArrangements = new Set<string>();
-    for (let i = 0; i < 50; i++) {
-      const tables = assignLeagueRound(players, sizes);
-      const fourTable = tables.find((t) => t.length === 4)!;
-      seenArrangements.add([...fourTable].sort().join(","));
+    for (let i = 0; i < 100; i++) {
+      const tables = assignLeagueRound(players, new Set(), 0);
+      const tableMitP0 = tables.find((t) => t.includes("p0"))!;
+      seenArrangements.add([...tableMitP0].sort().join(","));
     }
 
-    // Mit striktem Rang-Grouping (kein Jitter) gäbe es hier immer nur genau
-    // EINE mögliche Tischaufteilung (p0-p3 zusammen). Mit Jitter sollten
-    // über 50 Versuche mehrere unterschiedliche Aufteilungen auftauchen.
-    expect(seenArrangements.size).toBeGreaterThan(1);
+    // Waere die Verteilung innerhalb der Haelfte weiterhin nach Rang
+    // sortiert (wie frueher, Block+Jitter), saehe man kaum Variation.
+    // Komplett zufaellig muss p0 im Lauf vieler Ziehungen mit ganz
+    // unterschiedlichen Tischnachbarn aus der oberen Haelfte landen.
+    expect(seenArrangements.size).toBeGreaterThan(3);
   });
 
-  it("mischt bei großem Punkteabstand nie über die Tischgrenze hinweg (Jitter bleibt begrenzt)", () => {
-    // Abstand von 100 Punkten ist weit größer als 2x RANK_JITTER_POINTS (6),
-    // die Top-4 dürfen also nie mit den unteren 3 gemischt werden.
-    const players = makePlayers([700, 600, 500, 400, 300, 200, 100]);
-    const sizes = computeTableSizes(players.length); // [4,3]
-
+  it("lässt die Trennlinie bei GRENZ_UNSCHAERFE=0 nie verrutschen (Grenzfall exakt reproduzierbar)", () => {
+    const players = makePlayers(Array.from({ length: 10 }, (_, i) => 100 - i)); // N=10, Mitte=5
     for (let i = 0; i < 50; i++) {
-      const tables = assignLeagueRound(players, sizes);
-      const fourTable = tables.find((t) => t.length === 4)!;
-      expect(new Set(fourTable)).toEqual(new Set(["p0", "p1", "p2", "p3"]));
+      const tables = assignLeagueRound(players, new Set(), 0);
+      const tableMitP4 = tables.find((t) => t.includes("p4"))!; // letzter der oberen Haelfte
+      // p4 darf nie mit jemandem aus der unteren Haelfte (p5..p9) sitzen.
+      expect(tableMitP4.some((id) => ["p5", "p6", "p7", "p8", "p9"].includes(id))).toBe(
+        false,
+      );
+    }
+  });
+
+  it("mit Unschärfe kann die Grenze knapp benachbarte Ränge gelegentlich zusammenbringen", () => {
+    const players = makePlayers(Array.from({ length: 10 }, (_, i) => 100 - i)); // N=10, Mitte=5
+    let p4TrifftP5 = 0;
+    const trials = 400;
+    for (let i = 0; i < trials; i++) {
+      const tables = assignLeagueRound(players, new Set(), 1); // Unschaerfe 1
+      const tableMitP4 = tables.find((t) => t.includes("p4"))!;
+      if (tableMitP4.includes("p5")) p4TrifftP5++;
+    }
+    // Bei GRENZ_UNSCHAERFE=0 waere das immer 0 — mit Unschaerfe muss es
+    // in einem spuerbaren Teil der Ziehungen vorkommen.
+    expect(p4TrifftP5).toBeGreaterThan(0);
+  });
+
+  it("bleibt bei sehr kleinen Abenden (< 6 Anwesende) eine einzige Gruppe, ohne Fehler", () => {
+    for (const n of [3, 4, 5]) {
+      const players = makePlayers(Array.from({ length: n }, (_, i) => 10 - i));
+      expect(() => assignLeagueRound(players)).not.toThrow();
+      const tables = assignLeagueRound(players);
+      expect(tables.flat().length).toBe(n);
+    }
+  });
+
+  it("wirft PairingError bei weniger als drei Spielern", () => {
+    const players = makePlayers([1, 2]);
+    expect(() => assignLeagueRound(players)).toThrow(PairingError);
+  });
+
+  it("reduziert Rematches durch Tausch innerhalb einer Hälfte", () => {
+    // 16 Spieler -> obere Haelfte (Mitte=8) p0..p7, verteilt auf 2 Tische
+    // zu je 4 — erst ab zwei Tischen pro Haelfte gibt es zwischen ihnen
+    // ueberhaupt etwas zu tauschen (bei genau 4 waere es ein einziger
+    // Tisch, an dem sich nichts aendern liesse).
+    const players = makePlayers(
+      Array.from({ length: 16 }, (_, i) => 100 - i),
+    );
+    // Eine konkrete Vierergruppe aus der oberen Haelfte, die schon einmal
+    // zusammensass.
+    const previousPairings = new Set(tablePairKeys(["p0", "p1", "p2", "p3"]));
+
+    let totalRematchesMitVermeidung = 0;
+    let totalRematchesOhneVermeidung = 0;
+    const trials = 500;
+    for (let i = 0; i < trials; i++) {
+      const mit = assignLeagueRound(players, previousPairings, 0);
+      totalRematchesMitVermeidung += mit.reduce(
+        (s, t) => s + countRematches(t, previousPairings),
+        0,
+      );
+      const ohne = assignLeagueRound(players, new Set(), 0);
+      totalRematchesOhneVermeidung += ohne.reduce(
+        (s, t) => s + countRematches(t, previousPairings),
+        0,
+      );
+    }
+    expect(totalRematchesMitVermeidung).toBeLessThan(totalRematchesOhneVermeidung);
+  });
+
+  it("tauscht bei der Rematch-Vermeidung nie über die Hälften-Grenze hinweg", () => {
+    // p0..p3 obere Haelfte, p4..p7 untere Haelfte. Simuliere eine
+    // Vorrunde, in der (hypothetisch) alle in der oberen Haelfte
+    // zusammen sassen — die Vermeidung darf trotzdem niemanden aus der
+    // unteren Haelfte heranziehen.
+    const players = makePlayers([100, 90, 80, 70, 60, 50, 40, 30]);
+    const previousPairings = new Set(tablePairKeys(["p0", "p1", "p2", "p3"]));
+
+    for (let i = 0; i < 100; i++) {
+      const tables = assignLeagueRound(players, previousPairings, 0);
+      const oben = new Set(["p0", "p1", "p2", "p3"]);
+      const unten = new Set(["p4", "p5", "p6", "p7"]);
+      for (const table of tables) {
+        const hatOben = table.some((id) => oben.has(id));
+        const hatUnten = table.some((id) => unten.has(id));
+        expect(hatOben && hatUnten).toBe(false);
+      }
     }
   });
 });
@@ -151,50 +182,56 @@ describe("pairKey", () => {
 });
 
 describe("Paarung der zweiten Runde nach dem Sieg (SPEC.md Abschnitt 5)", () => {
-  // Runde 2 nutzt denselben Mechanismus, aber mit 1/0 statt Punkten und
-  // ohne Rauschen — siehe WIN_JITTER in league/actions.ts.
+  // Der Sieg-Bonus wirkt sich vor allem an der Grenze zwischen oberer und
+  // unterer Haelfte aus (siehe SIEG_BONUS_RAENGE in leagueRanking.ts).
   const alsSieg = (ids: string[], sieger: string[]) =>
-    ids.map((id) => ({ id, points: sieger.includes(id) ? 1 : 0 }));
+    ids.map((id, i) => ({ id, points: -i + (sieger.includes(id) ? 4 : 0) }));
 
-  it("setzt die drei Sieger an denselben Tisch", () => {
-    const ids = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
-    const sieger = ["c", "f", "i"];
-    for (let i = 0; i < 200; i++) {
-      const tische = assignLeagueRound(alsSieg(ids, sieger), [3, 3, 3], new Set(), 0);
-      const kopftisch = tische.find((t) => t.includes("c"))!;
-      expect([...kopftisch].sort()).toEqual(sieger);
+  it("ein Sieg an der Hälften-Grenze kann in die stärkere Hälfte heben", () => {
+    // 10 Spieler, Mitte=5 (ohne Bonus: p0-p4 oben, p5-p9 unten). p5
+    // gewinnt: Wert -5+4=-1, gleichauf mit p1 (-1) — durch stabile
+    // Sortierung rutscht p5 damit sicher in die obere Haelfte (statt
+    // p4, der als schwaechster der ehemals oberen Haelfte verdraengt wird).
+    const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
+    const bewertet = alsSieg(ids, ["p5"]);
+    const tables = assignLeagueRound(bewertet, new Set(), 0);
+
+    const oben = new Set(["p0", "p1", "p5", "p2", "p3"]);
+    const unten = new Set(["p4", "p6", "p7", "p8", "p9"]);
+    for (const table of tables) {
+      const hatOben = table.some((id) => oben.has(id));
+      const hatUnten = table.some((id) => unten.has(id));
+      expect(hatOben && hatUnten).toBe(false);
+    }
+    // p5 sitzt tatsaechlich in der oberen Haelfte, nie mit der unteren.
+    const tableMitP5 = tables.find((t) => t.includes("p5"))!;
+    expect(tableMitP5.some((id) => unten.has(id))).toBe(false);
+  });
+
+  it("ein Sieg weit weg von der Grenze ändert nichts an der Hälfte", () => {
+    // p9 (letzter Platz) gewinnt — +4 Raenge reicht bei weitem nicht, um
+    // von Position 9 in die obere Haelfte (Positionen 0-4) zu gelangen.
+    const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
+    const bewertet = alsSieg(ids, ["p9"]);
+
+    for (let i = 0; i < 100; i++) {
+      const tables = assignLeagueRound(bewertet, new Set(), 0);
+      const tableMitP9 = tables.find((t) => t.includes("p9"))!;
+      // p9 darf trotz Sieg nie mit der Spitze (p0) am selben Tisch sitzen.
+      expect(tableMitP9.includes("p0")).toBe(false);
     }
   });
 
-  it("verteilt zufaellig, wenn alle Tische unentschieden ausgingen", () => {
-    const ids = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
-    const zusammen = new Set<string>();
-    for (let i = 0; i < 200; i++) {
-      const tische = assignLeagueRound(alsSieg(ids, []), [3, 3, 3], new Set(), 0);
-      const tischVonA = tische.find((t) => t.includes("a"))!;
-      for (const id of tischVonA) if (id !== "a") zusammen.add(id);
+  it("ohne Sieger verhält sich Runde 2 wie Runde 1 (reine Rangfolge)", () => {
+    const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
+    const bewertet = alsSieg(ids, []);
+    const tables = assignLeagueRound(bewertet, new Set(), 0);
+    const oben = new Set(["p0", "p1", "p2", "p3", "p4"]);
+    const unten = new Set(["p5", "p6", "p7", "p8", "p9"]);
+    for (const table of tables) {
+      const hatOben = table.some((id) => oben.has(id));
+      const hatUnten = table.some((id) => unten.has(id));
+      expect(hatOben && hatUnten).toBe(false);
     }
-    // Ohne Sieger gibt es nichts zu sortieren: "a" muss im Lauf der
-    // Durchgaenge mit jedem anderen einmal zusammengesessen haben.
-    expect(zusammen.size).toBe(8);
-  });
-
-  it("das Rauschen der Runde 1 wuerde den Sieg-Schluessel zerstoeren", () => {
-    // Sicherung gegen einen Rueckfall: mit RANK_JITTER_POINTS (+-3) auf
-    // einer 0/1-Skala landen die Sieger wieder zufaellig verteilt.
-    const ids = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
-    const sieger = ["c", "f", "i"];
-    let zusammen = 0;
-    for (let i = 0; i < 200; i++) {
-      const tische = assignLeagueRound(
-        alsSieg(ids, sieger),
-        [3, 3, 3],
-        new Set(),
-        RANK_JITTER_POINTS,
-      );
-      const kopftisch = tische.find((t) => t.includes("c"))!;
-      if ([...kopftisch].sort().join() === sieger.join()) zusammen++;
-    }
-    expect(zusammen).toBeLessThan(100);
   });
 });
