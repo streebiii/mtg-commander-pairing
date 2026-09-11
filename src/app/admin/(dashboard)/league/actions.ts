@@ -434,32 +434,6 @@ export async function publishRound(formData: FormData) {
   revalidatePath("/");
 }
 
-/**
- * Verwirft einen Liga-Abend vollständig, solange noch keine Ergebnisse
- * eingetragen wurden. Gedacht für versehentlich gestartete Abende: ohne
- * diesen Weg liesse sich ein solcher Abend gar nicht mehr loswerden, denn
- * "Abend beenden" verlangt vollständige Ergebnisse — und solange er läuft,
- * sind die beteiligten Spieler nicht löschbar (siehe SPEC.md Abschnitt 6.2).
- *
- * Sobald irgendein Ergebnis erfasst ist, wird bewusst nichts gelöscht: dann
- * hängen bereits fortgeschriebene Liga-Punkte daran.
- */
-export async function discardEvening(formData: FormData) {
-  const eveningId = String(formData.get("eveningId") ?? "");
-  if (!eveningId) return;
-
-  const enteredResults = await prisma.table.count({
-    where: { resultEnteredAt: { not: null }, round: { eveningId } },
-  });
-  if (enteredResults > 0) return;
-
-  // Rounds/Tables/Assignments hängen per onDelete: Cascade daran.
-  await prisma.evening.delete({ where: { id: eveningId } });
-
-  revalidatePath("/admin/league");
-  revalidatePath("/");
-}
-
 /** Beendet den aktuellen Liga-Abend (keine weiteren Runden mehr möglich). */
 export async function finishEvening(formData: FormData) {
   const eveningId = String(formData.get("eveningId") ?? "");

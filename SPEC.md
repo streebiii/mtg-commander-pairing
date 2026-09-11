@@ -353,11 +353,12 @@ Kopie des Saisonstands von mtgbl.ch und dient allein der Paarung von
 Runde 1. Die Achievement-Punkte werden am Abendende erfasst (siehe
 BACKLOG.md) und wandern von dort nach mtgbl.ch.
 
-- **Abend verwerfen**: solange für keinen einzigen Tisch ein Ergebnis
-  erfasst ist, lässt sich ein Abend komplett verwerfen. Ohne das käme man
-  aus einem versehentlichen Start nicht mehr heraus — "Abend beenden"
-  verlangt vollständige Ergebnisse, und solange der Abend läuft, sind die
-  beteiligten Spieler nicht löschbar (Abschnitt 6.2).
+- **Kein separates "Abend verwerfen"**: "Abend beenden" verlangt keine
+  vollständigen Ergebnisse (mehr) — ein versehentlich gestarteter Abend
+  lässt sich also jederzeit direkt beenden, ohne dass es dafür einen
+  eigenen Lösch-Weg braucht. Die Historie bleibt dabei stehen (siehe
+  "Keine Punkteerfassung pro Runde" oben — sie wird ohnehin nicht
+  ausgewertet).
 - **Tie-Break bei Punktegleichstand**: zufällige Reihenfolge.
 - **Rematch-Vermeidung**: weiches Kriterium, gilt nur **innerhalb desselben
   Abends** (nicht saisonübergreifend). Priorität bleibt die

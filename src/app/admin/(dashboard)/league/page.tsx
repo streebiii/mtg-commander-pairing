@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { formatPlayerName } from "@/lib/players";
 import { rankValues } from "@/lib/pairing/leagueRanking";
 import { startEvening } from "./actions";
-import DiscardEveningButton from "./DiscardEveningButton";
 import FinishEveningButton from "./FinishEveningButton";
 import ImportClient from "./ImportClient";
 import LeaguePlayerRow from "./LeaguePlayerRow";
@@ -156,11 +155,6 @@ export default async function LeaguePage() {
   const lastRoundComplete = lastRound.tables.every(
     (t) => t.resultEnteredAt !== null,
   );
-  // Solange nirgends ein Ergebnis steht, lässt sich der Abend komplett
-  // verwerfen — sonst käme man aus einem Fehlstart nicht mehr heraus.
-  const noResultsAtAll = evening.rounds.every((r) =>
-    r.tables.every((t) => t.resultEnteredAt === null),
-  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -295,7 +289,6 @@ export default async function LeaguePage() {
             wird — z.B. weil an dem Abend keine Achievement-Punkte für
             Runde 2 vergeben werden. */}
         <FinishEveningButton eveningId={evening.id} disabled={false} />
-        {noResultsAtAll && <DiscardEveningButton eveningId={evening.id} />}
       </div>
       {lastRoundPublished && !lastRoundComplete && lastRound.number < MAX_ROUNDS && (
         <p className="text-xs opacity-70">
