@@ -34,8 +34,15 @@ export const DAEMPFUNG_ABENDE = 2;
  * 12 Zuteilungen zusammen, bei ±10 nur noch 4,5, und man trifft 17,9 statt
  * 12,8 verschiedene Leute. Der Preis sind rund fünf Begegnungen pro Saison
  * zwischen oberem und unterem Viertel — bewusst in Kauf genommen.
+ *
+ * Auf ±7 reduziert (vorher ±10), nachdem in der Praxis Rang 1 und Rang 16
+ * zusammensassen — ein Abstand von 15, innerhalb der tatsächlichen
+ * Durchmischungsgrenze von 2×RANG_RAUSCHEN. Mit ±7 liegt diese Grenze bei
+ * 14 Rängen statt 20. Kein hartes Limit — nur seltener und kleiner als
+ * zuvor (siehe BACKLOG.md für die verworfene Alternative mit zusätzlicher
+ * harter Abstandsgrenze).
  */
-export const RANG_RAUSCHEN = 10;
+export const RANG_RAUSCHEN = 7;
 
 /**
  * Wie viele Ränge ein Rundensieg für die Paarung der zweiten Runde zählt.
