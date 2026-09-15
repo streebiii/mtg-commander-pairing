@@ -5,7 +5,10 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { assignLeagueRound } from "@/lib/pairing/leagueAssignment";
 import { rankValues } from "@/lib/pairing/leagueRanking";
-import { buildPreviousPairings } from "@/lib/pairing/leagueHistory";
+import {
+  buildPreviousNonFourTablePlayers,
+  buildPreviousPairings,
+} from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
 
 /**
@@ -231,7 +234,13 @@ export async function startNextRound(formData: FormData) {
   });
 
   const previousPairings = await buildPreviousPairings(eveningId);
-  const tables = assignLeagueRound(rankValues(standings, sieger), previousPairings);
+  const wiederholteNichtVierer = await buildPreviousNonFourTablePlayers(eveningId);
+  const tables = assignLeagueRound(
+    rankValues(standings, sieger),
+    previousPairings,
+    wiederholteNichtVierer,
+    sieger,
+  );
 
   await createRoundInDb(prisma, eveningId, lastRound.number + 1, tables);
   revalidatePath("/admin/league");
@@ -290,7 +299,16 @@ export async function regenerateRound(formData: FormData) {
     round.eveningId,
     round.number,
   );
-  const tables = assignLeagueRound(rankValues(players, sieger), previousPairings);
+  const wiederholteNichtVierer = await buildPreviousNonFourTablePlayers(
+    round.eveningId,
+    round.number,
+  );
+  const tables = assignLeagueRound(
+    rankValues(players, sieger),
+    previousPairings,
+    wiederholteNichtVierer,
+    sieger,
+  );
 
   await prisma.$transaction([
     prisma.table.deleteMany({ where: { roundId: round.id } }),
