@@ -5,6 +5,35 @@ Konzept-Session zum Liga-Abend und sind entscheidungsreif — die
 Grundsatzfragen sind dort beantwortet, offen ist jeweils nur noch die
 Umsetzung.
 
+## Liga: Nicht-4er-Tische nach unten drücken, Wiederholungen und Sieger-Zusammensitz
+
+**Status:** Entschieden und umgesetzt (Session vom 15.09.2026), siehe
+`src/lib/pairing/leagueAssignment.ts` (`verbessereZuteilung`,
+`waehleHaelftenGrenze`).
+
+**Drei Ergänzungen zur Hälften-Zuteilung** (siehe Eintrag unten):
+1. **3er-Tische bevorzugt unten**: wo die Halbierung eine Wahl lässt
+   (mehrere gleichwertige Aufteilungen mit derselben Gesamtzahl an
+   Nicht-4er-Tischen, z.B. Grenze 4 oder 7 bei 11 Anwesenden), gewinnt
+   die Variante, die den Nicht-4er-Tisch in die untere statt die obere
+   Hälfte legt.
+2. **Wiederholte Nicht-4er-Zuteilung vermeiden**: wer an diesem Abend
+   schon an einem Nicht-4er-Tisch sass, wird beim Tausch-Optimierer
+   bevorzugt nicht noch einmal dorthin gesetzt (`buildPreviousNonFourTablePlayers`
+   in leagueHistory.ts).
+3. **Sieger bevorzugt zusammen**: derselbe Optimierer erhöht zusätzlich
+   die Chance, dass zwei Sieger der Vorrunde am selben Tisch landen.
+   Empirisch sehr stark — in einem Testfall ohne konkurrierende
+   Kriterien clusterten alle Sieger bei 1000 von 1000 Ziehungen komplett
+   zusammen (nicht nur "häufiger"). Bewusst akzeptiert: Sieger wechseln
+   jede Runde, anders als der stabile Saison-Rang, der zum ursprünglichen
+   Top-5-Problem führte — keine feste Clique zu erwarten.
+
+Alle drei Kriterien (plus die bestehende Rematch-Vermeidung) laufen in
+einem gemeinsam gewichteten Tausch-Optimierer (`bewerteTisch`), nicht
+nacheinander — Gewichte: Rematch (3) > wiederholter Nicht-4er (2) >
+Sieger-Zusammensitz (1). Tauscht nie über die Hälften-Grenze hinweg.
+
 ## Liga: Rang-Rauschen durch Hälften-Zuteilung ersetzt
 
 **Status:** Entschieden und umgesetzt — Rang-Rauschen komplett entfernt,

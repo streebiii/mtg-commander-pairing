@@ -419,25 +419,48 @@ insgesamt die wenigsten Nicht-4er-Tische ergibt — geht die Gesamtzahl der
 Anwesenden rechnerisch komplett in 4er-Tische auf (z.B. 28 Spieler →
 7×4), darf die Halbierung selbst keine unnötigen 3er-Tische erzeugen
 (eine exakte Hälfte von 14/14 ergäbe sonst pro Seite `[4,4,3,3]` statt
-der mit 12/16 möglichen reinen 4er-Aufteilung). Erst danach zählt die
-Nähe zur exakten Mitte. Gibt es mehrere gleichwertige Aufteilungen (wie
-12/16 und 16/12 bei 28 Anwesenden), wird zufällig eine davon gewählt —
-das sorgt nebenbei dafür, dass zwei fast gleich starke Spieler direkt an
-der Grenze sich nicht künstlich nie begegnen, ohne die Sicherheit an den
-Extremen zu gefährden.
+der mit 12/16 möglichen reinen 4er-Aufteilung).
+
+**Ein unvermeidbarer Nicht-4er-Tisch landet bevorzugt in der unteren
+(schwächeren) Hälfte.** Ergeben zwei Aufteilungen dieselbe Gesamtzahl an
+Nicht-4er-Tischen (z.B. bei 11 Anwesenden sowohl Grenze 4 als auch
+Grenze 7), aber nur eine davon lässt ihn in der oberen Hälfte
+entstehen, gewinnt die andere — die Spitze soll nicht öfter als nötig
+an einem kleineren Tisch sitzen.
+
+Erst danach zählt die Nähe zur exakten Mitte. Gibt es mehrere
+gleichwertige Aufteilungen (wie 12/16 und 16/12 bei 28 Anwesenden), wird
+zufällig eine davon gewählt — das sorgt nebenbei dafür, dass zwei fast
+gleich starke Spieler direkt an der Grenze sich nicht künstlich nie
+begegnen, ohne die Sicherheit an den Extremen zu gefährden.
 
 Der Organisator kann eine Runde ausserdem jederzeit (solange noch keine
 Ergebnisse für sie eingetragen wurden) neu auswürfeln lassen ("Neu
 mischen"-Button), falls ihm der erste Vorschlag nicht zusagt.
 
-### 5.2 Rematch-Vermeidung — Umsetzung
+### 5.2 Lokale Verbesserung nach der Zuteilung
 
-Bei der Neupaarung für Runde 2/3 wird, wenn Spieler *derselben Hälfte*
-für zwei verschiedene Tische infrage kommen, ein Tausch bevorzugt, der
-eine Wiederholungsbegegnung (Rematch) aus einer vorherigen Runde dieses
-Abends auflöst. Die Vermeidung tauscht dabei nie über die Hälften-Grenze
-hinweg — die Tischgrössenverteilung selbst (Abschnitt 3) bleibt davon
-unberührt.
+Nach dem Zufalls-Schritt (innerhalb jeder Hälfte) versucht ein
+Tausch-Optimierer, drei weiche Kriterien zu verbessern — nie über die
+Hälften-Grenze hinweg, und nie auf Kosten der Tischgrössenverteilung
+(Abschnitt 3):
+
+1. **Rematch-Vermeidung** (am stärksten gewichtet): ein Tausch wird
+   bevorzugt, wenn er eine Wiederholungsbegegnung (Rematch) aus einer
+   vorherigen Runde dieses Abends auflöst.
+2. **Wiederholte Nicht-4er-Zuteilung vermeiden**: wer an diesem Abend
+   schon einmal an einem Nicht-4er-Tisch (i.d.R. ein 3er) sass, wird
+   nach Möglichkeit nicht noch einmal an einen gesetzt — stattdessen
+   jemand, der noch nie dort sass.
+3. **Sieger bevorzugt zusammensetzen** (am schwächsten gewichtet): zwei
+   Spieler, die ihre letzte Runde gewonnen haben, landen mit höherer
+   Wahrscheinlichkeit am selben Tisch als durch reinen Zufall. Da Sieger
+   von Runde zu Runde wechseln (anders als der Saison-Rang), entsteht
+   dadurch keine feste Gruppe, die sich immer wieder begegnet.
+
+Die drei Kriterien werden gemeinsam optimiert (ein Tausch zählt, wenn er
+die gewichtete Summe aller drei verbessert), nicht nacheinander — sonst
+könnte ein späteres Kriterium ein früheres wieder zunichtemachen.
 
 ## 6. Spielerverwaltung
 
