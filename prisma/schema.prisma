@@ -62,7 +62,8 @@ model Evening {
   finishedAt DateTime?
   createdAt  DateTime    @default(now())
 
-  rounds Round[]
+  rounds       Round[]
+  achievements EveningAchievement[]
 
   @@map("evenings")
 }
@@ -163,6 +164,78 @@ model CasualSeat {
   @@unique([playerId])
   @@index([tableNumber])
   @@map("casual_seats")
+}
+
+/// Ein Achievement aus dem Katalog der Liga (siehe SPEC.md Abschnitt 11).
+/// Massgeblich ist die Liste auf mtgbl.ch; die Startdaten stammen von dort
+/// (Migration `add_achievements`), gepflegt wird danach im Achievements-Tab.
+/// Achievements werden nie gelöscht, nur deaktiviert — vergangene Abende
+/// tragen ohnehin eine eigene Kopie (EveningAchievement).
+model Achievement {
+  id          String              @id @default(cuid())
+  title       String
+  description String
+  /// Punkte pro Erfüllung. Variable Werte der Website («+2/+1») werden
+  /// mit dem höheren Wert geführt und bei der Erfassung korrigiert.
+  points      Int
+  category    AchievementCategory
+  /// Wie oft das Achievement zählen kann. Folgt meist aus der Kategorie,
+  /// ist aber ein eigenes Feld, damit Ausnahmen wie Evergreen (Deckbau,
+  /// aber einmal pro Liga) nicht im Code stecken.
+  scope       AchievementScope
+  /// Kann innerhalb seines Geltungsbereichs mehrfach zählen (z.B.
+  /// «+1/Spieler»). Die Erfassung zeigt dann ein Anzahl-Feld statt eines
+  /// Häkchens.
+  repeatable  Boolean             @default(false)
+  /// Deaktivierte Achievements erscheinen nicht mehr in der Auswahl und
+  /// werden bei neuen Abenden nicht übernommen.
+  active      Boolean             @default(true)
+  /// Gehört zur vorgemerkten Auswahl der rotierenden für den nächsten
+  /// Liga-Abend. Wird beim Start des Abends übernommen und geleert.
+  nextSelected Boolean            @default(false)
+  /// Reihenfolge wie auf mtgbl.ch, innerhalb der Kategorie.
+  sortOrder   Int                 @default(0)
+  createdAt   DateTime            @default(now())
+
+  eveningAchievements EveningAchievement[]
+
+  @@index([category, sortOrder])
+  @@map("achievements")
+}
+
+enum AchievementCategory {
+  FIXED        // fix, gilt jeden Abend
+  DECKBUILDING // Deckbau, gilt jeden Abend
+  ROTATING     // rotierend, 10 pro Abend
+}
+
+enum AchievementScope {
+  MATCH   // 1x pro Match
+  EVENING // 1x pro Abend
+  SEASON  // 1x am Ende der Liga
+}
+
+/// Ein an einem Liga-Abend geltendes Achievement — eine eingefrorene
+/// Kopie aus dem Katalog. Spätere Katalogänderungen schreiben vergangene
+/// Abende damit nicht um (siehe BACKLOG.md).
+model EveningAchievement {
+  id            String              @id @default(cuid())
+  eveningId     String
+  evening       Evening             @relation(fields: [eveningId], references: [id], onDelete: Cascade)
+  /// Herkunft im Katalog. Bleibt gesetzt, solange es das Achievement gibt;
+  /// verhindert, dass dasselbe Achievement doppelt an einem Abend gilt.
+  achievementId String?
+  achievement   Achievement?        @relation(fields: [achievementId], references: [id], onDelete: SetNull)
+  title         String
+  description   String
+  points        Int
+  category      AchievementCategory
+  scope         AchievementScope
+  repeatable    Boolean
+  sortOrder     Int
+
+  @@unique([eveningId, achievementId])
+  @@map("evening_achievements")
 }
 
 /// Einmal-Code für den passwortlosen Email-Login (siehe SPEC.md

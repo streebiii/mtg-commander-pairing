@@ -2,6 +2,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getCasualPairing } from "@/lib/casualPairing";
 import { formatPlayerName } from "@/lib/players";
+import { CATEGORIES, CATEGORY_LABELS, formatPoints } from "@/lib/achievements";
 
 // Öffentliche, ungeschützte Lese-Ansicht der aktuellen Tischzuteilung
 // (siehe SPEC.md Abschnitt 2). Kein Login nötig — gedacht zum Anzeigen auf
@@ -14,6 +15,15 @@ import { formatPlayerName } from "@/lib/players";
 // Liga-Abends verwirft sie ebenfalls. Spieler-Stufen tauchen hier nie auf
 // (siehe SPEC.md Abschnitt 6.1).
 export const dynamic = "force-dynamic";
+
+interface DisplayAchievement {
+  id: string;
+  title: string;
+  description: string;
+  points: number;
+  repeatable: boolean;
+  category: (typeof CATEGORIES)[number];
+}
 
 interface DisplayTable {
   key: string;
@@ -30,11 +40,26 @@ export default async function Home() {
     players: t.players.map((p) => ({ key: p.id, name: p.name })),
   }));
 
+  // Die geltenden Achievements des laufenden Liga-Abends, damit die
+  // Spieler sie am Tisch nachschlagen können (siehe SPEC.md Abschnitt 11).
+  let achievements: DisplayAchievement[] = [];
+
   if (tables.length === 0) {
     const evening = await prisma.evening.findFirst({
       where: { mode: "LEAGUE", finishedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
+        achievements: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            points: true,
+            repeatable: true,
+            category: true,
+          },
+        },
         rounds: {
           // Nur veröffentlichte Runden — eine gerade im Warteraum
           // geprüfte Zuteilung ist bewusst noch nicht öffentlich
@@ -70,6 +95,7 @@ export default async function Home() {
           name: formatPlayerName(a.player),
         })),
       })) ?? [];
+    achievements = evening?.achievements ?? [];
   }
 
   return (
@@ -113,6 +139,41 @@ export default async function Home() {
             </div>
           ))}
         </div>
+      )}
+
+      {achievements.length > 0 && (
+        <section className="flex flex-col gap-6">
+          <h2 className="text-xl font-semibold">Achievements heute</h2>
+          {CATEGORIES.map((category) => {
+            const items = achievements.filter((a) => a.category === category);
+            if (items.length === 0) return null;
+            return (
+              <div key={category} className="flex flex-col gap-2">
+                <h3 className="text-sm font-medium opacity-70">
+                  {CATEGORY_LABELS[category]}
+                </h3>
+                <ul className="flex flex-col gap-2 text-sm">
+                  {items.map((a) => (
+                    <li key={a.id} className="flex gap-3">
+                      <span className="w-8 shrink-0 tabular-nums opacity-70">
+                        {formatPoints(a.points, false)}
+                      </span>
+                      <span>
+                        <span className="font-medium">{a.title}</span>
+                        {a.repeatable && (
+                          <span className="opacity-70"> (mehrfach)</span>
+                        )}
+                        {a.description && (
+                          <span className="opacity-70"> — {a.description}</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </section>
       )}
     </div>
   );

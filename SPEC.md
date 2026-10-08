@@ -577,8 +577,10 @@ bestätigt den Vorgang. Gilt für beide Tabs.
 ## 9. Ausdrücklich ausserhalb des Scopes (v1)
 
 - Kein Multi-User/Rollenmodell.
-- Keine Digitalisierung des vollständigen Achievement-Sheets (25 Punkte pro
-  Abend einzeln) — nur Gesamtsumme pro Spieler/Runde.
+- Keine Ziehung der rotierenden Achievements in der App — die macht
+  mtgbl.ch, die App übernimmt sie nur (Abschnitt 11). Die Erfassung der
+  erreichten Achievements am Abendende ist geplant (BACKLOG.md), aber noch
+  nicht umgesetzt.
 - Kein automatischer Import/Sync mit mtgbl.ch.
 - Keine saisonübergreifende Rematch-Vermeidung.
 - Keine Sonderbehandlung für „zu wenige Spieler" (< 3 anwesend) — tritt
@@ -598,3 +600,48 @@ bestätigt den Vorgang. Gilt für beide Tabs.
   (`docker-compose.yml`), identisch zur Produktions-Datenbank-Engine.
 - Eigene Domain (statt `*.vercel.app`) ist optional und kann jederzeit
   nachträglich in Vercel eingerichtet werden.
+
+## 11. Achievements
+
+Die Liga vergibt Punkte über Achievements; massgeblich ist die Liste auf
+https://mtgbl.ch/liga/commander/2026/achievements. Die App führt sie als
+Katalog im Tab **«Achievements»**.
+
+### 11.1 Katalog
+
+- Drei Kategorien: **fix** und **Deckbau** gelten an jedem Liga-Abend,
+  **rotierend** gelten nur, wenn sie für den Abend ausgewählt sind
+  (üblicherweise 10 pro Abend, also 25 insgesamt).
+- Je Achievement: Titel, Beschreibung, Punkte, Kategorie, **Art** (1x pro
+  Match, 1x pro Abend, 1x am Ende der Liga), **mehrfach** (kann innerhalb
+  seiner Art öfter zählen, z.B. «+1/Spieler») und **aktiv**.
+- Die Art wird beim Anlegen aus der Kategorie vorbelegt (fix und
+  rotierend pro Match, Deckbau pro Abend) und ist danach änderbar —
+  Evergreen ist Deckbau, zählt aber einmal am Ende der Liga.
+- Variable Punktwerte der Website («+2/+1») werden mit dem höheren Wert
+  geführt und bei der Erfassung korrigiert.
+- Die Kategorie ist nach dem Anlegen nicht mehr änderbar.
+- Achievements werden nie gelöscht, nur deaktiviert. Deaktivierte gelten
+  an künftigen Abenden nicht mehr und fallen aus der Vormerkung.
+- Die Startdaten (Stand 08.10.2026: 6 fixe, 9 Deckbau, 76 rotierende)
+  stammen einmalig von der Website; danach wird nur in der App gepflegt.
+
+### 11.2 Auswahl der rotierenden
+
+- Die **Ziehung macht mtgbl.ch** am Ende eines Abends für den nächsten.
+  Im Achievements-Tab werden die gezogenen durch Ankreuzen als **nächste
+  Auswahl** vorgemerkt — ohne Zähler oder Sperre, weil die Auswahl
+  übernommen und nicht hier entschieden wird.
+- Beim **Start eines Liga-Abends** übernimmt der Abend alle aktiven fixen
+  und Deckbau-Achievements plus die vorgemerkten rotierenden, in derselben
+  Transaktion wie Abend und Runde 1. Die Vormerkung wird danach geleert.
+- Der Abend speichert eine **eingefrorene Kopie** (Titel, Beschreibung,
+  Punkte, Kategorie, Art, mehrfach). Spätere Katalogänderungen wirken nur
+  auf künftige Abende.
+- Die rotierenden eines **laufenden Abends** lassen sich im
+  Achievements-Tab jederzeit ändern.
+
+### 11.3 Öffentliche Ansicht
+
+Während ein Liga-Abend läuft, zeigt die öffentliche Lese-Ansicht unter den
+Tischen die geltenden Achievements des Abends, nach Kategorie gruppiert.
