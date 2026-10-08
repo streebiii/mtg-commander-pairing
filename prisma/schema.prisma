@@ -181,12 +181,10 @@ model Achievement {
   category    AchievementCategory
   /// Wie oft das Achievement zählen kann. Folgt meist aus der Kategorie,
   /// ist aber ein eigenes Feld, damit Ausnahmen wie Evergreen (Deckbau,
-  /// aber einmal pro Liga) nicht im Code stecken.
+  /// aber einmal pro Liga) nicht im Code stecken. PER_PLAYER und MULTIPLE
+  /// zählen mehrfach — die Erfassung zeigt dort ein Anzahl-Feld statt
+  /// eines Häkchens.
   scope       AchievementScope
-  /// Kann innerhalb seines Geltungsbereichs mehrfach zählen (z.B.
-  /// «+1/Spieler»). Die Erfassung zeigt dann ein Anzahl-Feld statt eines
-  /// Häkchens.
-  repeatable  Boolean             @default(false)
   /// Deaktivierte Achievements erscheinen nicht mehr in der Auswahl und
   /// werden bei neuen Abenden nicht übernommen.
   active      Boolean             @default(true)
@@ -210,9 +208,11 @@ enum AchievementCategory {
 }
 
 enum AchievementScope {
-  MATCH   // 1x pro Match
-  EVENING // 1x pro Abend
-  SEASON  // 1x am Ende der Liga
+  MATCH      // 1x pro Match
+  EVENING    // 1x pro Abend
+  SEASON     // 1x am Ende der Liga
+  PER_PLAYER // pro Spieler (z.B. je eliminiertem Spieler)
+  MULTIPLE   // mehrmals pro Abend
 }
 
 /// Ein an einem Liga-Abend geltendes Achievement — eine eingefrorene
@@ -231,7 +231,6 @@ model EveningAchievement {
   points        Int
   category      AchievementCategory
   scope         AchievementScope
-  repeatable    Boolean
   sortOrder     Int
 
   @@unique([eveningId, achievementId])

@@ -1,8 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { CATEGORIES, CATEGORY_LABELS } from "@/lib/achievements";
-import AchievementRow from "./AchievementRow";
-import { createAchievement } from "./actions";
-import CreateAchievementButton from "./CreateAchievementButton";
+import AchievementTable from "./AchievementTable";
 import RotatingSelection from "./RotatingSelection";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +32,6 @@ export default async function AchievementsPage() {
       title: a.title,
       description: a.description,
       points: a.points,
-      repeatable: a.repeatable,
     }));
 
   return (
@@ -85,116 +81,28 @@ export default async function AchievementsPage() {
         />
       </section>
 
-      <section className="flex flex-col gap-6">
+      <section className="flex flex-col gap-3">
         <div>
           <h2 className="text-sm font-medium">Katalog</h2>
           <p className="text-xs opacity-70">
-            Änderungen werden automatisch gespeichert und gelten nur für
-            künftige Abende — laufende und vergangene behalten ihren Stand.
-            Achievements werden nicht gelöscht, sondern deaktiviert.
+            Änderungen gelten nur für künftige Abende — laufende und
+            vergangene behalten ihren Stand. Achievements werden nicht
+            gelöscht, sondern deaktiviert.
           </p>
         </div>
-
-        {CATEGORIES.map((category) => {
-          const items = achievements.filter((a) => a.category === category);
-          return (
-            <div key={category} className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium">
-                {CATEGORY_LABELS[category]} ({items.length})
-              </h3>
-              <div className="w-full overflow-x-auto">
-                <table className="w-full min-w-[820px] text-sm">
-                  <thead>
-                    <tr className="border-b border-white/10 text-left">
-                      <th className="py-2 pr-3">Titel</th>
-                      <th className="py-2 pr-3">Beschreibung</th>
-                      <th className="py-2 pr-3">Punkte</th>
-                      <th className="py-2 pr-3">Art</th>
-                      <th className="py-2 pr-3">Mehrfach</th>
-                      <th className="py-2 pr-3">Aktiv</th>
-                      <th className="py-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((a) => (
-                      <AchievementRow
-                        key={a.id}
-                        achievement={{
-                          id: a.id,
-                          title: a.title,
-                          description: a.description,
-                          points: a.points,
-                          scope: a.scope,
-                          repeatable: a.repeatable,
-                          active: a.active,
-                        }}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          );
-        })}
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">Achievement anlegen</h2>
-        <form
-          action={createAchievement}
-          className="flex max-w-3xl flex-wrap items-end gap-3"
-        >
-          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
-            Titel
-            <input
-              type="text"
-              name="title"
-              required
-              className="min-h-9 w-full rounded border border-white/20 px-3 py-2 sm:w-56"
-            />
-          </label>
-          <label className="flex w-full flex-col gap-1.5 text-sm">
-            Beschreibung
-            <input
-              type="text"
-              name="description"
-              className="min-h-9 w-full rounded border border-white/20 px-3 py-2"
-            />
-          </label>
-          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
-            Punkte
-            <input
-              type="number"
-              name="points"
-              required
-              defaultValue={1}
-              className="min-h-9 w-full rounded border border-white/20 px-3 py-2 sm:w-20"
-            />
-          </label>
-          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
-            Kategorie
-            <select
-              name="category"
-              defaultValue="ROTATING"
-              className="min-h-9 w-full rounded border border-white/20 px-3 py-2 sm:w-auto"
-            >
-              {CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {CATEGORY_LABELS[category]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex min-h-11 w-full items-center gap-2 text-sm sm:w-auto">
-            <input type="checkbox" name="repeatable" className="h-4 w-4" />
-            Zählt mehrfach
-          </label>
-          <CreateAchievementButton />
-        </form>
-        <p className="text-xs opacity-70">
-          Die Art (pro Match, pro Abend, am Ende der Liga) wird aus der
-          Kategorie vorbelegt und lässt sich danach im Katalog ändern.
-        </p>
+        <AchievementTable
+          achievements={achievements.map((a) => ({
+            id: a.id,
+            title: a.title,
+            description: a.description,
+            points: a.points,
+            category: a.category,
+            scope: a.scope,
+            active: a.active,
+            nextSelected: a.nextSelected,
+            sortOrder: a.sortOrder,
+          }))}
+        />
       </section>
     </div>
   );

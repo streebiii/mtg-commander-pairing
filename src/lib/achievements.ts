@@ -21,14 +21,30 @@ export const CATEGORY_LABELS: Record<AchievementCategory, string> = {
   ROTATING: "Rotierende Achievements",
 };
 
-export const SCOPES: AchievementScope[] = ["MATCH", "EVENING", "SEASON"];
+export const SCOPES: AchievementScope[] = [
+  "MATCH",
+  "EVENING",
+  "SEASON",
+  "PER_PLAYER",
+  "MULTIPLE",
+];
 
 /** Beschriftung wie in der Spalte «Art» des Punkteblatts. */
 export const SCOPE_LABELS: Record<AchievementScope, string> = {
   MATCH: "1x pro Match",
   EVENING: "1x pro Abend",
   SEASON: "1x am Ende der Liga",
+  PER_PLAYER: "pro Spieler",
+  MULTIPLE: "mehrmals pro Abend",
 };
+
+/**
+ * Zählt das Achievement mehrfach? Dann zeigt die Erfassung ein
+ * Anzahl-Feld statt eines Häkchens.
+ */
+export function isRepeatable(scope: AchievementScope): boolean {
+  return scope === "PER_PLAYER" || scope === "MULTIPLE";
+}
 
 /**
  * Vorbelegung der Art beim Anlegen: fixe und rotierende zählen pro Match,
@@ -52,10 +68,9 @@ export function parseScope(value: unknown): AchievementScope | null {
     : null;
 }
 
-/** «+1», «+2»; mehrfach zählende mit Zusatz, z.B. «+1 (mehrfach)». */
-export function formatPoints(points: number, repeatable: boolean): string {
-  const sign = points >= 0 ? "+" : "";
-  return `${sign}${points}${repeatable ? " (mehrfach)" : ""}`;
+/** «+1», «+2», «−3» — mit Vorzeichen wie auf mtgbl.ch. */
+export function formatPoints(points: number): string {
+  return points >= 0 ? `+${points}` : `−${Math.abs(points)}`;
 }
 
 /**
@@ -74,7 +89,6 @@ export function eveningCopy(
     points: a.points,
     category: a.category,
     scope: a.scope,
-    repeatable: a.repeatable,
     sortOrder: a.sortOrder,
   };
 }

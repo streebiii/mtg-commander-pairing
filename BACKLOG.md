@@ -268,12 +268,17 @@ automatisch, dazu 10 rotierende, die du aus dem Katalog auswählst.
   übernommen (Stand 08.10.2026: 6 fixe, 9 Deckbau, 76 rotierende).
   Danach wird nur noch in der App gepflegt. Massgeblich bleibt die
   Website, die Dateien in `information-files/` sind veraltet.
-- **Punkte als Zahl plus Flag «mehrfach»:** ein fester Punktwert pro
-  Erfüllung. Achievements, die mehrfach zählen können
-  (`Commander Classic Win`, «+1/Spieler»), bekommen bei der Erfassung
-  ein Anzahl-Feld statt eines Häkchens. `It's Good to Be the King/Queen`
-  («+2/+1») wird als +2 geführt; die +1 für Spätere wird bei Bedarf bei
-  der Erfassung korrigiert.
+- **Punkte als Zahl, Mehrfach-Zählung über die Art:** ein fester
+  Punktwert pro Erfüllung. Die Art kennt neben «1x pro Match», «1x pro
+  Abend» und «1x am Ende der Liga» auch **«pro Spieler»** und
+  **«mehrmals pro Abend»** — beide zählen mehrfach und bekommen bei der
+  Erfassung ein Anzahl-Feld statt eines Häkchens (`Commander Classic
+  Win`, «+1/Spieler», ist «pro Spieler»). Ein eigenes Flag «mehrfach»
+  gibt es nicht (Korrektur vom 08.10.2026). `It's Good to Be the King/Queen`
+  («+2/+1») ist ebenfalls «pro Spieler» und wird als +2 geführt; die +1
+  für Spätere wird bei Bedarf bei der Erfassung korrigiert. Alle übrigen
+  rotierenden zählen «1x pro Match», wie auf dem Punkteblatt vom
+  22.05.2026.
 - **Eine «nächste Auswahl»:** im Achievements-Tab gibt es genau ein
   vorgemerktes Set von rotierenden, ausgewählt durch **Ankreuzen aus der
   Liste**. Beim Start des nächsten Liga-Abends wird es übernommen und
@@ -289,13 +294,18 @@ automatisch, dazu 10 rotierende, die du aus dem Katalog auswählst.
   Sheriff is Near, Necropotence, Crumbling Sanctuary, Endurance,
   Fateful Hour, Serial Killer.
 - **Der Abend friert eine Kopie ein:** beim Übernehmen kopiert der Abend
-  Titel, Beschreibung, Punkte, Kategorie und «mehrfach» seiner 25.
+  Titel, Beschreibung, Punkte, Kategorie und Art seiner 25.
   Katalogänderungen wirken nur auf künftige Abende. Entfernen heisst
   deaktivieren, nie löschen.
 - **Die Auswahl eines Abends bleibt immer änderbar**, auch nach der
   Erfassung. Erfassungen zu einem entfernten Achievement fallen dann weg.
 - **Öffentliche Lese-Ansicht** (SPEC.md Abschnitt 8) zeigt beim
   laufenden Abend die 25 geltenden Achievements.
+
+- **Katalog als drei Tabellen im Stil von CRM-Listen**, umgeschaltet
+  über Reiter mit Anzahl: Suche, Filter nach Art und Status, sortierbare
+  Spalten, Titel und Beschreibung als getrennte Spalten, Bearbeiten per
+  Klick in die Zelle. Angelegt wird in einem Seitenpanel.
 
 **Zu beachten:**
 - Die Art (pro Match, pro Abend, am Ende der Liga) folgt aus der

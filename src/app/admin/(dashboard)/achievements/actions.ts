@@ -20,14 +20,19 @@ function parsePoints(value: FormDataEntryValue | null): number | null {
   return Number.isFinite(points) ? points : null;
 }
 
-export async function createAchievement(formData: FormData) {
+/**
+ * Legt ein Achievement an. Gibt die id zurück, bei unvollständigen Angaben
+ * null — dann bleibt das Panel offen, statt die Eingaben zu verwerfen.
+ */
+export async function createAchievement(
+  formData: FormData,
+): Promise<string | null> {
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const points = parsePoints(formData.get("points"));
   const category = parseCategory(formData.get("category"));
-  const repeatable = formData.get("repeatable") === "on";
-
-  if (!title || points === null || category === null) return;
+  if (!title || points === null || category === null) return null;
+  const scope = parseScope(formData.get("scope")) ?? DEFAULT_SCOPE[category];
 
   // Neue Einträge hinten an ihre Kategorie anhängen.
   const last = await prisma.achievement.findFirst({
@@ -36,18 +41,18 @@ export async function createAchievement(formData: FormData) {
     select: { sortOrder: true },
   });
 
-  await prisma.achievement.create({
+  const created = await prisma.achievement.create({
     data: {
       title,
       description,
       points,
       category,
-      scope: DEFAULT_SCOPE[category],
-      repeatable,
+      scope,
       sortOrder: (last?.sortOrder ?? 0) + 1,
     },
   });
   revalidateAchievementViews();
+  return created.id;
 }
 
 /**
@@ -62,7 +67,6 @@ export async function updateAchievement(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const points = parsePoints(formData.get("points"));
   const scope = parseScope(formData.get("scope"));
-  const repeatable = formData.get("repeatable") === "true";
   const active = formData.get("active") === "true";
 
   if (!id || !title || points === null || scope === null) return;
@@ -74,7 +78,6 @@ export async function updateAchievement(formData: FormData) {
       description,
       points,
       scope,
-      repeatable,
       active,
       ...(active ? {} : { nextSelected: false }),
     },

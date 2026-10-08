@@ -612,15 +612,24 @@ Katalog im Tab **«Achievements»**.
 - Drei Kategorien: **fix** und **Deckbau** gelten an jedem Liga-Abend,
   **rotierend** gelten nur, wenn sie für den Abend ausgewählt sind
   (üblicherweise 10 pro Abend, also 25 insgesamt).
-- Je Achievement: Titel, Beschreibung, Punkte, Kategorie, **Art** (1x pro
-  Match, 1x pro Abend, 1x am Ende der Liga), **mehrfach** (kann innerhalb
-  seiner Art öfter zählen, z.B. «+1/Spieler») und **aktiv**.
+- Je Achievement: Titel, Beschreibung, Punkte, Kategorie, **Art** und
+  **aktiv**. Die Art ist eine von: 1x pro Match, 1x pro Abend, 1x am Ende
+  der Liga, **pro Spieler** (z.B. «+1/Spieler») oder **mehrmals pro
+  Abend**. Die letzten beiden zählen mehrfach; die Erfassung zeigt dort
+  ein Anzahl-Feld statt eines Häkchens.
 - Die Art wird beim Anlegen aus der Kategorie vorbelegt (fix und
   rotierend pro Match, Deckbau pro Abend) und ist danach änderbar —
   Evergreen ist Deckbau, zählt aber einmal am Ende der Liga.
 - Variable Punktwerte der Website («+2/+1») werden mit dem höheren Wert
   geführt und bei der Erfassung korrigiert.
 - Die Kategorie ist nach dem Anlegen nicht mehr änderbar.
+- Der Katalog besteht aus drei Tabellen (fix, Deckbau, rotierend), die
+  über Reiter mit Anzahl umgeschaltet werden. Darüber Suche und Filter
+  nach Art und Status (standardmässig nur aktive); Titel, Art und Punkte
+  sind sortierbar. Spalten: Titel, Beschreibung, Art, Punkte, Status.
+- Bearbeitet wird direkt in der Tabelle: ein Klick auf eine Zelle macht
+  sie zum Eingabefeld, Enter oder Verlassen speichert, Esc verwirft.
+  Angelegt wird in einem Seitenpanel mit ausdrücklichem «Anlegen».
 - Achievements werden nie gelöscht, nur deaktiviert. Deaktivierte gelten
   an künftigen Abenden nicht mehr und fallen aus der Vormerkung.
 - Die Startdaten (Stand 08.10.2026: 6 fixe, 9 Deckbau, 76 rotierende)
@@ -636,7 +645,7 @@ Katalog im Tab **«Achievements»**.
   und Deckbau-Achievements plus die vorgemerkten rotierenden, in derselben
   Transaktion wie Abend und Runde 1. Die Vormerkung wird danach geleert.
 - Der Abend speichert eine **eingefrorene Kopie** (Titel, Beschreibung,
-  Punkte, Kategorie, Art, mehrfach). Spätere Katalogänderungen wirken nur
+  Punkte, Kategorie, Art). Spätere Katalogänderungen wirken nur
   auf künftige Abende.
 - Die rotierenden eines **laufenden Abends** lassen sich im
   Achievements-Tab jederzeit ändern.

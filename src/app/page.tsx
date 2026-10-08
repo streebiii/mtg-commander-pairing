@@ -2,7 +2,13 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getCasualPairing } from "@/lib/casualPairing";
 import { formatPlayerName } from "@/lib/players";
-import { CATEGORIES, CATEGORY_LABELS, formatPoints } from "@/lib/achievements";
+import {
+  CATEGORIES,
+  CATEGORY_LABELS,
+  SCOPE_LABELS,
+  formatPoints,
+  isRepeatable,
+} from "@/lib/achievements";
 
 // Öffentliche, ungeschützte Lese-Ansicht der aktuellen Tischzuteilung
 // (siehe SPEC.md Abschnitt 2). Kein Login nötig — gedacht zum Anzeigen auf
@@ -21,7 +27,7 @@ interface DisplayAchievement {
   title: string;
   description: string;
   points: number;
-  repeatable: boolean;
+  scope: keyof typeof SCOPE_LABELS;
   category: (typeof CATEGORIES)[number];
 }
 
@@ -56,7 +62,7 @@ export default async function Home() {
             title: true,
             description: true,
             points: true,
-            repeatable: true,
+            scope: true,
             category: true,
           },
         },
@@ -156,12 +162,15 @@ export default async function Home() {
                   {items.map((a) => (
                     <li key={a.id} className="flex gap-3">
                       <span className="w-8 shrink-0 tabular-nums opacity-70">
-                        {formatPoints(a.points, false)}
+                        {formatPoints(a.points)}
                       </span>
                       <span>
                         <span className="font-medium">{a.title}</span>
-                        {a.repeatable && (
-                          <span className="opacity-70"> (mehrfach)</span>
+                        {isRepeatable(a.scope) && (
+                          <span className="opacity-70">
+                            {" "}
+                            ({SCOPE_LABELS[a.scope]})
+                          </span>
                         )}
                         {a.description && (
                           <span className="opacity-70"> — {a.description}</span>

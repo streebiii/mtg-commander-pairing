@@ -9,7 +9,6 @@ interface RotatingOption {
   title: string;
   description: string;
   points: number;
-  repeatable: boolean;
 }
 
 /** Wohin ein Häkchen speichert: Vormerkung für den nächsten Abend oder ein laufender Abend. */
@@ -97,7 +96,7 @@ export default function RotatingSelection({
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Achievement suchen"
         aria-label="Rotierende Achievements durchsuchen"
-        className="min-h-9 w-full max-w-sm rounded border border-white/20 px-3 py-2 text-sm"
+        className="min-h-11 w-full max-w-sm rounded border border-white/20 bg-transparent px-3 py-2"
       />
       <div className="grid max-w-4xl grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {visible.map((o) => (
@@ -119,7 +118,7 @@ export default function RotatingSelection({
               <span>
                 {o.title}{" "}
                 <span className="opacity-50">
-                  {formatPoints(o.points, o.repeatable)}
+                  {formatPoints(o.points)}
                 </span>
               </span>
               <span className="text-xs opacity-60">{o.description}</span>
