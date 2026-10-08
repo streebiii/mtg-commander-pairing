@@ -10,31 +10,28 @@ interface Player {
   lastName: string | null;
   points: number;
   attendedEvenings: number;
-  leagueActive: boolean;
 }
 
 /**
- * Eine Zeile in der Liga-Verwaltung mit Auto-Save (Punkte + Teilnahme-Flag).
+ * Eine Zeile in der Liga-Verwaltung mit Auto-Save der Punkte.
  * Die besuchten Abende stehen nur lesend daneben: sie kommen aus dem
  * Import und bestimmen zusammen mit den Punkten die Rangfolge für die
  * Paarung (siehe SPEC.md Abschnitt 5.1). Sichtbar, damit ein Import, der
  * die Rundenspalten nicht erkannt hat, sofort auffällt — sonst würde die
  * App still auf Gesamtpunkte zurückfallen.
- * Name und Stufe werden hier bewusst nicht angezeigt/editiert — das lebt im
- * Spieler-Tab (siehe SPEC.md Abschnitt 6).
+ * Name, Stufe und Liga-Teilnahme werden hier bewusst nicht editiert — das
+ * lebt im Spieler-Tab (siehe SPEC.md Abschnitt 6).
  */
 export default function LeaguePlayerRow({ player }: { player: Player }) {
   const [points, setPoints] = useState(String(player.points));
-  const [leagueActive, setLeagueActive] = useState(player.leagueActive);
   const [isPending, startTransition] = useTransition();
   const [justSaved, setJustSaved] = useState(false);
   const savedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function save(overrides: Partial<{ points: string; leagueActive: boolean }> = {}) {
+  function save(nextPoints: string) {
     const fd = new FormData();
     fd.set("id", player.id);
-    fd.set("points", overrides.points ?? points);
-    fd.set("leagueActive", String(overrides.leagueActive ?? leagueActive));
+    fd.set("points", nextPoints);
 
     startTransition(async () => {
       await updateLeaguePlayer(fd);
@@ -66,24 +63,10 @@ export default function LeaguePlayerRow({ player }: { player: Player }) {
           value={points}
           onChange={(e) => {
             setPoints(e.target.value);
-            save({ points: e.target.value });
+            save(e.target.value);
           }}
           className="min-h-9 w-20 rounded border border-white/20 px-3 py-2"
         />
-      </td>
-      <td className="py-2 pr-3">
-        <label className="flex min-h-9 items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={leagueActive}
-            onChange={(e) => {
-              setLeagueActive(e.target.checked);
-              save({ leagueActive: e.target.checked });
-            }}
-            className="h-4 w-4"
-          />
-          teilnehmend
-        </label>
       </td>
       <td className="py-2 pr-3 text-xs">
         <span
