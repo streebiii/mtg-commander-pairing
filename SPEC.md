@@ -480,6 +480,8 @@ Verwaltung auf zwei Tabs aufgeteilt:
     Komplett unabhängig vom Liga-Punktestand, wird ausschliesslich für die
     ausgewogene Zuteilung im Casual-Modus verwendet (Abschnitt 4.2).
   - Zeigt und ändert die **Liga-Teilnahme** (`leagueActive`) pro Spieler.
+    Das ist neben dem Import (Abschnitt 7) der einzige Ort, an dem jemand
+    in die Liga aufgenommen oder aus ihr herausgenommen wird.
   - Zeigt **keine** Liga-Punkte — die werden im Liga-Tab gepflegt.
 
 ### 6.1 Sichtbarkeit der Stufen-Einstufung
@@ -515,12 +517,16 @@ Beide Fälle werden über denselben Bestätigungsdialog abgefragt.
 
 ### 6.3 Liga-Tab (siehe Abschnitt 5)
 
-- Enthält je Spieler den aktuellen Gesamt-Liga-Punktestand (Kopie des
-  Standes von mtgbl.ch, gepflegt über den Import aus Abschnitt 7, hier
-  aber auch manuell editierbar) sowie — wie der Spieler-Tab — die
-  **Liga-Teilnahme-Flag**. Dazu die Anzahl besuchter Abende, die aus
-  denselben Importdaten stammt und in die Paarung eingeht
-  (Abschnitt 5.1).
+- Die Liga-Verwaltung listet **nur die Liga-Teilnehmenden**
+  (`leagueActive`). Je Spieler steht dort der aktuelle
+  Gesamt-Liga-Punktestand (Kopie des Standes von mtgbl.ch, gepflegt über
+  den Import aus Abschnitt 7, hier aber auch manuell editierbar) und die
+  Anzahl besuchter Abende, die aus denselben Importdaten stammt und in die
+  Paarung eingeht (Abschnitt 5.1).
+- Die Teilnahme selbst lässt sich hier **nicht** ändern — das geht nur im
+  Spieler-Tab. Wer dort den Haken entfernt, verschwindet aus der
+  Liga-Verwaltung; seine Punkte bleiben gespeichert und sind beim
+  erneuten Aufnehmen wieder da.
 - Die Teilnahme-Flag wirkt rein zukunftsgerichtet: sie filtert nur die
   Auswahlliste beim Start eines neuen Liga-Abends — bestehende Abende und
   Ergebnisse bleiben beim Deaktivieren unberührt.

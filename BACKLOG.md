@@ -125,7 +125,10 @@ gewonnen hat. Die Paarung von Hand war die einzig mögliche Reaktion.
 
 ## Liga-Abend: Runde 2 paart nach dem Tischsieger
 
-**Status:** Fertig gegrillt, bereit zur Umsetzung.
+**Status:** Umgesetzt — Sieger pro Tisch (`TableAssignment.isWinner`,
+Unentschieden über `Table.resultEnteredAt` ohne Sieger), `MAX_ROUNDS = 2`, SPEC.md
+Abschnitt 5 neu geschrieben. Die Abendend-Erfassung der Punkte steht
+noch aus (eigener Eintrag unten).
 
 **Worum es geht:** Der Liga-Abend wird auf den tatsächlichen Ablauf
 umgebaut. Kern ist der Wechsel des Sortierschlüssels für Runde 2: nicht
@@ -318,29 +321,8 @@ bevor gebaut wird.
 
 ## Liga-Verwaltung zeigt nur noch Liga-Teilnehmer
 
-**Status:** Klar, kein Grill nötig.
-
-**Worum es geht:** Die Liga-Verwaltung
-(`src/app/admin/(dashboard)/league/page.tsx`) listet heute **alle**
-Vereinsspieler mit Punktestand und Teilnahme-Checkbox. Künftig sollen
-dort nur noch die tatsächlich Teilnehmenden stehen (`leagueActive`).
-Wer den Haken nicht gesetzt hat, taucht ausschliesslich im Spieler-Tab
-auf.
-
-**Aufgenommen wird weiterhin im Spieler-Tab** — die Checkbox dort
-(`PlayerRow.tsx`) existiert bereits und bleibt der Weg, jemanden zur Liga
-hinzuzufügen. Die Liga-Verwaltung wird damit zur reinen Pflege der
-Teilnehmenden.
-
-**Zu entscheiden bei der Umsetzung:** ob die Teilnahme-Spalte in der
-Liga-Verwaltung ganz verschwindet (dann nur noch Punkte, Entfernen läuft
-über den Spieler-Tab) oder als Weg zum Herausnehmen bestehen bleibt. Ein
-Haken, den man dort abwählt, lässt die Zeile sofort verschwinden — das
-sollte nicht wie ein Fehler wirken.
-
-**Ausserdem anzupassen:** Der Hinweistext in der Liga-Verwaltung ("nur
-teilnehmende Spieler erscheinen in der Auswahlliste für neue
-Liga-Abende") und die Anzahl in der Überschrift beziehen sich heute auf
-alle Spieler.
-
-**Nächster Schritt:** Direkt umsetzen.
+**Status:** Umgesetzt. Die Liga-Verwaltung
+(`src/app/admin/(dashboard)/league/page.tsx`) listet nur noch Spieler
+mit `leagueActive` und pflegt dort ausschliesslich Punkte. Die
+Teilnahme-Spalte ist ganz weggefallen: aufgenommen und herausgenommen
+wird nur noch im Spieler-Tab (`PlayerRow.tsx`) oder über den Import.

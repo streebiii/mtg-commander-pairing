@@ -44,9 +44,10 @@ export default async function LeaguePage() {
         },
       },
     }),
-    // Alle Vereinsspieler für die Verwaltung (Punkte + Teilnahme-Flag) —
-    // nicht nur die aktuell teilnehmenden, damit man auch neue Spieler
-    // aktivieren kann (siehe SPEC.md Abschnitt 6).
+    // Alle Vereinsspieler, nicht nur die teilnehmenden: der Import gleicht
+    // Namen gegen das ganze Roster ab, und die Rangliste eines laufenden
+    // Abends muss auch Anwesende kennen, die inzwischen nicht mehr
+    // teilnehmen. Die Liga-Verwaltung filtert selbst (siehe unten).
     prisma.player.findMany({
       where: { archivedAt: null },
       orderBy: [{ points: "desc" }, { firstName: "asc" }],
@@ -74,34 +75,40 @@ export default async function LeaguePage() {
     evening = null;
   }
 
+  // Die Verwaltung pflegt nur die Teilnehmenden. Aufgenommen und
+  // herausgenommen wird im Spieler-Tab oder über den Import (siehe SPEC.md
+  // Abschnitt 6.3).
+  const activePlayers = allPlayers.filter((p) => p.leagueActive);
+
   const managementSection = (
     <section className="flex flex-col gap-3">
       <h2 className="text-sm font-medium">
-        Liga-Verwaltung ({allPlayers.length} Spieler)
+        Liga-Verwaltung ({activePlayers.length} Spieler)
       </h2>
       <p className="text-xs opacity-70">
-        Punktestand und Liga-Teilnahme pro Spieler — nur teilnehmende Spieler
-        erscheinen in der Auswahlliste für neue Liga-Abende. Änderungen
-        werden automatisch gespeichert.
+        Punktestand der Liga-Teilnehmenden. Wer an der Liga teilnimmt, legst
+        du im Spieler-Tab fest — der Import unten nimmt importierte Spieler
+        automatisch auf. Änderungen werden automatisch gespeichert.
       </p>
-      <div className="w-full max-w-2xl overflow-x-auto">
-        <table className="w-full min-w-[420px] text-sm">
-          <thead>
-            <tr className="border-b border-white/10 text-left">
-              <th className="py-2 pr-3">Spieler</th>
-              <th className="py-2 pr-3">Abende</th>
-              <th className="py-2 pr-3">Punkte</th>
-              <th className="py-2 pr-3">Liga-Teilnahme</th>
-              <th className="py-2 pr-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {allPlayers.map((player) => (
-              <LeaguePlayerRow key={player.id} player={player} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {activePlayers.length > 0 && (
+        <div className="w-full max-w-2xl overflow-x-auto">
+          <table className="w-full min-w-[360px] text-sm">
+            <thead>
+              <tr className="border-b border-white/10 text-left">
+                <th className="py-2 pr-3">Spieler</th>
+                <th className="py-2 pr-3">Abende</th>
+                <th className="py-2 pr-3">Punkte</th>
+                <th className="py-2 pr-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {activePlayers.map((player) => (
+                <LeaguePlayerRow key={player.id} player={player} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <ImportClient
         existingPlayers={allPlayers.map((p) => ({
           id: p.id,
@@ -113,7 +120,6 @@ export default async function LeaguePage() {
   );
 
   if (!evening) {
-    const activePlayers = allPlayers.filter((p) => p.leagueActive);
     return (
       <div className="flex flex-col gap-8">
         <div>
@@ -129,8 +135,8 @@ export default async function LeaguePage() {
           </h2>
           {activePlayers.length === 0 ? (
             <p className="text-xs opacity-70">
-              Noch keine Spieler als Liga-teilnehmend markiert — aktiviere
-              zuerst welche unten in der Liga-Verwaltung.
+              Noch keine Spieler als Liga-teilnehmend markiert — nimm im
+              Spieler-Tab welche auf oder importiere unten die Rangliste.
             </p>
           ) : (
             <PlayerSelectionList

@@ -18,22 +18,20 @@ import { clearCasualPairing } from "@/lib/casualPairing";
 const MAX_ROUNDS = 2;
 
 /**
- * Auto-Save für die Liga-Verwaltung: Punktestand und Liga-Teilnahme-Flag
- * eines Spielers. Die Teilnahme-Flag wirkt rein zukunftsgerichtet (siehe
- * SPEC.md Abschnitt 6) — sie filtert nur die Auswahlliste für neue
- * Liga-Abende, bestehende Abende/Ergebnisse bleiben unberührt.
+ * Auto-Save für die Liga-Verwaltung: Punktestand eines Spielers. Die
+ * Liga-Teilnahme wird hier bewusst nicht angefasst — sie lebt im
+ * Spieler-Tab (siehe SPEC.md Abschnitt 6.3).
  */
 export async function updateLeaguePlayer(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const pointsRaw = String(formData.get("points") ?? "").trim();
   const points = Number.parseInt(pointsRaw, 10);
-  const leagueActive = formData.get("leagueActive") === "true";
 
   if (!id || !Number.isFinite(points)) return;
 
   await prisma.player.update({
     where: { id },
-    data: { points, leagueActive },
+    data: { points },
   });
   revalidatePath("/admin/league");
 }
