@@ -13,7 +13,6 @@ CREATE TABLE "achievements" (
     "category" "AchievementCategory" NOT NULL,
     "scope" "AchievementScope" NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "nextSelected" BOOLEAN NOT NULL DEFAULT false,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -48,28 +47,28 @@ ALTER TABLE "evening_achievements" ADD CONSTRAINT "evening_achievements_eveningI
 ALTER TABLE "evening_achievements" ADD CONSTRAINT "evening_achievements_achievementId_fkey" FOREIGN KEY ("achievementId") REFERENCES "achievements"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- Startdaten: Achievement-Liste von https://mtgbl.ch/liga/commander/2026/achievements
--- (Stand 08.10.2026: 6 fixe, 9 Deckbau, 76 rotierende). Die 10 rotierenden
--- der Ziehung vom 16.10.2026 sind als nächste Auswahl vorgemerkt.
--- «+1/Spieler» ist als +1 mit Art PER_PLAYER geführt, «+2/+1» als +2,
--- ebenfalls PER_PLAYER. Alle übrigen rotierenden zählen 1x pro Match,
--- wie auf dem Punkteblatt vom 22.05.2026
--- (siehe BACKLOG.md). Danach wird der Katalog nur noch in der App gepflegt.
-INSERT INTO "achievements" ("id", "title", "description", "points", "category", "scope", "nextSelected", "sortOrder") VALUES
-  (gen_random_uuid()::text, 'Participation', 'Nimm an einem Liga-Match teil', 1, 'FIXED', 'MATCH', false, 1),
-  (gen_random_uuid()::text, 'Winner winner – chicken dinner', 'Gewinne das Match', 1, 'FIXED', 'MATCH', false, 2),
-  (gen_random_uuid()::text, 'Eliminate', 'Eliminiere einen Spieler', 1, 'FIXED', 'MATCH', false, 3),
-  (gen_random_uuid()::text, 'I’ve seen this movie', 'Als erster Spieler eliminiert werden', 1, 'FIXED', 'MATCH', false, 4),
-  (gen_random_uuid()::text, 'Hardcore Mode', 'Auf 5 oder weniger Karten mulliganen', 1, 'FIXED', 'MATCH', false, 5),
-  (gen_random_uuid()::text, 'Alternative', 'Gewinne mit einer alternativen Win-Con. Als alternative Win-Cons zählen: Poison, Mill oder Karten mit dem Text „You win the game. (Commander Damage zählt nicht)', 2, 'FIXED', 'MATCH', false, 6),
-  (gen_random_uuid()::text, 'Big Play', 'Deck enthält keine Nicht-Land-Karten mit Manawert 3 oder weniger', 3, 'DECKBUILDING', 'EVENING', false, 1),
-  (gen_random_uuid()::text, 'Starting Point', 'Mit einem Commander-Precon-Deck spielen', 2, 'DECKBUILDING', 'EVENING', false, 2),
-  (gen_random_uuid()::text, 'Ya Basic', 'Nutze nur Standardländer', 1, 'DECKBUILDING', 'EVENING', false, 3),
-  (gen_random_uuid()::text, 'Pauper', 'Spiele mit einem Pauper Commander-Deck', 4, 'DECKBUILDING', 'EVENING', false, 4),
-  (gen_random_uuid()::text, 'No Sol Ring', 'Spiele ohne Sol Ring im Deck', 1, 'DECKBUILDING', 'EVENING', false, 5),
-  (gen_random_uuid()::text, 'No Creatures', 'Deck enthält ausser dem Commander keine Kreaturen', 2, 'DECKBUILDING', 'EVENING', false, 6),
-  (gen_random_uuid()::text, 'No Artifacts', 'Deck enthält keine Artefakte', 1, 'DECKBUILDING', 'EVENING', false, 7),
-  (gen_random_uuid()::text, 'I am speed', 'Abgesehen von Ländern und Commander können alle Karten “Instant-Speed” gespielt werden', 2, 'DECKBUILDING', 'EVENING', false, 8),
-  (gen_random_uuid()::text, 'Evergreen', 'Spiele über die gesamte Liga immer dasselbe Deck', 7, 'DECKBUILDING', 'SEASON', false, 9),
+-- (Stand 08.10.2026: 6 fixe, 9 Deckbau, 76 rotierende). Fixe und Deckbau sind
+-- aktiv; von den rotierenden genau die 10 der Ziehung vom 16.10.2026 — bei den
+-- rotierenden heisst aktiv «gilt am nächsten Liga-Abend».
+-- «+1/Spieler» und «+2/+1» haben die Art PER_PLAYER (+1 bzw. +2), alle übrigen
+-- rotierenden zählen 1x pro Match, wie auf dem Punkteblatt vom 22.05.2026.
+-- Danach wird der Katalog nur noch in der App gepflegt.
+INSERT INTO "achievements" ("id", "title", "description", "points", "category", "scope", "active", "sortOrder") VALUES
+  (gen_random_uuid()::text, 'Participation', 'Nimm an einem Liga-Match teil', 1, 'FIXED', 'MATCH', true, 1),
+  (gen_random_uuid()::text, 'Winner winner – chicken dinner', 'Gewinne das Match', 1, 'FIXED', 'MATCH', true, 2),
+  (gen_random_uuid()::text, 'Eliminate', 'Eliminiere einen Spieler', 1, 'FIXED', 'MATCH', true, 3),
+  (gen_random_uuid()::text, 'I’ve seen this movie', 'Als erster Spieler eliminiert werden', 1, 'FIXED', 'MATCH', true, 4),
+  (gen_random_uuid()::text, 'Hardcore Mode', 'Auf 5 oder weniger Karten mulliganen', 1, 'FIXED', 'MATCH', true, 5),
+  (gen_random_uuid()::text, 'Alternative', 'Gewinne mit einer alternativen Win-Con. Als alternative Win-Cons zählen: Poison, Mill oder Karten mit dem Text „You win the game. (Commander Damage zählt nicht)', 2, 'FIXED', 'MATCH', true, 6),
+  (gen_random_uuid()::text, 'Big Play', 'Deck enthält keine Nicht-Land-Karten mit Manawert 3 oder weniger', 3, 'DECKBUILDING', 'EVENING', true, 1),
+  (gen_random_uuid()::text, 'Starting Point', 'Mit einem Commander-Precon-Deck spielen', 2, 'DECKBUILDING', 'EVENING', true, 2),
+  (gen_random_uuid()::text, 'Ya Basic', 'Nutze nur Standardländer', 1, 'DECKBUILDING', 'EVENING', true, 3),
+  (gen_random_uuid()::text, 'Pauper', 'Spiele mit einem Pauper Commander-Deck', 4, 'DECKBUILDING', 'EVENING', true, 4),
+  (gen_random_uuid()::text, 'No Sol Ring', 'Spiele ohne Sol Ring im Deck', 1, 'DECKBUILDING', 'EVENING', true, 5),
+  (gen_random_uuid()::text, 'No Creatures', 'Deck enthält ausser dem Commander keine Kreaturen', 2, 'DECKBUILDING', 'EVENING', true, 6),
+  (gen_random_uuid()::text, 'No Artifacts', 'Deck enthält keine Artefakte', 1, 'DECKBUILDING', 'EVENING', true, 7),
+  (gen_random_uuid()::text, 'I am speed', 'Abgesehen von Ländern und Commander können alle Karten “Instant-Speed” gespielt werden', 2, 'DECKBUILDING', 'EVENING', true, 8),
+  (gen_random_uuid()::text, 'Evergreen', 'Spiele über die gesamte Liga immer dasselbe Deck', 7, 'DECKBUILDING', 'SEASON', true, 9),
   (gen_random_uuid()::text, 'Untouchable', 'Ein Spiel gewinnen, ohne jemals Schaden zu nehmen', 3, 'ROTATING', 'MATCH', false, 1),
   (gen_random_uuid()::text, 'It’s Free Real Estate', 'Mehr als 45 bleibende Karten gleichzeitig im Spiel haben', 1, 'ROTATING', 'MATCH', false, 2),
   (gen_random_uuid()::text, 'Just as Garfield Intended', 'Zehn oder mehr Kreaturen in einem einzigen Zug wirken', 1, 'ROTATING', 'MATCH', false, 3),

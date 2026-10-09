@@ -4,12 +4,11 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_SCOPE,
-  eveningCopy,
   parseCategory,
   parseScope,
 } from "@/lib/achievements";
 
-/** Katalog und Auswahl erscheinen im Achievements-Tab und öffentlich. */
+/** Der Katalog erscheint im Achievements-Tab und (über Abende) öffentlich. */
 function revalidateAchievementViews() {
   revalidatePath("/admin/achievements");
   revalidatePath("/");
@@ -66,12 +65,9 @@ export async function createAchievement(
 }
 
 /**
- * Auto-Save einer Katalogzeile. Wirkt nur auf künftige Abende — laufende
- * und vergangene tragen ihre eigene Kopie (siehe SPEC.md Abschnitt 11).
- * Deaktivieren lässt ein Häkchen in der Auswahl für den nächsten
- * Liga-Abend bewusst stehen: wird das Achievement vor dem Abendstart
- * wieder aktiviert, ist es wieder dabei; bleibt es deaktiviert, übernimmt
- * der Abendstart es ohnehin nicht.
+ * Auto-Save einer Katalogzeile. Wirkt nur auf künftige Abende — ein
+ * gestarteter Abend trägt seine eigene Kopie (siehe SPEC.md Abschnitt 11).
+ * `active` entscheidet, ob das Achievement am nächsten Liga-Abend gilt.
  */
 export async function updateAchievement(formData: FormData) {
   const id = String(formData.get("id") ?? "");
@@ -93,47 +89,5 @@ export async function updateAchievement(formData: FormData) {
       active,
     },
   });
-  revalidateAchievementViews();
-}
-
-/** Nimmt ein rotierendes Achievement in die Auswahl für den nächsten Liga-Abend auf oder heraus. */
-export async function setNextSelected(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  const selected = formData.get("selected") === "true";
-  if (!id) return;
-
-  await prisma.achievement.updateMany({
-    where: { id, category: "ROTATING", active: true },
-    data: { nextSelected: selected },
-  });
-  revalidateAchievementViews();
-}
-
-/**
- * Ändert die rotierenden Achievements eines bereits gestarteten Abends.
- * Bewusst jederzeit erlaubt, auch nach der Erfassung (siehe BACKLOG.md):
- * eine Erfassung zu einem entfernten Achievement fällt dann weg.
- */
-export async function setEveningSelected(formData: FormData) {
-  const eveningId = String(formData.get("eveningId") ?? "");
-  const achievementId = String(formData.get("achievementId") ?? "");
-  const selected = formData.get("selected") === "true";
-  if (!eveningId || !achievementId) return;
-
-  if (selected) {
-    const achievement = await prisma.achievement.findFirst({
-      where: { id: achievementId, category: "ROTATING", active: true },
-    });
-    if (!achievement) return;
-    // skipDuplicates: ein Doppelklick darf keinen Fehler am Unique-Index werfen.
-    await prisma.eveningAchievement.createMany({
-      data: [eveningCopy(eveningId, achievement)],
-      skipDuplicates: true,
-    });
-  } else {
-    await prisma.eveningAchievement.deleteMany({
-      where: { eveningId, achievementId, category: "ROTATING" },
-    });
-  }
   revalidateAchievementViews();
 }

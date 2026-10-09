@@ -169,8 +169,8 @@ model CasualSeat {
 /// Ein Achievement aus dem Katalog der Liga (siehe SPEC.md Abschnitt 11).
 /// Massgeblich ist die Liste auf mtgbl.ch; die Startdaten stammen von dort
 /// (Migration `add_achievements`), gepflegt wird danach im Achievements-Tab.
-/// Achievements werden nie gelöscht, nur deaktiviert — vergangene Abende
-/// tragen ohnehin eine eigene Kopie (EveningAchievement).
+/// Achievements werden nie gelöscht, nur inaktiv gestellt — vergangene
+/// Abende tragen ohnehin eine eigene Kopie (EveningAchievement).
 model Achievement {
   id          String              @id @default(cuid())
   title       String
@@ -185,13 +185,11 @@ model Achievement {
   /// zählen mehrfach — die Erfassung zeigt dort ein Anzahl-Feld statt
   /// eines Häkchens.
   scope       AchievementScope
-  /// Deaktivierte Achievements erscheinen nicht mehr in der Auswahl und
-  /// werden bei neuen Abenden nicht übernommen.
+  /// Gilt an Liga-Abenden: der Abendstart übernimmt alle aktiven. Bei den
+  /// rotierenden heisst aktiv «gehört zur aktuellen Ziehung» — nach jeder
+  /// Ziehung auf mtgbl.ch werden die neuen 10 aktiv und die alten inaktiv
+  /// gestellt (siehe SPEC.md Abschnitt 11.2).
   active      Boolean             @default(true)
-  /// Angekreuzt in der Auswahl der rotierenden für den nächsten
-  /// Liga-Abend. Wird beim Start des Abends übernommen und geleert.
-  /// Bleibt beim Deaktivieren stehen; übernommen werden nur aktive.
-  nextSelected Boolean            @default(false)
   /// Reihenfolge wie auf mtgbl.ch, innerhalb der Kategorie.
   sortOrder   Int                 @default(0)
   createdAt   DateTime            @default(now())

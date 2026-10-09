@@ -20,7 +20,6 @@ export interface TableAchievement {
   category: AchievementCategory;
   scope: AchievementScope;
   active: boolean;
-  nextSelected: boolean;
   sortOrder: number;
 }
 
@@ -28,7 +27,7 @@ type Editable = Pick<
   TableAchievement,
   "title" | "description" | "points" | "scope" | "active"
 >;
-type Column = "title" | "description" | "scope" | "points" | "active";
+type Column = "title" | "description" | "scope" | "points";
 type SortKey = "default" | "title" | "scope" | "points";
 type StatusFilter = "active" | "inactive" | "all";
 
@@ -113,13 +112,9 @@ function CellEditor({
       if (Number.isFinite(points) && points !== initial.points) {
         onCommit({ points });
       } else onCancel();
-    } else if (column === "scope") {
+    } else {
       const scope = value as AchievementScope;
       if (scope !== initial.scope) onCommit({ scope });
-      else onCancel();
-    } else {
-      const active = value === "true";
-      if (active !== initial.active) onCommit({ active });
       else onCancel();
     }
   }
@@ -140,14 +135,8 @@ function CellEditor({
     }
   }
 
-  if (column === "scope" || column === "active") {
-    const options =
-      column === "scope"
-        ? SCOPES.map((s) => ({ value: s, label: SCOPE_LABELS[s] }))
-        : [
-            { value: "true", label: "Aktiv" },
-            { value: "false", label: "Deaktiviert" },
-          ];
+  if (column === "scope") {
+    const options = SCOPES.map((s) => ({ value: s, label: SCOPE_LABELS[s] }));
     return (
       <select
         autoFocus
@@ -155,7 +144,7 @@ function CellEditor({
         onChange={(e) => commit(e.target.value)}
         onBlur={cancel}
         onKeyDown={onKeyDown}
-        aria-label={column === "scope" ? "Art" : "Status"}
+        aria-label="Art"
         className={CELL_INPUT}
       >
         {options.map((o) => (
@@ -206,8 +195,11 @@ function CellEditor({
  * oder Verlassen speichert, Esc verwirft. Gespeicherte Werte erscheinen
  * sofort, ohne auf die Server-Antwort zu warten.
  *
- * Standardmässig nur aktive Achievements; deaktivierte holt der
- * Status-Filter zurück. Die Standard-Sortierung entspricht mtgbl.ch.
+ * Die Status-Spalte ist ein Schalter: aktiv heisst «gilt am nächsten
+ * Liga-Abend». Bei den rotierenden werden so nach jeder Ziehung die neuen
+ * 10 aktiv gestellt. Die Reihenfolge bleibt beim Umschalten stehen
+ * (Standard wie auf mtgbl.ch), damit Zeilen nicht unter dem Finger
+ * wegspringen; inaktive sind abgeblendet.
  */
 export default function AchievementTable({
   achievements,
@@ -217,7 +209,7 @@ export default function AchievementTable({
   const [tab, setTab] = useState<AchievementCategory>("FIXED");
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<AchievementScope | "ALL">("ALL");
-  const [status, setStatus] = useState<StatusFilter>("active");
+  const [status, setStatus] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
     key: "default",
     dir: "asc",
@@ -284,13 +276,20 @@ export default function AchievementTable({
   }, [filtered, tab, sort]);
 
   const filtersActive =
-    query.trim() !== "" || scope !== "ALL" || status !== "active";
+    query.trim() !== "" || scope !== "ALL" || status !== "all";
 
   function resetFilters() {
     setQuery("");
     setScope("ALL");
-    setStatus("active");
+    setStatus("all");
   }
+
+  // Aktive des offenen Reiters, unabhängig von Suche und Filtern — damit
+  // sich nach dem Umstellen der Ziehung prüfen lässt, ob es 10 sind.
+  const activeInTab = merged.filter(
+    (a) => a.category === tab && a.active,
+  ).length;
+  const totalInTab = merged.filter((a) => a.category === tab).length;
 
   /**
    * Klickfolge je Spalte: erste Richtung, umgekehrte Richtung, zurück zur
@@ -427,9 +426,9 @@ export default function AchievementTable({
           aria-label="Nach Status filtern"
           className="min-h-11 rounded border border-white/20 bg-background px-3 py-2"
         >
-          <option value="active">Aktive</option>
-          <option value="inactive">Deaktivierte</option>
           <option value="all">Alle Status</option>
+          <option value="active">Aktive</option>
+          <option value="inactive">Inaktive</option>
         </select>
         <PrimaryButton
           onClick={() => setCreating(true)}
@@ -477,8 +476,15 @@ export default function AchievementTable({
       </div>
 
       <div className="flex min-h-8 items-center justify-between gap-3 text-xs">
-        <span className="opacity-70">
-          Zum Ändern auf eine Zelle klicken · Enter speichert · Esc bricht ab
+        <span>
+          <span className="font-medium tabular-nums">
+            {activeInTab} von {totalInTab} aktiv
+          </span>
+          <span className="opacity-70">
+            {" "}
+            · Zum Ändern auf eine Zelle klicken · Enter speichert · Esc
+            bricht ab
+          </span>
         </span>
         <span aria-live="polite" className="shrink-0">
           {justSaved ? (
@@ -511,7 +517,7 @@ export default function AchievementTable({
               {header(null, "Beschreibung")}
               {header("scope", "Art", "w-44")}
               {header("points", "Punkte", "w-24 text-right")}
-              {header(null, "Status", "w-36")}
+              {header(null, "Aktiv", "w-28")}
             </tr>
           </thead>
           <tbody>
@@ -550,26 +556,31 @@ export default function AchievementTable({
                   </span>,
                   "text-right",
                 )}
-                {cell(
-                  a,
-                  "active",
-                  <span className="flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1.5">
+                <td className="border-b border-white/5 px-3 py-1.5 align-top">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={a.active}
+                    aria-label={`${a.title} aktiv`}
+                    onClick={() => commit(a, { active: !a.active })}
+                    className="flex min-h-9 items-center gap-2 text-white"
+                  >
+                    <span
+                      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                        a.active ? "bg-green-600" : "bg-white/20"
+                      }`}
+                    >
                       <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          a.active ? "bg-green-500" : "bg-white/40"
+                        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+                          a.active ? "translate-x-4" : "translate-x-0.5"
                         }`}
                       />
-                      {a.active ? "Aktiv" : "Deaktiviert"}
                     </span>
-                    {a.nextSelected && (
-                      <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-xs text-blue-300 ring-1 ring-inset ring-blue-500/30">
-                        nächster Abend
-                      </span>
-                    )}
-                  </span>,
-                  "whitespace-nowrap",
-                )}
+                    <span className={a.active ? "" : "opacity-50"}>
+                      {a.active ? "Aktiv" : "Inaktiv"}
+                    </span>
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -95,31 +95,21 @@ export function eveningCopy(
 
 /**
  * Übernimmt beim Start eines Liga-Abends die geltenden Achievements: alle
- * aktiven fixen und Deckbau-Achievements plus die aktiven rotierenden aus
- * der Auswahl für den nächsten Liga-Abend. Die Auswahl wird danach
- * geleert (auch Häkchen an deaktivierten) — die nächste entsteht erst am
- * Ende dieses Abends, wenn mtgbl.ch neu zieht (siehe SPEC.md 11.2).
+ * aktiven — fixe, Deckbau und die aktiven rotierenden der aktuellen
+ * Ziehung (normalerweise 6 + 9 + 10 = 25). Der Katalog bleibt dabei
+ * unverändert; die rotierenden werden erst nach der nächsten Ziehung
+ * umgestellt (siehe SPEC.md Abschnitt 11.2).
  */
 export async function adoptAchievementsForEvening(
   tx: Prisma.TransactionClient,
   eveningId: string,
 ) {
   const achievements = await tx.achievement.findMany({
-    where: {
-      active: true,
-      OR: [
-        { category: { in: ["FIXED", "DECKBUILDING"] } },
-        { category: "ROTATING", nextSelected: true },
-      ],
-    },
+    where: { active: true },
   });
   if (achievements.length > 0) {
     await tx.eveningAchievement.createMany({
       data: achievements.map((a) => eveningCopy(eveningId, a)),
     });
   }
-  await tx.achievement.updateMany({
-    where: { nextSelected: true },
-    data: { nextSelected: false },
-  });
 }

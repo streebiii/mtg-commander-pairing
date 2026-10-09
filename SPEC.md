@@ -609,9 +609,10 @@ Katalog im Tab **«Achievements»**.
 
 ### 11.1 Katalog
 
-- Drei Kategorien: **fix** und **Deckbau** gelten an jedem Liga-Abend,
-  **rotierend** gelten nur, wenn sie für den Abend ausgewählt sind
-  (üblicherweise 10 pro Abend, also 25 insgesamt).
+- Drei Kategorien: **fix**, **Deckbau** und **rotierend**. Es gilt, was
+  **aktiv** ist: alle fixen und Deckbau-Achievements (solange aktiv) und
+  bei den rotierenden die 10 der aktuellen Ziehung — zusammen
+  üblicherweise 25.
 - Je Achievement: Titel, Beschreibung, Punkte, Kategorie, **Art** und
   **aktiv**. Die Art ist eine von: 1x pro Match, 1x pro Abend, 1x am Ende
   der Liga, **pro Spieler** (z.B. «+1/Spieler») oder **mehrmals pro
@@ -625,42 +626,38 @@ Katalog im Tab **«Achievements»**.
 - Die Kategorie ist nach dem Anlegen nicht mehr änderbar.
 - Der Katalog besteht aus drei Tabellen (fix, Deckbau, rotierend), die
   über Reiter mit Anzahl umgeschaltet werden. Darüber Suche und Filter
-  nach Art und Status (standardmässig nur aktive); Titel, Art und Punkte
-  sind sortierbar. Spalten: Titel, Beschreibung, Art, Punkte, Status.
+  nach Art und Status (standardmässig alle); Titel, Art und Punkte sind
+  sortierbar. Spalten: Titel, Beschreibung, Art, Punkte, Aktiv. Über der
+  Tabelle steht, wie viele im offenen Reiter aktiv sind («10 von 76
+  aktiv»).
 - Bearbeitet wird direkt in der Tabelle: ein Klick auf eine Zelle macht
-  sie zum Eingabefeld, Enter oder Verlassen speichert, Esc verwirft.
+  sie zum Eingabefeld, Enter oder Verlassen speichert, Esc verwirft. Die
+  Spalte «Aktiv» ist ein Schalter, ein Klick stellt um. Die Reihenfolge
+  bleibt dabei stehen; inaktive Zeilen sind abgeblendet.
   Angelegt wird in einem Seitenpanel mit ausdrücklichem «Anlegen».
-- Achievements werden nie gelöscht, nur deaktiviert. Deaktivierte gelten
-  an künftigen Abenden nicht mehr. Ein Häkchen in der Auswahl für den
-  nächsten Liga-Abend bleibt beim Deaktivieren stehen (unsichtbar); wird
-  das Achievement vor dem Abendstart wieder aktiviert, ist es wieder
-  angekreuzt.
+- Achievements werden nie gelöscht, nur inaktiv gestellt.
 - Die Startdaten (Stand 08.10.2026: 6 fixe, 9 Deckbau, 76 rotierende)
   stammen einmalig von der Website; danach wird nur in der App gepflegt.
 
-### 11.2 Auswahl der rotierenden
-
-Ablauf vom Ende eines Liga-Abends bis zum Start des nächsten:
+### 11.2 Vom Ende eines Liga-Abends bis zum nächsten
 
 1. **Abend beenden** im Liga-Tab. Die 25 Achievements des Abends bleiben
    bei ihm gespeichert.
 2. **mtgbl.ch zieht** die 10 rotierenden für den nächsten Abend und
    veröffentlicht sie (ausserhalb der App).
-3. Im Achievements-Tab, Abschnitt **«Rotierende für den nächsten
-   Abend»**, werden die 10 angekreuzt — die **Auswahl für den nächsten
-   Liga-Abend**. Jedes Häkchen speichert sofort, die Auswahl bleibt bis
-   zum Abendstart änderbar. Ohne Zähler oder Sperre, weil sie übernommen
-   und nicht hier entschieden wird.
+3. Im Achievements-Tab, Reiter **Rotierend**, werden die 10 neuen
+   **aktiv** und die bisherigen **inaktiv** gestellt. Jeder Klick
+   speichert sofort. Ohne Sperre auf 10, weil die Ziehung übernommen und
+   nicht hier entschieden wird; die Anzeige «10 von 76 aktiv» dient zur
+   Kontrolle.
 4. Beim **Start des nächsten Liga-Abends** übernimmt der Abend, in
-   derselben Transaktion wie Abend und Runde 1, alle aktiven fixen und
-   Deckbau-Achievements plus die aktiven angekreuzten rotierenden
-   (normalerweise 6 + 9 + 10 = 25). Danach werden alle Häkchen der
-   Auswahl entfernt; der Abschnitt ist leer bis zur nächsten Ziehung.
-- Der Abend speichert eine **eingefrorene Kopie** (Titel, Beschreibung,
-  Punkte, Kategorie, Art). Spätere Katalogänderungen wirken nur
-  auf künftige Abende.
-- Die rotierenden eines **laufenden Abends** lassen sich im
-  Achievements-Tab jederzeit ändern.
+   derselben Transaktion wie Abend und Runde 1, alle aktiven
+   Achievements als **eingefrorene Kopie** (Titel, Beschreibung, Punkte,
+   Kategorie, Art). Der Katalog bleibt unverändert — die rotierenden
+   bleiben aktiv, bis nach der nächsten Ziehung umgestellt wird.
+
+Ein gestarteter Abend behält seine Liste: Änderungen im Katalog wirken
+erst auf den nächsten Abend, auch während ein Abend läuft.
 
 ### 11.3 Öffentliche Ansicht
 

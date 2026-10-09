@@ -246,14 +246,13 @@ Papierzettel (bestätigt 08.10.2026).
 
 ## Achievement-Katalog und Auswahl der rotierenden
 
-**Status:** Umgesetzt (08.10.2026), siehe SPEC.md Abschnitt 11. Ersetzt
-den früheren Entwurf mit Zufallsziehung in der App. Die Auswahl eines
-laufenden Abends ist im Achievements-Tab änderbar; für abgeschlossene
-Abende gibt es noch keine Oberfläche (die kommt mit der Erfassung).
+**Status:** Umgesetzt (08./09.10.2026), siehe SPEC.md Abschnitt 11.
+Ersetzt den früheren Entwurf mit Zufallsziehung in der App.
 
 **Worum es geht:** Die Achievements liegen als pflegbare Stammdaten in
 der App. Pro Abend gelten 25: alle 6 fixen und 9 Deckbau-Achievements
-automatisch, dazu 10 rotierende, die du aus dem Katalog auswählst.
+automatisch, dazu die 10 rotierenden der aktuellen Ziehung — es gilt,
+was im Katalog aktiv ist.
 
 **Entschieden:**
 - **Die Ziehung macht die Website, nicht die App.** mtgbl.ch zieht die
@@ -262,7 +261,7 @@ automatisch, dazu 10 rotierende, die du aus dem Katalog auswählst.
   übernimmt sie nur. Eine Zufallsziehung in der App entfällt.
 - **Eigener Tab «Achievements»** in der Navigation, neben Liga und
   Spieler. Dort: Katalog nach Kategorie (fix, Deckbau, rotierend),
-  anlegen, ändern, deaktivieren.
+  anlegen, ändern, aktiv/inaktiv stellen.
 - **Katalog einmal mitliefern:** die Liste von
   https://mtgbl.ch/liga/commander/2026/achievements wird als Startdaten
   übernommen (Stand 08.10.2026: 6 fixe, 9 Deckbau, 76 rotierende).
@@ -279,41 +278,41 @@ automatisch, dazu 10 rotierende, die du aus dem Katalog auswählst.
   für Spätere wird bei Bedarf bei der Erfassung korrigiert. Alle übrigen
   rotierenden zählen «1x pro Match», wie auf dem Punkteblatt vom
   22.05.2026.
-- **Eine Auswahl für den nächsten Liga-Abend:** im Achievements-Tab
-  gibt es genau ein Set von rotierenden für den nächsten Abend,
-  ausgewählt durch **Ankreuzen aus der Liste**. Beim Start des nächsten
-  Liga-Abends wird es übernommen und danach geleert. Gepflegt wird es **nur im Achievements-Tab** — der
-  Schritt «Abend beenden» bleibt unverändert.
-- **Ein Abend ohne Auswahl für ihn kommt im Ablauf nicht vor**
-  (die 10 werden immer am Ende des Vorabends festgelegt). Keine Sperre
-  und kein Sonderfall beim Abendstart nötig.
-- **Keine Anzahl-Prüfung** beim Ankreuzen — die 10 werden von der
-  Website übernommen, ein Zähler oder eine Sperre bringt nichts.
-- **Die Ziehung vom 16.10.2026 wird mitgeliefert** als erste Auswahl
-  für den nächsten Liga-Abend: Fog, Boundless Realms, Smash!, Commander Classic Win, The
-  Sheriff is Near, Necropotence, Crumbling Sanctuary, Endurance,
-  Fateful Hour, Serial Killer.
-- **Der Abend friert eine Kopie ein:** beim Übernehmen kopiert der Abend
+- **Aktiv heisst «gilt am nächsten Liga-Abend»** (Entscheid vom
+  09.10.2026, ersetzt die frühere Kachel-Auswahl): bei den rotierenden
+  stellst du nach jeder Ziehung im Katalog die neuen 10 aktiv und die
+  bisherigen inaktiv. Ein separates «deaktiviert» gibt es nicht —
+  nicht gezogene rotierende sind schlicht inaktiv. Gepflegt wird **nur
+  im Achievements-Tab**, der Schritt «Abend beenden» bleibt unverändert.
+- **Abendstart übernimmt alle aktiven** und lässt den Katalog
+  unverändert; die rotierenden bleiben aktiv bis zur nächsten Umstellung.
+- **Keine Korrektur am laufenden Abend** — ein gestarteter Abend behält
+  seine Liste.
+- **Keine Anzahl-Sperre** — die 10 werden von der Website übernommen.
+  Zur Kontrolle zeigt der Katalog «10 von 76 aktiv».
+- **Die Ziehung vom 16.10.2026 wird mitgeliefert**: diese 10 rotierenden
+  sind in den Startdaten aktiv — Fog, Boundless Realms, Smash!,
+  Commander Classic Win, The Sheriff is Near, Necropotence, Crumbling
+  Sanctuary, Endurance, Fateful Hour, Serial Killer.
+- **Der Abend friert eine Kopie ein:** beim Start kopiert der Abend
   Titel, Beschreibung, Punkte, Kategorie und Art seiner 25.
   Katalogänderungen wirken nur auf künftige Abende. Entfernen heisst
-  deaktivieren, nie löschen.
-- **Die Auswahl eines Abends bleibt immer änderbar**, auch nach der
-  Erfassung. Erfassungen zu einem entfernten Achievement fallen dann weg.
+  inaktiv stellen, nie löschen.
 - **Öffentliche Lese-Ansicht** (SPEC.md Abschnitt 8) zeigt beim
   laufenden Abend die 25 geltenden Achievements.
 
 - **Katalog als drei Tabellen im Stil von CRM-Listen**, umgeschaltet
   über Reiter mit Anzahl: Suche, Filter nach Art und Status, sortierbare
   Spalten, Titel und Beschreibung als getrennte Spalten, Bearbeiten per
-  Klick in die Zelle. Angelegt wird in einem Seitenpanel.
+  Klick in die Zelle, «Aktiv» als Schalter. Angelegt wird in einem
+  Seitenpanel.
 
 **Zu beachten:**
 - Die Art (pro Match, pro Abend, am Ende der Liga) folgt aus der
   Kategorie, mit Evergreen als einziger Ausnahme. Damit die Ausnahme
   nicht im Code steckt, wird die Art als eigenes Feld gespeichert und
   beim Mitliefern aus der Kategorie vorbelegt.
-- Schema-Änderung (Katalog, Abend-Kopie, Auswahl für den nächsten
-  Abend), additiv.
+- Schema-Änderung (Katalog, Abend-Kopie), additiv.
   Migration vor dem Merge in Produktion einspielen.
 
 **Nächster Schritt:** Die Abendend-Erfassung (Eintrag oben), erfasst
