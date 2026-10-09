@@ -42,7 +42,7 @@ const collator = new Intl.Collator("de-CH", { sensitivity: "base" });
 
 /** Eingabefelder bleiben bei 16px (iOS-Zoom, siehe globals.css). */
 const CELL_INPUT =
-  "w-full rounded border border-blue-500 bg-background px-2 py-1.5 outline-none";
+  "block w-full bg-background px-3 py-2.5 outline-none ring-2 ring-inset ring-blue-500";
 
 function SortIcon({ direction }: { direction: "asc" | "desc" | null }) {
   return (
@@ -160,7 +160,7 @@ function CellEditor({
     return (
       <textarea
         autoFocus
-        rows={3}
+        rows={Math.max(2, text.split("\n").length)}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => commit(text)}
@@ -340,7 +340,7 @@ export default function AchievementTable({
                 : "descending"
               : "none"
         }
-        className={`sticky top-0 z-10 border-b border-white/10 bg-background px-3 py-2 font-medium ${className}`}
+        className={`sticky top-0 z-10 border-b border-white/10 bg-background px-3 py-2.5 align-middle ${className}`}
       >
         {key === null ? (
           label
@@ -348,7 +348,7 @@ export default function AchievementTable({
           <button
             type="button"
             onClick={() => toggleSort(key)}
-            className={`inline-flex min-h-8 items-center gap-1.5 ${
+            className={`inline-flex items-center gap-1.5 ${
               className.includes("text-right") ? "flex-row-reverse" : ""
             }`}
           >
@@ -369,7 +369,7 @@ export default function AchievementTable({
   ) {
     const isEditing = editing?.id === a.id && editing.column === column;
     return (
-      <td className={`border-b border-white/5 px-1.5 py-1.5 align-top ${className}`}>
+      <td className={`border-b border-white/5 p-0 align-middle ${className}`}>
         {isEditing ? (
           <CellEditor
             column={column}
@@ -381,7 +381,7 @@ export default function AchievementTable({
           <button
             type="button"
             onClick={() => setEditing({ id: a.id, column })}
-            className={`block min-h-9 w-full rounded border border-transparent px-1.5 py-1.5 text-left hover:border-white/20 focus-visible:border-blue-500 focus-visible:outline-none ${
+            className={`block min-h-11 w-full px-3 py-2.5 text-left outline-none ring-inset hover:ring-1 hover:ring-white/20 focus-visible:ring-2 focus-visible:ring-blue-500 ${
               className.includes("text-right") ? "text-right" : ""
             }`}
           >
@@ -513,11 +513,11 @@ export default function AchievementTable({
         <table className="w-full min-w-[820px] border-separate border-spacing-0 text-sm">
           <thead className="text-left">
             <tr>
-              {header("title", "Titel", "sticky left-0 z-20 w-56")}
+              {header(null, "Aktiv", "sticky left-0 z-20 w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem]")}
+              {header("title", "Titel", "sticky left-[4.5rem] z-20 w-56")}
               {header(null, "Beschreibung")}
               {header("scope", "Art", "w-44")}
               {header("points", "Punkte", "w-24 text-right")}
-              {header(null, "Aktiv", "w-28")}
             </tr>
           </thead>
           <tbody>
@@ -528,6 +528,33 @@ export default function AchievementTable({
                   a.active ? "" : "text-white/50"
                 }`}
               >
+                {/* Schalter zuerst: nach einer Ziehung werden genau hier
+                    die neuen 10 umgestellt. Fixiert wie die Titelspalte. */}
+                <td
+                  className="sticky left-0 z-[1] w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem] border-b border-white/5 bg-background px-3 py-2.5 align-middle transition-colors group-hover:bg-surface"
+                >
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={a.active}
+                    aria-label={`${a.title} aktiv`}
+                    title={a.active ? "Aktiv" : "Inaktiv"}
+                    onClick={() => commit(a, { active: !a.active })}
+                    className="flex items-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                  >
+                    <span
+                      className={`relative inline-block h-6 w-11 shrink-0 rounded-full transition-colors ${
+                        a.active ? "bg-green-600" : "bg-white/20"
+                      }`}
+                    >
+                      <span
+                        className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          a.active ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </span>
+                  </button>
+                </td>
                 {/* Fixierte Titelspalte braucht einen deckenden Hintergrund,
                     sonst scheinen beim seitlichen Scrollen andere Spalten
                     durch. */}
@@ -535,7 +562,7 @@ export default function AchievementTable({
                   a,
                   "title",
                   <span className="font-medium">{a.title}</span>,
-                  "sticky left-0 bg-background group-hover:bg-surface",
+                  "sticky left-[4.5rem] z-[1] bg-background group-hover:bg-surface",
                 )}
                 {cell(
                   a,
@@ -556,31 +583,6 @@ export default function AchievementTable({
                   </span>,
                   "text-right",
                 )}
-                <td className="border-b border-white/5 px-3 py-1.5 align-top">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={a.active}
-                    aria-label={`${a.title} aktiv`}
-                    onClick={() => commit(a, { active: !a.active })}
-                    className="flex min-h-9 items-center gap-2 text-white"
-                  >
-                    <span
-                      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-                        a.active ? "bg-green-600" : "bg-white/20"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-                          a.active ? "translate-x-4" : "translate-x-0.5"
-                        }`}
-                      />
-                    </span>
-                    <span className={a.active ? "" : "opacity-50"}>
-                      {a.active ? "Aktiv" : "Inaktiv"}
-                    </span>
-                  </button>
-                </td>
               </tr>
             ))}
           </tbody>
