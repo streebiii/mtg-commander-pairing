@@ -95,9 +95,10 @@ export function eveningCopy(
 
 /**
  * Übernimmt beim Start eines Liga-Abends die geltenden Achievements: alle
- * aktiven fixen und Deckbau-Achievements plus die vorgemerkte Auswahl der
- * rotierenden. Die Vormerkung wird danach geleert — die nächste Auswahl
- * entsteht erst am Ende dieses Abends (siehe BACKLOG.md).
+ * aktiven fixen und Deckbau-Achievements plus die aktiven rotierenden aus
+ * der Auswahl für den nächsten Liga-Abend. Die Auswahl wird danach
+ * geleert (auch Häkchen an deaktivierten) — die nächste entsteht erst am
+ * Ende dieses Abends, wenn mtgbl.ch neu zieht (siehe SPEC.md 11.2).
  */
 export async function adoptAchievementsForEvening(
   tx: Prisma.TransactionClient,

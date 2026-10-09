@@ -279,18 +279,18 @@ automatisch, dazu 10 rotierende, die du aus dem Katalog auswählst.
   für Spätere wird bei Bedarf bei der Erfassung korrigiert. Alle übrigen
   rotierenden zählen «1x pro Match», wie auf dem Punkteblatt vom
   22.05.2026.
-- **Eine «nächste Auswahl»:** im Achievements-Tab gibt es genau ein
-  vorgemerktes Set von rotierenden, ausgewählt durch **Ankreuzen aus der
-  Liste**. Beim Start des nächsten Liga-Abends wird es übernommen und
-  danach geleert. Gepflegt wird es **nur im Achievements-Tab** — der
+- **Eine Auswahl für den nächsten Liga-Abend:** im Achievements-Tab
+  gibt es genau ein Set von rotierenden für den nächsten Abend,
+  ausgewählt durch **Ankreuzen aus der Liste**. Beim Start des nächsten
+  Liga-Abends wird es übernommen und danach geleert. Gepflegt wird es **nur im Achievements-Tab** — der
   Schritt «Abend beenden» bleibt unverändert.
-- **Ein Abend ohne vorgemerkte Auswahl kommt im Ablauf nicht vor**
+- **Ein Abend ohne Auswahl für ihn kommt im Ablauf nicht vor**
   (die 10 werden immer am Ende des Vorabends festgelegt). Keine Sperre
   und kein Sonderfall beim Abendstart nötig.
 - **Keine Anzahl-Prüfung** beim Ankreuzen — die 10 werden von der
   Website übernommen, ein Zähler oder eine Sperre bringt nichts.
-- **Die Ziehung vom 16.10.2026 wird mitgeliefert** als erste «nächste
-  Auswahl»: Fog, Boundless Realms, Smash!, Commander Classic Win, The
+- **Die Ziehung vom 16.10.2026 wird mitgeliefert** als erste Auswahl
+  für den nächsten Liga-Abend: Fog, Boundless Realms, Smash!, Commander Classic Win, The
   Sheriff is Near, Necropotence, Crumbling Sanctuary, Endurance,
   Fateful Hour, Serial Killer.
 - **Der Abend friert eine Kopie ein:** beim Übernehmen kopiert der Abend
@@ -312,7 +312,8 @@ automatisch, dazu 10 rotierende, die du aus dem Katalog auswählst.
   Kategorie, mit Evergreen als einziger Ausnahme. Damit die Ausnahme
   nicht im Code steckt, wird die Art als eigenes Feld gespeichert und
   beim Mitliefern aus der Kategorie vorbelegt.
-- Schema-Änderung (Katalog, Abend-Kopie, nächste Auswahl), additiv.
+- Schema-Änderung (Katalog, Abend-Kopie, Auswahl für den nächsten
+  Abend), additiv.
   Migration vor dem Merge in Produktion einspielen.
 
 **Nächster Schritt:** Die Abendend-Erfassung (Eintrag oben), erfasst

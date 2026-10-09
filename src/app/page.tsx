@@ -173,7 +173,10 @@ export default async function Home() {
                           </span>
                         )}
                         {a.description && (
-                          <span className="opacity-70"> — {a.description}</span>
+                          <span className="whitespace-pre-line opacity-70">
+                            {" "}
+                            — {a.description}
+                          </span>
                         )}
                       </span>
                     </li>

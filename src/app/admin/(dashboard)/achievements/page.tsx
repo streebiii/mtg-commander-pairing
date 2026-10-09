@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 
 // Achievement-Katalog der Liga und Auswahl der rotierenden (siehe SPEC.md
 // Abschnitt 11). Die Ziehung macht mtgbl.ch — hier wird sie nur
-// übernommen: vorgemerkt für den nächsten Abend und, solange einer läuft,
-// für den laufenden Abend korrigierbar.
+// übernommen: als Auswahl für den nächsten Liga-Abend und, solange einer
+// läuft, für den laufenden Abend korrigierbar.
 export default async function AchievementsPage() {
   const [achievements, runningEvening] = await Promise.all([
     prisma.achievement.findMany({
@@ -51,7 +51,8 @@ export default async function AchievementsPage() {
             Rotierende für den laufenden Abend
           </h2>
           <p className="text-xs opacity-70">
-            Wurden beim Start des Abends aus der Vormerkung übernommen.
+            Wurden beim Start des Abends aus der Auswahl für den nächsten
+            Liga-Abend übernommen.
             Änderungen gelten nur für diesen Abend.
           </p>
           <RotatingSelection

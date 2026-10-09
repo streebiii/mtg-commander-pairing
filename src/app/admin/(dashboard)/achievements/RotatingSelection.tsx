@@ -11,7 +11,7 @@ interface RotatingOption {
   points: number;
 }
 
-/** Wohin ein Häkchen speichert: Vormerkung für den nächsten Abend oder ein laufender Abend. */
+/** Wohin ein Häkchen speichert: Auswahl für den nächsten Liga-Abend oder ein laufender Abend. */
 type Target = { kind: "next" } | { kind: "evening"; eveningId: string };
 
 /**
@@ -22,7 +22,10 @@ type Target = { kind: "next" } | { kind: "evening"; eveningId: string };
  *
  * Der Ankreuz-Zustand wird lokal geführt und sofort umgeschaltet, damit
  * schnelles Antippen mehrerer Kacheln nicht auf jede Server-Antwort warten
- * muss. Das Suchfeld filtert nur die Anzeige.
+ * muss. Sobald keine Speicherung mehr läuft, übernimmt er wieder den Stand
+ * des Servers — sonst könnte eine Kachel etwas anderes zeigen als die
+ * Datenbank, z.B. nach Änderungen im Katalog. Das Suchfeld filtert nur die
+ * Anzeige.
  */
 export default function RotatingSelection({
   options,
@@ -37,7 +40,14 @@ export default function RotatingSelection({
     () => new Set(selectedIds),
   );
   const [query, setQuery] = useState("");
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+
+  const serverKey = [...selectedIds].sort().join(",");
+  const [syncedKey, setSyncedKey] = useState(serverKey);
+  if (!isPending && serverKey !== syncedKey) {
+    setSyncedKey(serverKey);
+    setSelected(new Set(selectedIds));
+  }
 
   function toggle(id: string) {
     const isSelected = !selected.has(id);
@@ -121,7 +131,9 @@ export default function RotatingSelection({
                   {formatPoints(o.points)}
                 </span>
               </span>
-              <span className="text-xs opacity-60">{o.description}</span>
+              <span className="whitespace-pre-line text-xs opacity-60">
+                {o.description}
+              </span>
             </span>
           </label>
         ))}

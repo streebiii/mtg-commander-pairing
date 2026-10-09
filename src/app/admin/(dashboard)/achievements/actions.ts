@@ -15,6 +15,16 @@ function revalidateAchievementViews() {
   revalidatePath("/");
 }
 
+/**
+ * Formulare übertragen Zeilenumbrüche als CRLF — einheitlich als LF
+ * speichern, damit Vergleiche und Anzeige nicht davon abhängen.
+ */
+function parseText(value: FormDataEntryValue | null): string {
+  return String(value ?? "")
+    .replace(/\r\n?/g, "\n")
+    .trim();
+}
+
 function parsePoints(value: FormDataEntryValue | null): number | null {
   const points = Number.parseInt(String(value ?? "").trim(), 10);
   return Number.isFinite(points) ? points : null;
@@ -27,8 +37,8 @@ function parsePoints(value: FormDataEntryValue | null): number | null {
 export async function createAchievement(
   formData: FormData,
 ): Promise<string | null> {
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
+  const title = parseText(formData.get("title"));
+  const description = parseText(formData.get("description"));
   const points = parsePoints(formData.get("points"));
   const category = parseCategory(formData.get("category"));
   if (!title || points === null || category === null) return null;
@@ -58,13 +68,15 @@ export async function createAchievement(
 /**
  * Auto-Save einer Katalogzeile. Wirkt nur auf künftige Abende — laufende
  * und vergangene tragen ihre eigene Kopie (siehe SPEC.md Abschnitt 11).
- * Wer deaktiviert wird, fällt auch aus der Vormerkung für den nächsten
- * Abend, sonst würde er dort unsichtbar weiter mitgezählt.
+ * Deaktivieren lässt ein Häkchen in der Auswahl für den nächsten
+ * Liga-Abend bewusst stehen: wird das Achievement vor dem Abendstart
+ * wieder aktiviert, ist es wieder dabei; bleibt es deaktiviert, übernimmt
+ * der Abendstart es ohnehin nicht.
  */
 export async function updateAchievement(formData: FormData) {
   const id = String(formData.get("id") ?? "");
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
+  const title = parseText(formData.get("title"));
+  const description = parseText(formData.get("description"));
   const points = parsePoints(formData.get("points"));
   const scope = parseScope(formData.get("scope"));
   const active = formData.get("active") === "true";
@@ -79,13 +91,12 @@ export async function updateAchievement(formData: FormData) {
       points,
       scope,
       active,
-      ...(active ? {} : { nextSelected: false }),
     },
   });
   revalidateAchievementViews();
 }
 
-/** Nimmt ein rotierendes Achievement in die Auswahl für den nächsten Abend auf oder heraus. */
+/** Nimmt ein rotierendes Achievement in die Auswahl für den nächsten Liga-Abend auf oder heraus. */
 export async function setNextSelected(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const selected = formData.get("selected") === "true";

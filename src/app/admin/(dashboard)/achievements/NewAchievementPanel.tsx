@@ -40,6 +40,7 @@ export default function NewAchievementPanel({
   const [scope, setScope] = useState<AchievementScope>(
     DEFAULT_SCOPE[initialCategory],
   );
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const titleInput = useRef<HTMLInputElement>(null);
   // Über eine Ref, damit der Effekt nur beim Öffnen läuft.
@@ -65,6 +66,12 @@ export default function NewAchievementPanel({
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    // Ein Titel nur aus Leerzeichen kommt am Browser-Pflichtfeld vorbei.
+    if (!title.trim()) {
+      setError("Bitte einen Titel eingeben.");
+      titleInput.current?.focus();
+      return;
+    }
     const fd = new FormData();
     fd.set("title", title);
     fd.set("description", description);
@@ -74,6 +81,7 @@ export default function NewAchievementPanel({
     startTransition(async () => {
       const id = await createAchievement(fd);
       if (id) onClose();
+      else setError("Konnte nicht angelegt werden — Titel und Punkte prüfen.");
     });
   }
 
@@ -115,9 +123,23 @@ export default function NewAchievementPanel({
               type="text"
               required
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setError(null);
+              }}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? "new-achievement-error" : undefined}
               className={INPUT}
             />
+            {error && (
+              <span
+                id="new-achievement-error"
+                role="alert"
+                className="text-xs text-red-400"
+              >
+                {error}
+              </span>
+            )}
           </label>
 
           <label className="flex flex-col gap-1.5">

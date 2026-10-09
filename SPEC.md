@@ -631,19 +631,31 @@ Katalog im Tab **«Achievements»**.
   sie zum Eingabefeld, Enter oder Verlassen speichert, Esc verwirft.
   Angelegt wird in einem Seitenpanel mit ausdrücklichem «Anlegen».
 - Achievements werden nie gelöscht, nur deaktiviert. Deaktivierte gelten
-  an künftigen Abenden nicht mehr und fallen aus der Vormerkung.
+  an künftigen Abenden nicht mehr. Ein Häkchen in der Auswahl für den
+  nächsten Liga-Abend bleibt beim Deaktivieren stehen (unsichtbar); wird
+  das Achievement vor dem Abendstart wieder aktiviert, ist es wieder
+  angekreuzt.
 - Die Startdaten (Stand 08.10.2026: 6 fixe, 9 Deckbau, 76 rotierende)
   stammen einmalig von der Website; danach wird nur in der App gepflegt.
 
 ### 11.2 Auswahl der rotierenden
 
-- Die **Ziehung macht mtgbl.ch** am Ende eines Abends für den nächsten.
-  Im Achievements-Tab werden die gezogenen durch Ankreuzen als **nächste
-  Auswahl** vorgemerkt — ohne Zähler oder Sperre, weil die Auswahl
-  übernommen und nicht hier entschieden wird.
-- Beim **Start eines Liga-Abends** übernimmt der Abend alle aktiven fixen
-  und Deckbau-Achievements plus die vorgemerkten rotierenden, in derselben
-  Transaktion wie Abend und Runde 1. Die Vormerkung wird danach geleert.
+Ablauf vom Ende eines Liga-Abends bis zum Start des nächsten:
+
+1. **Abend beenden** im Liga-Tab. Die 25 Achievements des Abends bleiben
+   bei ihm gespeichert.
+2. **mtgbl.ch zieht** die 10 rotierenden für den nächsten Abend und
+   veröffentlicht sie (ausserhalb der App).
+3. Im Achievements-Tab, Abschnitt **«Rotierende für den nächsten
+   Abend»**, werden die 10 angekreuzt — die **Auswahl für den nächsten
+   Liga-Abend**. Jedes Häkchen speichert sofort, die Auswahl bleibt bis
+   zum Abendstart änderbar. Ohne Zähler oder Sperre, weil sie übernommen
+   und nicht hier entschieden wird.
+4. Beim **Start des nächsten Liga-Abends** übernimmt der Abend, in
+   derselben Transaktion wie Abend und Runde 1, alle aktiven fixen und
+   Deckbau-Achievements plus die aktiven angekreuzten rotierenden
+   (normalerweise 6 + 9 + 10 = 25). Danach werden alle Häkchen der
+   Auswahl entfernt; der Abschnitt ist leer bis zur nächsten Ziehung.
 - Der Abend speichert eine **eingefrorene Kopie** (Titel, Beschreibung,
   Punkte, Kategorie, Art). Spätere Katalogänderungen wirken nur
   auf künftige Abende.

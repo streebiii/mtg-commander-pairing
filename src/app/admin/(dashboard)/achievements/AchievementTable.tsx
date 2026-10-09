@@ -292,12 +292,18 @@ export default function AchievementTable({
     setStatus("active");
   }
 
+  /**
+   * Klickfolge je Spalte: erste Richtung, umgekehrte Richtung, zurück zur
+   * Standardreihenfolge. Punkte beginnen absteigend (höchste zuerst), die
+   * übrigen aufsteigend.
+   */
   function toggleSort(key: SortKey) {
+    const first = key === "points" ? "desc" : "asc";
     setSort((prev) =>
       prev.key !== key
-        ? { key, dir: key === "points" ? "desc" : "asc" }
-        : prev.dir === "asc"
-          ? { key, dir: "desc" }
+        ? { key, dir: first }
+        : prev.dir === first
+          ? { key, dir: first === "asc" ? "desc" : "asc" }
           : { key: "default", dir: "asc" },
     );
   }
@@ -528,7 +534,11 @@ export default function AchievementTable({
                 {cell(
                   a,
                   "description",
-                  a.description || <span className="opacity-40">—</span>,
+                  a.description ? (
+                    <span className="whitespace-pre-line">{a.description}</span>
+                  ) : (
+                    <span className="opacity-40">—</span>
+                  ),
                   "min-w-72",
                 )}
                 {cell(a, "scope", SCOPE_LABELS[a.scope], "whitespace-nowrap")}

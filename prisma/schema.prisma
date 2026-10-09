@@ -188,8 +188,9 @@ model Achievement {
   /// Deaktivierte Achievements erscheinen nicht mehr in der Auswahl und
   /// werden bei neuen Abenden nicht übernommen.
   active      Boolean             @default(true)
-  /// Gehört zur vorgemerkten Auswahl der rotierenden für den nächsten
+  /// Angekreuzt in der Auswahl der rotierenden für den nächsten
   /// Liga-Abend. Wird beim Start des Abends übernommen und geleert.
+  /// Bleibt beim Deaktivieren stehen; übernommen werden nur aktive.
   nextSelected Boolean            @default(false)
   /// Reihenfolge wie auf mtgbl.ch, innerhalb der Kategorie.
   sortOrder   Int                 @default(0)

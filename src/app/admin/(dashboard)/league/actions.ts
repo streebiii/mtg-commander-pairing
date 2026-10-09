@@ -97,7 +97,8 @@ export async function startEvening(formData: FormData) {
   // bei einem Fehler zwischen den beiden Schritten ein Abend ohne jede
   // Runde zurück, der die Liga-Seite dauerhaft zum Absturz bringt. Die
   // geltenden Achievements gehören mit in dieselbe Transaktion, sonst
-  // wäre die Vormerkung bei einem Fehler geleert, ohne übernommen zu sein.
+  // wäre die Auswahl für den nächsten Abend bei einem Fehler geleert, ohne
+  // übernommen zu sein.
   await prisma.$transaction(async (tx) => {
     const evening = await tx.evening.create({ data: { mode: "LEAGUE" } });
     await createRoundInDb(tx, evening.id, 1, tables);
