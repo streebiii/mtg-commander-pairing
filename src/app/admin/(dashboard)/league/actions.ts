@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/adminGuard";
 import { assignLeagueRound } from "@/lib/pairing/leagueAssignment";
 import { rankValues } from "@/lib/pairing/leagueRanking";
 import {
@@ -24,6 +25,7 @@ const MAX_ROUNDS = 2;
  * Spieler-Tab (siehe SPEC.md Abschnitt 6.3).
  */
 export async function updateLeaguePlayer(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const pointsRaw = String(formData.get("points") ?? "").trim();
   const points = Number.parseInt(pointsRaw, 10);
@@ -73,6 +75,7 @@ async function createRoundInDb(
 
 /** Startet einen neuen Liga-Abend (Modus B) mit Runde 1. */
 export async function startEvening(formData: FormData) {
+  await requireAdmin();
   const playerIds = formData.getAll("playerIds").map(String);
   if (playerIds.length < 3) return;
 
@@ -138,6 +141,7 @@ export async function startEvening(formData: FormData) {
  * der Tisch gilt danach wieder als "noch nicht erfasst".
  */
 export async function setTableResult(formData: FormData) {
+  await requireAdmin();
   const tableId = String(formData.get("tableId") ?? "");
   const winnerAssignmentId = String(formData.get("winnerAssignmentId") ?? "");
   if (!tableId) return;
@@ -202,6 +206,7 @@ export async function setTableResult(formData: FormData) {
  * Gepaart wird nach dem Sieg aus Runde 1, nicht nach dem Saisonstand.
  */
 export async function startNextRound(formData: FormData) {
+  await requireAdmin();
   const eveningId = String(formData.get("eveningId") ?? "");
   if (!eveningId) return;
 
@@ -266,6 +271,7 @@ export async function startNextRound(formData: FormData) {
  * ggf. schon Ergebnisse dran, und die Spieler kennen ihren Tisch bereits.
  */
 export async function regenerateRound(formData: FormData) {
+  await requireAdmin();
   const roundId = String(formData.get("roundId") ?? "");
   if (!roundId) return;
 
@@ -354,6 +360,7 @@ export async function regenerateRound(formData: FormData) {
  * korrigieren — ein seltener Sonderfall, kein neues Verhalten.
  */
 export async function swapPlayers(formData: FormData) {
+  await requireAdmin();
   const assignmentAId = String(formData.get("assignmentAId") ?? "");
   const assignmentBId = String(formData.get("assignmentBId") ?? "");
   if (!assignmentAId || !assignmentBId || assignmentAId === assignmentBId) return;
@@ -415,6 +422,7 @@ export async function swapPlayers(formData: FormData) {
  * Spieler sie sehen.
  */
 export async function publishRound(formData: FormData) {
+  await requireAdmin();
   const roundId = String(formData.get("roundId") ?? "");
   if (!roundId) return;
 
@@ -440,6 +448,7 @@ export async function publishRound(formData: FormData) {
 
 /** Beendet den aktuellen Liga-Abend (keine weiteren Runden mehr möglich). */
 export async function finishEvening(formData: FormData) {
+  await requireAdmin();
   const eveningId = String(formData.get("eveningId") ?? "");
   if (!eveningId) return;
 

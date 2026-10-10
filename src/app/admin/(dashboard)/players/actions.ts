@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/adminGuard";
 import { parseSkillLevel } from "@/lib/players";
 
 /** Beide Tabs zeigen Spielerdaten — nach Änderungen immer beide auffrischen. */
@@ -12,6 +13,7 @@ function revalidatePlayerViews() {
 }
 
 export async function createPlayer(formData: FormData) {
+  await requireAdmin();
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
   const skillLevel = parseSkillLevel(formData.get("skillLevel"));
@@ -29,6 +31,7 @@ export async function createPlayer(formData: FormData) {
 }
 
 export async function updatePlayer(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
@@ -56,6 +59,7 @@ export async function updatePlayer(formData: FormData) {
  *   sonst zerreisst es die Tische des laufenden Abends.
  */
 export async function deletePlayer(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
