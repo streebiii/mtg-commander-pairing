@@ -99,6 +99,13 @@ export async function startEvening(formData: FormData) {
   // geltenden Achievements gehören mit in dieselbe Transaktion, damit es
   // keinen Abend ohne seine Achievements gibt.
   await prisma.$transaction(async (tx) => {
+    // Eine noch offene Erfassung eines früheren Abends wird geschlossen:
+    // es gibt immer nur eine offene Erfassung, sonst wäre die alte in der
+    // Übersicht nicht mehr erreichbar (siehe SPEC.md Abschnitt 12).
+    await tx.evening.updateMany({
+      where: { mode: "LEAGUE", entryClosedAt: null },
+      data: { entryClosedAt: new Date() },
+    });
     const evening = await tx.evening.create({ data: { mode: "LEAGUE" } });
     await createRoundInDb(tx, evening.id, 1, tables);
     await adoptAchievementsForEvening(tx, evening.id);
@@ -110,6 +117,7 @@ export async function startEvening(formData: FormData) {
 
   revalidatePath("/admin/league");
   revalidatePath("/admin/achievements");
+  revalidatePath("/admin/erfassung");
   revalidatePath("/");
 }
 

@@ -578,9 +578,9 @@ bestätigt den Vorgang. Gilt für beide Tabs.
 
 - Kein Multi-User/Rollenmodell.
 - Keine Ziehung der rotierenden Achievements in der App — die macht
-  mtgbl.ch, die App übernimmt sie nur (Abschnitt 11). Die Erfassung der
-  erreichten Achievements am Abendende ist geplant (BACKLOG.md), aber noch
-  nicht umgesetzt.
+  mtgbl.ch, die App übernimmt sie nur (Abschnitt 11). Die erreichten
+  Achievements erfassen die Spieler selbst (Abschnitt 12); eine
+  Rangliste in der App ist geplant (BACKLOG.md).
 - Kein automatischer Import/Sync mit mtgbl.ch.
 - Keine saisonübergreifende Rematch-Vermeidung.
 - Keine Sonderbehandlung für „zu wenige Spieler" (< 3 anwesend) — tritt
@@ -663,3 +663,65 @@ erst auf den nächsten Abend, auch während ein Abend läuft.
 
 Während ein Liga-Abend läuft, zeigt die öffentliche Lese-Ansicht unter den
 Tischen die geltenden Achievements des Abends, nach Kategorie gruppiert.
+
+## 12. Achievement-Erfassung durch die Spieler
+
+Die Spieler erfassen ihre Achievements am Liga-Abend selbst auf dem Handy.
+Der Papierzettel bleibt als Rückfall: wer kein Handy nutzt, gibt ihn ab,
+und der Organisator erfasst für ihn.
+
+### 12.1 Anmeldung über Tischkarten
+
+- Im Organisator-Bereich unter **Erfassung → Tischkarten drucken** gibt
+  es eine Druckvorlage mit QR-Codes für **Tisch 1–6** (Drucken → «Als PDF
+  sichern» ergibt das PDF). Die Karten werden einmal gedruckt und bleiben
+  gültig: der QR-Code enthält nur `/tisch/<nr>`, nicht den Abend.
+- Die Tischseite zeigt die Spieler, die in der **aktuellen
+  veröffentlichten Runde** an diesem Tisch sitzen. Ein Antippen meldet das
+  Handy für diesen Namen an. Es braucht kein Konto und keinen Code.
+- Das Handy bekommt ein zufälliges Token als Cookie (14 Tage gültig), in
+  der Datenbank steht nur dessen Hash. **Ein Name pro Handy und Abend**,
+  und ein angemeldeter Name ist für andere Handys gesperrt. Der
+  Organisator kann ihn freigeben («Handy freigeben»), die Einträge bleiben
+  dabei erhalten. Die Anmeldung ist atomar: tippen zwei Handys
+  gleichzeitig denselben Namen an, gewinnt eines.
+- Die Tischkarten sind dauerhaft und damit nicht geheim. Schutz bieten
+  die Beschränkung auf die Spieler des Tisches, die Namenssperre und die
+  Prüfung durch den Organisator. Eine Tischseite funktioniert nur, solange
+  eine Erfassung offen ist.
+
+### 12.2 Erfassungsblatt
+
+- Für jedes gespielte Spiel (Runde 1, Runde 2) gibt es die fixen und
+  rotierenden Achievements mit Art «1x pro Match» oder «pro Spieler»,
+  darunter **Ganzer Abend** mit allem, was einmal pro Abend zählt
+  (Deckbau, «mehrmals pro Abend»). «1x am Ende der Liga» (Evergreen)
+  erscheint nur am letzten Abend der Saison.
+- Mehrfach zählende Achievements («pro Spieler», «mehrmals pro Abend»)
+  haben ein Anzahl-Feld (− / +, höchstens 20), alle anderen ein Häkchen.
+- **Participation** setzt die App für jedes gespielte Spiel automatisch,
+  es ist nicht änderbar. «Winner winner» trägt der Spieler selbst ein.
+- Oben steht die laufende Summe mit Teilsummen **Core / Deckbau /
+  Rotate**, wie auf dem Punkteblatt. Jede Änderung speichert sofort.
+- Grundlage sind die eingefrorenen Achievements des Abends (Abschnitt
+  11.2). Der Server prüft jede Änderung: Das Achievement muss zum Abend
+  gehören, das Spiel muss gespielt sein, und die Anzahl muss erlaubt sein.
+- **Abgeben** (mit Rückfrage) sperrt das Blatt für den Spieler.
+
+### 12.3 Organisator
+
+- Der Liga-Tab zeigt, solange eine Erfassung offen ist, den Hinweis
+  «Achievement-Erfassung offen» mit Anzahl der Abgaben. Er bleibt auch
+  nach «Abend beenden» stehen.
+- Unter **Erfassung** stehen alle Anwesenden mit Status (nicht
+  angemeldet / erfasst gerade / abgegeben) und Total. Pro Spieler gibt
+  es «Bearbeiten» (dasselbe Blatt, für Korrekturen und Papierzettel, mit
+  «Als abgegeben markieren»), «Wieder öffnen» und «Handy freigeben».
+- **Erfassung schliessen** (mit Rückfrage) beendet die Erfassung des
+  Abends. Danach können die Spieler nichts mehr ändern, und der Abend
+  zählt in der Rangliste. Startet ein neuer Liga-Abend, wird eine noch
+  offene Erfassung automatisch geschlossen. Es gibt immer nur eine
+  offene Erfassung.
+- Welcher Liga-Abend (1–6) ein Abend ist, leitet die App aus den
+  Terminen auf mtgbl.ch ab (`src/lib/season.ts`). Bei einer
+  Terminverschiebung muss die Liste angepasst werden.
