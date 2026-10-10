@@ -16,10 +16,11 @@ import {
 // Startseite ("/") — der Organisator-Bereich liegt unter /admin.
 //
 // Es läuft immer nur eines von beidem: entweder eine Casual-Zuteilung oder
-// ein Liga-Abend. Existiert eine Casual-Zuteilung, hat sie Vorrang; sie wird
-// über "Zurücksetzen" im Casual-Tab wieder entfernt, und das Starten eines
-// Liga-Abends verwirft sie ebenfalls. Spieler-Stufen tauchen hier nie auf
-// (siehe SPEC.md Abschnitt 6.1).
+// ein Liga-Abend. Gezeigt wird jeweils erst, was der Organisator live
+// geschaltet hat. Eine live geschaltete Casual-Zuteilung hat Vorrang; sie
+// verschwindet mit "Zurücksetzen", nach 24 Stunden oder wenn ein
+// Liga-Abend startet. Spieler-Stufen tauchen hier nie auf (siehe SPEC.md
+// Abschnitt 6.1).
 export const dynamic = "force-dynamic";
 
 interface DisplayAchievement {
@@ -38,7 +39,8 @@ interface DisplayTable {
 }
 
 export default async function Home() {
-  const casualTables = await getCasualPairing();
+  const casual = await getCasualPairing();
+  const casualTables = casual?.published ? casual.tables : [];
 
   let tables: DisplayTable[] = casualTables.map((t) => ({
     key: `casual-${t.tableNumber}`,
@@ -52,7 +54,7 @@ export default async function Home() {
 
   if (tables.length === 0) {
     const evening = await prisma.evening.findFirst({
-      where: { mode: "LEAGUE", finishedAt: null },
+      where: { finishedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
         achievements: {
@@ -125,7 +127,7 @@ export default async function Home() {
       {tables.length === 0 ? (
         <p className="text-sm opacity-70">
           Gerade sind keine Tische zugeteilt. Sobald der Organisator die
-          Zuteilung berechnet, erscheinen hier die aktuellen Tische.
+          Zuteilung freigibt, erscheinen hier die aktuellen Tische.
         </p>
       ) : (
         <div className="flex flex-wrap gap-5">

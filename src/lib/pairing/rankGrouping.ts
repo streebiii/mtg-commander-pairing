@@ -1,5 +1,6 @@
 import { shuffle } from "./shuffle";
 import { PairingError } from "./errors";
+import { dealIntoTables } from "./tableSizes";
 
 export interface ValuedEntity {
   id: string;
@@ -10,10 +11,9 @@ export interface ValuedEntity {
  * Sortiert Einheiten absteigend nach `value` (mit etwas Zufalls-Rauschen)
  * und teilt sie in Blöcke gemäß der übergebenen Tischgrößen ein.
  *
- * Gemeinsamer Kern für zwei Gruppierungs-Varianten:
- * - Modus B: Rang nach Liga-Punktestand (siehe leagueAssignment.ts)
- * - Modus A "nach Skill balanciert": Rang nach Skill-Level (siehe
- *   skillAssignment.ts)
+ * Grundlage der ausgewogenen Casual-Zuteilung (siehe skillAssignment.ts).
+ * Die Liga nutzt bewusst ein anderes Modell — Hälften mit zufälliger
+ * Verteilung darin (siehe leagueAssignment.ts und SPEC.md Abschnitt 4.2).
  *
  * @param entities Einheiten mit ihrem Sortier-Wert (Punkte, Skill, ...).
  * @param tableSizes Tischgrößen gemäß computeTableSizes, Summe muss der
@@ -45,13 +45,8 @@ export function groupByValueWithJitter(
     (a, b) => b.value + jitterOf.get(b.id)! - (a.value + jitterOf.get(a.id)!),
   );
 
-  // Größte Tische zuerst, für eine deterministische/lesbare Reihenfolge.
-  const orderedSizes = [...tableSizes].sort((a, b) => b - a);
-  const tables: string[][] = [];
-  let cursor = 0;
-  for (const size of orderedSizes) {
-    tables.push(sorted.slice(cursor, cursor + size).map((e) => e.id));
-    cursor += size;
-  }
-  return tables;
+  return dealIntoTables(
+    sorted.map((e) => e.id),
+    tableSizes,
+  );
 }

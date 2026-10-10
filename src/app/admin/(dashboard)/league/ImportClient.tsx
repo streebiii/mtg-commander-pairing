@@ -3,35 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PrimaryButton, SecondaryButton } from "@/components/Button";
+import { formatPlayerName } from "@/lib/players";
+import type { ExistingPlayer, ImportMatch } from "@/lib/playerMatch";
+import { applyImport, previewImport, type ImportResolution } from "./importActions";
 
-interface ExistingPlayer {
-  id: string;
-  firstName: string;
-  lastName: string | null;
-}
-
-type MatchType = "exact" | "ambiguous" | "new";
-
-interface BaseMatch {
-  importName: string;
-  total: number;
-  attendedEvenings: number;
-  matchType: MatchType;
-}
-interface ExactMatch extends BaseMatch {
-  matchType: "exact";
-  matchedPlayerId: string;
-}
-interface AmbiguousMatch extends BaseMatch {
-  matchType: "ambiguous";
-  candidates: ExistingPlayer[];
-}
-interface NewMatch extends BaseMatch {
-  matchType: "new";
-  suggestedFirstName: string;
-  suggestedLastName: string | null;
-}
-type Match = ExactMatch | AmbiguousMatch | NewMatch;
+type ExactMatch = Extract<ImportMatch, { matchType: "exact" }>;
+type NewMatch = Extract<ImportMatch, { matchType: "new" }>;
+type AmbiguousMatch = Extract<ImportMatch, { matchType: "ambiguous" }>;
 
 // Aufgelöste Entscheidung pro Zeile, editierbar durch den Organisator.
 interface Resolution {
@@ -41,10 +19,6 @@ interface Resolution {
   lastName?: string | null;
 }
 
-function playerName(p: ExistingPlayer): string {
-  return p.lastName ? `${p.firstName} ${p.lastName}` : p.firstName;
-}
-
 export default function ImportClient({
   existingPlayers,
 }: {
@@ -52,7 +26,7 @@ export default function ImportClient({
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
-  const [matches, setMatches] = useState<Match[] | null>(null);
+  const [matches, setMatches] = useState<ImportMatch[] | null>(null);
   const [resolutions, setResolutions] = useState<Resolution[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -64,21 +38,16 @@ export default function ImportClient({
     setResult(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/players/import/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Unbekannter Fehler");
+      const data = await previewImport(text);
+      if ("error" in data) {
+        setError(data.error);
         setMatches(null);
         return;
       }
       setMatches(data.matches);
-      setWarnings(data.warnings ?? []);
+      setWarnings(data.warnings);
       setResolutions(
-        (data.matches as Match[]).map((m): Resolution => {
+        data.matches.map((m): Resolution => {
           if (m.matchType === "exact") {
             return { action: "update", playerId: m.matchedPlayerId };
           }
@@ -93,7 +62,7 @@ export default function ImportClient({
         }),
       );
     } catch {
-      setError("Netzwerkfehler beim Parsen");
+      setError("Fehler beim Verarbeiten des Textes");
     } finally {
       setLoading(false);
     }
@@ -108,33 +77,28 @@ export default function ImportClient({
     setLoading(true);
     setError(null);
     try {
-      const payload = resolutions.map((r, i) => {
+      const payload = resolutions.map((r, i): ImportResolution => {
         const m = matches[i];
-        if (r.action === "skip") return { action: "skip" as const };
+        if (r.action === "skip") return { action: "skip" };
         if (r.action === "update") {
           return {
-            action: "update" as const,
+            action: "update",
             playerId: r.playerId!,
             total: m.total,
             attendedEvenings: m.attendedEvenings,
           };
         }
         return {
-          action: "create" as const,
+          action: "create",
           firstName: r.firstName!,
           lastName: r.lastName ?? null,
           total: m.total,
           attendedEvenings: m.attendedEvenings,
         };
       });
-      const res = await fetch("/api/admin/players/import/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resolutions: payload }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Unbekannter Fehler");
+      const data = await applyImport(payload);
+      if ("error" in data) {
+        setError(data.error);
         return;
       }
       setResult(
@@ -144,7 +108,7 @@ export default function ImportClient({
       setText("");
       router.refresh();
     } catch {
-      setError("Netzwerkfehler beim Anwenden");
+      setError("Fehler beim Anwenden des Imports");
     } finally {
       setLoading(false);
     }
@@ -206,7 +170,7 @@ export default function ImportClient({
                     {m.matchType === "exact" && (
                       <span>
                         Aktualisiert:{" "}
-                        {playerName(
+                        {formatPlayerName(
                           existingPlayers.find(
                             (p) => p.id === (m as ExactMatch).matchedPlayerId,
                           )!,
@@ -261,7 +225,7 @@ export default function ImportClient({
                         <option value="__new__">Als neuen Spieler anlegen</option>
                         {(m as AmbiguousMatch).candidates.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {playerName(c)} aktualisieren
+                            {formatPlayerName(c)} aktualisieren
                           </option>
                         ))}
                       </select>

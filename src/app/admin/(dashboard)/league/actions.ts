@@ -4,20 +4,11 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/adminGuard";
-import { assignLeagueRound } from "@/lib/pairing/leagueAssignment";
+import { assignLeagueRound, MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
 import { rankValues } from "@/lib/pairing/leagueRanking";
-import {
-  buildPreviousNonFourTablePlayers,
-  buildPreviousPairings,
-} from "@/lib/pairing/leagueHistory";
+import { loadEveningHistory } from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
 import { adoptAchievementsForEvening } from "@/lib/achievements";
-
-/**
- * Zwei Runden pro Liga-Abend — so steht es in den Liga-Regeln auf
- * mtgbl.ch ("Pro Liga-Abend werden zwei Spiele gespielt").
- */
-const MAX_ROUNDS = 2;
 
 /**
  * Auto-Save für die Liga-Verwaltung: Punktestand eines Spielers. Die
@@ -80,7 +71,7 @@ export async function startEvening(formData: FormData) {
   if (playerIds.length < 3) return;
 
   const active = await prisma.evening.findFirst({
-    where: { mode: "LEAGUE", finishedAt: null },
+    where: { finishedAt: null },
   });
   if (active) return; // es läuft bereits ein Abend — erst beenden
 
@@ -106,10 +97,10 @@ export async function startEvening(formData: FormData) {
     // es gibt immer nur eine offene Erfassung, sonst wäre die alte in der
     // Übersicht nicht mehr erreichbar (siehe SPEC.md Abschnitt 12).
     await tx.evening.updateMany({
-      where: { mode: "LEAGUE", entryClosedAt: null },
+      where: { entryClosedAt: null },
       data: { entryClosedAt: new Date() },
     });
-    const evening = await tx.evening.create({ data: { mode: "LEAGUE" } });
+    const evening = await tx.evening.create({ data: {} });
     await createRoundInDb(tx, evening.id, 1, tables);
     await adoptAchievementsForEvening(tx, evening.id);
   });
@@ -249,8 +240,8 @@ export async function startNextRound(formData: FormData) {
     select: { id: true, points: true, attendedEvenings: true },
   });
 
-  const previousPairings = await buildPreviousPairings(eveningId);
-  const wiederholteNichtVierer = await buildPreviousNonFourTablePlayers(eveningId);
+  const { previousPairings, wiederholteNichtVierer } =
+    await loadEveningHistory(eveningId);
   const tables = assignLeagueRound(
     rankValues(standings, sieger),
     previousPairings,
@@ -312,11 +303,7 @@ export async function regenerateRound(formData: FormData) {
       : [];
   const sieger = new Set(vorrunde.map((a) => a.playerId));
 
-  const previousPairings = await buildPreviousPairings(
-    round.eveningId,
-    round.number,
-  );
-  const wiederholteNichtVierer = await buildPreviousNonFourTablePlayers(
+  const { previousPairings, wiederholteNichtVierer } = await loadEveningHistory(
     round.eveningId,
     round.number,
   );

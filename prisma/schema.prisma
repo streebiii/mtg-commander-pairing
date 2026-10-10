@@ -17,8 +17,9 @@ model Player {
   /// Optional, da der Textimport der Liga-Rangliste manchmal nur einen
   /// Vornamen oder eine Initiale liefert (z.B. "Tyrone", "Marc S.").
   lastName     String?
-  /// Aktueller Gesamt-Liga-Punktestand (Saison). Wird nach jeder Modus-B-
-  /// Runde um die eingetragenen pointsAwarded erhöht. Modus A ändert dies nie.
+  /// Gesamt-Liga-Punktestand (Saison), Kopie des Standes von mtgbl.ch.
+  /// Kommt über den Import (oder manuell im Liga-Tab) und dient der
+  /// Paarung von Runde 1 (siehe SPEC.md Abschnitt 5). Casual ändert ihn nie.
   points       Int       @default(0)
   /// An wie vielen Liga-Abenden der Spieler teilgenommen hat, aus den
   /// Rundenspalten der importierten Rangliste gezaehlt. Die Paarung
@@ -26,10 +27,9 @@ model Player {
   /// sonst landet, wer Abende verpasst hat, systematisch an den unteren
   /// Tischen, unabhaengig von seiner Staerke (siehe SPEC.md 5.1).
   attendedEvenings Int   @default(0)
-  /// Subjektive Skill-Einstufung 0-5 (0 = unbekannt, 1 = blutiger Anfänger,
-  /// 5 = langjähriger Commander/Magic-Spieler). Nur für die skill-
-  /// balancierte Gruppierung in Modus A verwendet (siehe SPEC.md
-  /// Abschnitt 4.1), fließt nie in die Liga-Rangliste (Modus B) ein.
+  /// Subjektive Skill-Einstufung 0-3 (0 = noch nicht eingestuft), im UI
+  /// schlicht «Stufe». Nur für die ausgewogene Casual-Zuteilung verwendet
+  /// (siehe SPEC.md Abschnitt 4.2), fliesst nie in die Liga-Paarung ein.
   skillLevel   Int       @default(0)
   /// Nimmt der Spieler an der Liga (Modus B) teil? Rein zukunftsgerichtete
   /// Filterung der Auswahlliste für neue Liga-Abende — bestehende Abende/
@@ -51,13 +51,10 @@ model Player {
   @@map("players")
 }
 
-/// Ein Spielabend. mode unterscheidet Modus A (Casual) von Modus B (Liga).
-/// Modus-A-Abende dienen nur der Anzeige/aktuellen Zuteilung und fließen
-/// bewusst nicht in Saison-Statistiken oder Rematch-Vermeidung ein
-/// (siehe SPEC.md Abschnitt 4 und 9).
+/// Ein Liga-Abend. Casual-Abende kennen keine Abende, Runden oder Tische —
+/// ihre Zuteilung liegt allein in CasualSeat (siehe SPEC.md Abschnitt 4.3).
 model Evening {
   id         String      @id @default(cuid())
-  mode       EveningMode
   date       DateTime    @default(now())
   /// Gesetzt, sobald der Abend abgeschlossen ist (keine weiteren Runden mehr).
   finishedAt DateTime?
@@ -74,12 +71,8 @@ model Evening {
   @@map("evenings")
 }
 
-enum EveningMode {
-  CASUAL // Modus A
-  LEAGUE // Modus B
-}
-
-/// Eine Runde innerhalb eines Abends (bei Modus B bis zu 3, bei Modus A genau 1).
+/// Eine Runde innerhalb eines Liga-Abends (zwei pro Abend, siehe SPEC.md
+/// Abschnitt 5).
 model Round {
   id        String   @id @default(cuid())
   eveningId String
@@ -128,8 +121,7 @@ model TableAssignment {
   playerId String
   player   Player @relation(fields: [playerId], references: [id])
 
-  /// null, solange das Ergebnis noch nicht eingetragen wurde. Bei Modus A
-  /// bleibt dieses Feld immer null.
+  /// null, solange das Ergebnis noch nicht eingetragen wurde.
   ///
   /// Wird seit der Umstellung auf den Tischsieger nicht mehr befüllt: die
   /// Punkte entstehen erst bei der Erfassung am Abendende und wandern von
@@ -154,8 +146,9 @@ model TableAssignment {
 ///   Zurücksetzen löscht sie — kein Verlauf, keine Altlasten.
 /// - Sie zählt nicht als Abend-Teilnahme und blockiert deshalb auch nicht
 ///   das harte Löschen eines Spielers (siehe Abschnitt 6.2).
-/// - Sie existiert nur, damit die öffentliche Lese-Ansicht die Tische
-///   zeigen kann; ohne sie sähe sie niemand ausser dem Organisator.
+/// - Sie existiert vor allem, damit die öffentliche Lese-Ansicht die Tische
+///   zeigen kann — aber erst nach «Live schalten» (`publishedAt`), wie
+///   bei den Liga-Runden.
 model CasualSeat {
   id          String @id @default(cuid())
   /// Fortlaufende Tischnummer (1, 2, 3, ...) — nur für die Anzeige.
@@ -166,6 +159,10 @@ model CasualSeat {
   player      Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+  /// Gesetzt, sobald der Organisator die Zuteilung live geschaltet hat.
+  /// null = Warteraum: nur der Organisator sieht sie. Alle Zeilen einer
+  /// Zuteilung tragen denselben Wert.
+  publishedAt DateTime?
 
   @@unique([playerId])
   @@index([tableNumber])

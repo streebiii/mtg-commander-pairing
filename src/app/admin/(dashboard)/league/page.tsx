@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { formatPlayerName } from "@/lib/players";
+import TableCard from "@/components/TableCard";
+import { MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
 import { rankValues } from "@/lib/pairing/leagueRanking";
 import { startEvening } from "./actions";
 import EntryBanner from "./EntryBanner";
@@ -14,16 +16,13 @@ import RoundBoard from "./RoundBoard";
 
 export const dynamic = "force-dynamic";
 
-// Zwei Spiele pro Liga-Abend, so steht es in den Regeln auf mtgbl.ch.
-const MAX_ROUNDS = 2;
-
 export default async function LeaguePage() {
   // Unabhängige Top-Level-Abfragen parallel starten statt nacheinander zu
   // warten — spart bei jedem Seitenaufbau (auch nach jeder Aktion durch
   // revalidatePath) eine volle Round-Trip-Latenz zur DB.
   const [eveningResult, allPlayers] = await Promise.all([
     prisma.evening.findFirst({
-      where: { mode: "LEAGUE", finishedAt: null },
+      where: { finishedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
         rounds: {
@@ -215,7 +214,7 @@ export default async function LeaguePage() {
 
               <details className="text-xs opacity-70">
                 <summary className="cursor-pointer">
-                  Rangfolge zur Kontrolle (Paarungs-Basis, ohne Zufalls-Rauschen)
+                  Rangfolge zur Kontrolle (Basis der Teilung in eine obere und eine untere Hälfte)
                 </summary>
                 <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
                   {ranked.map((r, i) => (
@@ -251,13 +250,11 @@ export default async function LeaguePage() {
             ) : (
               <div className="flex flex-wrap gap-4">
                 {round.tables.map((table) => (
-                  <div
+                  <TableCard
                     key={table.id}
-                    className="w-full rounded border border-white/20 p-3 sm:w-64"
+                    tableNumber={table.tableNumber}
+                    size={table.size}
                   >
-                    <div className="mb-2 text-sm font-semibold">
-                      Tisch {table.tableNumber} ({table.size} Spieler)
-                    </div>
                     <ul className="flex flex-col gap-2">
                       {table.assignments.map((a) => (
                         <li
@@ -273,7 +270,7 @@ export default async function LeaguePage() {
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </TableCard>
                 ))}
               </div>
             )}
@@ -298,7 +295,7 @@ export default async function LeaguePage() {
             sich auch beenden lassen, wenn Runde 2 nicht (mehr) ausgewertet
             wird — z.B. weil an dem Abend keine Achievement-Punkte für
             Runde 2 vergeben werden. */}
-        <FinishEveningButton eveningId={evening.id} disabled={false} />
+        <FinishEveningButton eveningId={evening.id} />
       </div>
       {lastRoundPublished && !lastRoundComplete && lastRound.number < MAX_ROUNDS && (
         <p className="text-xs opacity-70">
