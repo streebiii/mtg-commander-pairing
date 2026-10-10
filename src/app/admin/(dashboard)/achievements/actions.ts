@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/adminGuard";
 import {
   DEFAULT_SCOPE,
   parseCategory,
@@ -36,6 +37,7 @@ function parsePoints(value: FormDataEntryValue | null): number | null {
 export async function createAchievement(
   formData: FormData,
 ): Promise<string | null> {
+  await requireAdmin();
   const title = parseText(formData.get("title"));
   const description = parseText(formData.get("description"));
   const points = parsePoints(formData.get("points"));
@@ -70,6 +72,7 @@ export async function createAchievement(
  * `active` entscheidet, ob das Achievement am nächsten Liga-Abend gilt.
  */
 export async function updateAchievement(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const title = parseText(formData.get("title"));
   const description = parseText(formData.get("description"));

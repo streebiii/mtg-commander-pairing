@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/adminGuard";
 import { clearCasualPairing, saveCasualPairing } from "@/lib/casualPairing";
 
 /** Beide Ansichten zeigen die Zuteilung — nach Änderungen auffrischen. */
@@ -17,12 +18,14 @@ function revalidateCasualViews() {
 export async function persistCasualPairing(
   tables: { tableNumber: number; playerIds: string[] }[],
 ): Promise<void> {
+  await requireAdmin();
   await saveCasualPairing(tables);
   revalidateCasualViews();
 }
 
 /** Verwirft die aktuelle Zuteilung (Knopf "Zurücksetzen"). */
 export async function resetCasualPairing(): Promise<void> {
+  await requireAdmin();
   await clearCasualPairing();
   revalidateCasualViews();
 }
