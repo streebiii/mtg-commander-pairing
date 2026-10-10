@@ -55,3 +55,21 @@ select,
 textarea {
   font-size: 16px;
 }
+
+/*
+ * Druck (z.B. Tischkarten): weisses Papier, schwarze Schrift — die dunkle
+ * Bildschirm-Farbgebung würde sonst hellgraue Schrift drucken.
+ */
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+}

@@ -46,6 +46,7 @@ model Player {
 
   assignments TableAssignment[]
   casualSeat  CasualSeat?
+  entries     PlayerEntry[]
 
   @@map("players")
 }
@@ -61,9 +62,14 @@ model Evening {
   /// Gesetzt, sobald der Abend abgeschlossen ist (keine weiteren Runden mehr).
   finishedAt DateTime?
   createdAt  DateTime    @default(now())
+  /// Gesetzt, sobald der Organisator die Achievement-Erfassung dieses
+  /// Abends geschlossen hat. Bis dahin können die Spieler eintragen, auch
+  /// nach «Abend beenden» (siehe SPEC.md Abschnitt 12).
+  entryClosedAt DateTime?
 
   rounds       Round[]
   achievements EveningAchievement[]
+  entries      PlayerEntry[]
 
   @@map("evenings")
 }
@@ -192,6 +198,10 @@ model Achievement {
   active      Boolean             @default(true)
   /// Reihenfolge wie auf mtgbl.ch, innerhalb der Kategorie.
   sortOrder   Int                 @default(0)
+  /// Kennung für Achievements, die die App selbst kennt. Heute nur
+  /// «participation»: wird bei der Erfassung für jedes gespielte Spiel
+  /// automatisch gesetzt.
+  systemKey   String?             @unique
   createdAt   DateTime            @default(now())
 
   eveningAchievements EveningAchievement[]
@@ -231,9 +241,52 @@ model EveningAchievement {
   category      AchievementCategory
   scope         AchievementScope
   sortOrder     Int
+  systemKey     String?
+
+  marks AchievementMark[]
 
   @@unique([eveningId, achievementId])
   @@map("evening_achievements")
+}
+
+/// Die Achievement-Erfassung eines Spielers an einem Liga-Abend (siehe
+/// SPEC.md Abschnitt 12). Entsteht, sobald der Spieler über eine
+/// Tischkarte seinen Namen wählt — oder der Organisator für ihn erfasst.
+model PlayerEntry {
+  id        String  @id @default(cuid())
+  eveningId String
+  evening   Evening @relation(fields: [eveningId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /// SHA-256 des Geräte-Tokens aus dem Cookie. Solange gesetzt, ist der
+  /// Name für andere Geräte gesperrt; der Organisator kann ihn löschen
+  /// (Freigeben). Der Token selbst steht nie in der Datenbank.
+  deviceTokenHash String?
+  claimedAt       DateTime?
+  /// Gesetzt mit «Abgeben»; danach kann der Spieler nichts mehr ändern.
+  submittedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  marks AchievementMark[]
+
+  @@unique([eveningId, playerId])
+  @@map("player_entries")
+}
+
+/// Ein erreichtes Achievement in einer Erfassung. `game` ist das Spiel
+/// (1 oder 2) bei Achievements pro Match/pro Spieler, 0 bei solchen pro
+/// Abend bzw. Liga. `count` > 1 nur bei mehrfach zählenden.
+model AchievementMark {
+  id                   String             @id @default(cuid())
+  entryId              String
+  entry                PlayerEntry        @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  eveningAchievementId String
+  eveningAchievement   EveningAchievement @relation(fields: [eveningAchievementId], references: [id], onDelete: Cascade)
+  game                 Int
+  count                Int                @default(1)
+
+  @@unique([entryId, eveningAchievementId, game])
+  @@map("achievement_marks")
 }
 
 /// Einmal-Code für den passwortlosen Email-Login (siehe SPEC.md

@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
-      <header className="border-b border-white/10 px-4 py-4">
+      <header className="border-b border-white/10 px-4 py-4 print:hidden">
         <nav className="mx-auto flex w-full max-w-xl text-sm font-medium">
           <Link
             href="/admin"
@@ -37,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
         </nav>
       </header>
-      <main className="p-6">{children}</main>
+      <main className="p-6 print:p-0">{children}</main>
     </div>
   );
 }

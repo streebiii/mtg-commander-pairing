@@ -90,6 +90,7 @@ export function eveningCopy(
     category: a.category,
     scope: a.scope,
     sortOrder: a.sortOrder,
+    systemKey: a.systemKey,
   };
 }
 

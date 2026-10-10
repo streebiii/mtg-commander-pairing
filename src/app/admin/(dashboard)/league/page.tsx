@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { formatPlayerName } from "@/lib/players";
 import { rankValues } from "@/lib/pairing/leagueRanking";
 import { startEvening } from "./actions";
+import EntryBanner from "./EntryBanner";
 import FinishEveningButton from "./FinishEveningButton";
 import ImportClient from "./ImportClient";
 import LeaguePlayerRow from "./LeaguePlayerRow";
@@ -129,6 +130,7 @@ export default async function LeaguePage() {
             gepaart, Runde 2 nach den Siegern der ersten Runde.
           </p>
         </div>
+        <EntryBanner />
         <form action={startEvening} className="flex flex-col gap-4">
           <h2 className="text-sm font-medium">
             Anwesende Spieler auswählen
@@ -170,6 +172,8 @@ export default async function LeaguePage() {
           Gestartet am {evening.date.toLocaleString("de-CH")}
         </p>
       </div>
+
+      <EntryBanner />
 
       {evening.rounds.map((round) => {
         const isLastRound = round.number === evening.rounds.length;

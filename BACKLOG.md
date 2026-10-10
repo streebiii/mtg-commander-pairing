@@ -127,8 +127,8 @@ gewonnen hat. Die Paarung von Hand war die einzig mögliche Reaktion.
 
 **Status:** Umgesetzt — Sieger pro Tisch (`TableAssignment.isWinner`,
 Unentschieden über `Table.resultEnteredAt` ohne Sieger), `MAX_ROUNDS = 2`, SPEC.md
-Abschnitt 5 neu geschrieben. Die Abendend-Erfassung der Punkte steht
-noch aus (eigener Eintrag unten).
+Abschnitt 5 neu geschrieben. Die Punkte erfassen die Spieler selbst
+(Eintrag «Spieler erfassen ihre Achievements selbst»).
 
 **Worum es geht:** Der Liga-Abend wird auf den tatsächlichen Ablauf
 umgebaut. Kern ist der Wechsel des Sortierschlüssels für Runde 2: nicht
@@ -184,65 +184,96 @@ setzen statt nach dem Verlauf der Runde.
 **Nächster Schritt:** Direkt umsetzen. Zuerst, weil alle anderen
 Liga-Einträge darauf aufbauen.
 
-## Abendabschluss: Achievements erfassen und ausgeben
+## Spieler erfassen ihre Achievements selbst
 
-**Status:** Fertig gegrillt, bereit zur Umsetzung.
+**Status:** Umgesetzt (10.10.2026), siehe SPEC.md Abschnitt 12. Ersetzt
+den früheren Entwurf, in dem der Organisator die Papierzettel abtippt
+und eine mtgbl-Tabelle ausgibt. Zusätzlich entschieden bei der
+Umsetzung: ein neuer Liga-Abend schliesst eine noch offene Erfassung
+automatisch.
 
-**Worum es geht:** Am Ende des Abends tippst du die Zettel in die App,
-sie rechnet die Summen und gibt sie in dem Format aus, das du auf
-mtgbl.ch einfügen kannst.
+**Worum es geht:** Die Spieler melden sich ohne Konto am laufenden
+Liga-Abend an und haken ihre Achievements auf dem Handy selbst ab —
+laufend während des Abends oder gesammelt am Schluss. Der Organisator
+prüft und schliesst die Erfassung.
 
 **Entschieden:**
-- Erfasst wird durch **Ankreuzen der Achievements**, nicht durch Eintippen
-  eines Totals — die App bildet die Summe. Damit stimmt sie garantiert,
-  und man sieht später, welche Achievements häufig erreicht werden.
-- **Je Runde eine eigene Spalte** pro Spieler (Runde 1 und Runde 2), weil
-  Teilnahme und Sieg **pro Match** zählen. Die Deckbau-Achievements
-  stehen als einfaches Häkchen pro Abend daneben.
-- **Ausgabe im mtgbl-Format zum Kopieren** — dasselbe Tabellenformat, das
-  der bestehende Import liest (`| # | Spieler | F | Total | R1 | R2 | ... |`).
-  Import und Export werden damit zum Spiegelbild.
-
-**Aus dem Punkteblatt übernommen** (`information-files/`, Blatt vom
-22.05.2026 — es ist die Vorlage für diese Maske):
-- Die Kopfzeile lautet `Datum | Commander | Color-ID | Art | Punkte |
-  Achievement | Abrechnung | R1 | R2`. Die beiden Spalten **R1 und R2**
-  bestätigen die Erfassung je Runde eins zu eins.
-- Die Spalte **Art** (`1x pro Match`, `1x pro Abend`, `1x am Ende der
-  Liga`) entscheidet, ob ein Achievement zwei Runden-Häkchen bekommt oder
-  nur eines pro Abend. Sie steht nicht auf der Website, folgt dort aber
-  eindeutig aus der Kategorie (siehe Katalog-Eintrag).
-- Das Blatt summiert **nach Kategorie**: `Name | Core | Deckbau | Rotate
-  | Total`. Die Maske sollte dieselben Teilsummen zeigen, sonst lässt
-  sich die Eingabe nicht gegen den Zettel prüfen.
-- Kopfdaten pro Spieler: **Commander (welches Deck)** und **Color-ID**.
-  Die Farbidentität wird zu Saisonbeginn ausgelost, das Deck darf
-  zwischen Abenden um höchstens 15 Karten geändert werden. Die App kennt
-  beides heute nicht.
+- **Zugang über feste Tischkarten:** ein PDF mit QR-Codes für Tisch 1–6,
+  einmal gedruckt und dauerhaft gültig, im Organisator-Bereich erzeugt.
+  Der QR führt zum Tisch; dort stehen die Spieler, die in der aktuellen
+  Runde an diesem Tisch sitzen. Name antippen, fertig. Funktioniert nur,
+  solange ein Liga-Abend läuft. Kein Abend-Code, kein Konto.
+- **Ein Name pro Gerät:** sobald ein Gerät einen Namen gewählt hat, ist er
+  für andere Geräte gesperrt; der Organisator kann ihn wieder freigeben
+  (z.B. Handywechsel). Das Gerät merkt sich den Namen für den Abend.
+- **Nur für sich selbst.** Wer kein Handy hat, gibt weiter den
+  Papierzettel ab; der Organisator erfasst für ihn in der App.
+- **Liste pro Spieler:** je Spiel (Runde 1, Runde 2) die fixen und
+  rotierenden Achievements zum Abhaken, Deckbau einmal pro Abend; bei
+  «pro Spieler» und «mehrmals pro Abend» ein Anzahl-Feld. Oben die
+  laufende Summe mit Teilsummen Core / Deckbau / Rotate wie auf dem
+  Zettel. Grundlage sind die eingefrorenen Achievements des Abends.
+- **Vorbelegt:** «Participation» ist für jede gespielte Runde gesetzt
+  (nicht änderbar). «Winner winner» trägt der Spieler selbst ein.
+- **Abgeben:** der Spieler tippt «Abgeben», danach ist seine Liste
+  gesperrt. Der Organisator sieht pro Spieler offen / abgegeben, kann
+  korrigieren und eine Abgabe wieder öffnen.
+- **Zeitfenster:** offen ab Abendstart, auch nach «Abend beenden» — bis
+  der Organisator die Erfassung schliesst. Erst dann zählt der Abend in
+  der Rangliste.
+- **Evergreen** («1x am Ende der Liga») erscheint nur am letzten Abend
+  der Saison. Welcher Abend welcher ist (R1–R6), leitet die App aus den
+  Terminen auf mtgbl.ch ab (24.04., 22.05., 14.08., 11.09., 16.10.,
+  06.11.2026); bei Verschiebungen bewusst in Kauf genommen.
+- **Commander und Farbidentität** werden hier nicht erfasst — sie werden
+  einmal initial pro Saison hinterlegt (siehe Saison-Eintrag).
 
 **Zu beachten:**
-- **Punktwerte prüfen, bevor das Feld festgelegt wird.** Die fixen und
-  Deckbau-Achievements der Website sind durchweg einfache positive Werte
-  (+1 bis +7). Im rotierenden Pool gibt es dagegen mindestens eines, das
-  mehrfach zählen kann (`Commander Classic Win`), und die xlsx kennt
-  variable Schreibweisen wie `+2/+1` und `+1/Spieler`. Beim Anlegen des
-  Katalogs die 70 rotierenden daraufhin durchsehen — ein reines
-  `Int`-Feld könnte zu knapp sein.
-- Die Maske wird breit: 25 Achievements × 2 Runden × alle Anwesenden.
-  Auf dem Handy ist das der kritische Fall — vermutlich ein Spieler nach
-  dem anderen statt einer Gesamttabelle.
-- Teilnahme und Sieg kann die App **vorbelegen**: wer an einem Tisch
-  sass, war anwesend, und der Sieger ist bereits erfasst. Das nimmt
-  schon zwei der häufigsten Häkchen ab.
-- **Offen und bewusst als Annahme markiert:** `Player.points` bleibt die
-  Kopie des Saisonstands von mtgbl.ch und wird von der Erfassung **nicht**
-  fortgeschrieben. Aktualisiert wird er beim nächsten Import. Sonst gäbe
-  es zwei Quellen für dieselbe Zahl.
+- Die Tischkarten sind dauerhaft gültig und damit nicht geheim; Schutz
+  bieten die Namenssperre, die Beschränkung auf die Spieler des Tisches
+  und die Prüfung durch den Organisator.
+- Spieler, die nur Runde 1 gespielt haben, sehen keine Spalte für
+  Runde 2.
+- Neue öffentliche Routen ausserhalb von `/admin` — dürfen nur Lese- und
+  eigene Schreibzugriffe für den gewählten Spieler erlauben.
+- Schema: Erfassung pro Spieler, Abend-Achievement und Spiel (mit
+  Anzahl), Abgabe-Status pro Spieler und Abend, Geräte-Zuordnung,
+  Erfassung-geschlossen am Abend. Additiv.
 
-**Nächster Schritt:** Umsetzen — der Achievement-Katalog steht (Eintrag
-unten), jeder Abend trägt seine 25 geltenden Achievements bereits als
-`EveningAchievement`. Erfasst wird vom Organisator anhand der
-Papierzettel (bestätigt 08.10.2026).
+**Nächster Schritt:** Öffentliche Rangliste (Eintrag unten).
+
+## Öffentliche Rangliste mit Achievements
+
+**Status:** Gegrillt (Session vom 10.10.2026), Gestaltungsvorschlag
+gemacht, bereit zur Umsetzung nach der Selbsterfassung.
+
+**Worum es geht:** pairings.mtgbl.ch zeigt eine Rangliste wie
+https://mtgbl.ch/liga/commander/2026/rangliste — zusätzlich mit den
+erreichten Achievements pro Abend.
+
+**Entschieden:**
+- **Spalten wie auf mtgbl.ch:** Δ, #, Spieler, F (Farbidentität, als
+  farbige Punkte), Total, R1–R6.
+- **Achievement-Details pro Abend:** Punktzahlen aus der App sind
+  markiert; Überfahren (Desktop) oder Antippen (Handy) zeigt darunter die
+  Aufschlüsselung Spiel 1 / Spiel 2 / Deckbau mit Achievements und
+  Teilsummen.
+- **Abende vor der App (R1–R4)** kommen über den erweiterten Import: er
+  speichert künftig die Punkte pro Abend und die Farbidentität (F), nicht
+  nur Total und Anzahl. Für diese Abende gibt es keine Details.
+- Ein Abend erscheint erst, wenn der Organisator die Erfassung
+  geschlossen hat.
+- **Streichresultat** (laut mtgbl.ch zählt das schlechteste Resultat
+  nicht): während der Saison Summe aller Abende, erst nach Abend 6 wird
+  das schlechteste gestrichen und durchgestrichen angezeigt.
+- Die Rangliste auf mtgbl.ch wird später automatisch aktualisiert — eine
+  Kopier-Ausgabe für mtgbl.ch braucht es vorerst nicht.
+
+**Zu beachten:**
+- `Player.points` ist heute die Kopie des mtgbl-Totals; mit der
+  Rangliste wird das Total aus den Abendpunkten berechnet. Klären, ob
+  `points` dann nur noch für die Paarung von Runde 1 dient.
+- Δ = Rangveränderung gegenüber dem Stand vor dem letzten Abend.
 
 ## Achievement-Katalog und Auswahl der rotierenden
 
@@ -315,8 +346,8 @@ was im Katalog aktiv ist.
 - Schema-Änderung (Katalog, Abend-Kopie), additiv.
   Migration vor dem Merge in Produktion einspielen.
 
-**Nächster Schritt:** Die Abendend-Erfassung (Eintrag oben), erfasst
-anhand der Papierzettel.
+**Nächster Schritt:** Die Selbsterfassung durch die Spieler (Eintrag
+«Spieler erfassen ihre Achievements selbst» oben).
 
 ## Saison als eigenes Objekt
 
