@@ -374,7 +374,6 @@ was im Katalog aktiv ist.
   nicht im Code steckt, wird die Art als eigenes Feld gespeichert und
   beim Mitliefern aus der Kategorie vorbelegt.
 - Schema-Änderung (Katalog, Abend-Kopie), additiv.
-  Migration vor dem Merge in Produktion einspielen.
 
 **Nächster Schritt:** Die Selbsterfassung durch die Spieler (Eintrag
 «Spieler erfassen ihre Achievements selbst» oben).
