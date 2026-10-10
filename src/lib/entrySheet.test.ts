@@ -102,4 +102,11 @@ describe("eveningNumber", () => {
     expect(isLastEvening(new Date("2026-10-16T19:00:00+02:00"))).toBe(false);
     expect(isLastEvening(new Date("2026-11-06T19:00:00+01:00"))).toBe(true);
   });
+
+  it("zählt Abende nach dem letzten Termin nicht mehr zur Saison", () => {
+    // Über Mitternacht zählt noch zum letzten Abend, ab dem Tag danach nicht mehr.
+    expect(eveningNumber(new Date("2026-11-07T00:30:00+01:00"))).toBe(6);
+    expect(eveningNumber(new Date("2026-11-08T19:00:00+01:00"))).toBeNull();
+    expect(isLastEvening(new Date("2027-03-12T19:00:00+01:00"))).toBe(false);
+  });
 });

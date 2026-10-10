@@ -1,13 +1,14 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DangerButton, PrimaryButton, SecondaryButton } from "@/components/Button";
+import {
+  PlayerSearchField,
+  PlayerTile,
+  PlayerTileGrid,
+  usePlayerSearch,
+} from "@/components/PlayerPicker";
+import TableCard from "@/components/TableCard";
 import { SKILL_LEVELS } from "@/lib/players";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
 import {
@@ -16,24 +17,21 @@ import {
   describeGroupConflict,
   type PlayerGroup,
 } from "@/lib/pairing/groups";
-import { persistCasualPairing, resetCasualPairing } from "./actions";
+import { quickCreatePlayer } from "../players/actions";
+import {
+  computeCasual,
+  publishCasual,
+  reshuffleCasual,
+  resetCasual,
+  saveCasualSwap,
+  type CasualTable,
+} from "./actions";
 
+// Bewusst ohne Stufe: die braucht nur der Server zum Rechnen, und was
+// nicht im Browser ist, kann auch niemand mitlesen (siehe SPEC.md 6.1).
 interface PlayerOption {
   id: string;
   name: string;
-  skillLevel: number;
-}
-
-interface TableResultPlayer {
-  id: string;
-  name: string;
-  skillLevel: number;
-}
-
-interface TableResult {
-  tableNumber: number;
-  size: number;
-  players: TableResultPlayer[];
 }
 
 type Mode = "random" | "skill";
@@ -70,26 +68,15 @@ function groupLabel(index: number): string {
   return String.fromCharCode(65 + index);
 }
 
-/** Legt einen neuen Spieler per Quick-Create-API an und gibt ihn zurück. */
-async function createPlayerQuick(
-  firstName: string,
-  lastName: string | null,
-  skillLevel: number,
-): Promise<{ player?: PlayerOption; error?: string }> {
-  try {
-    const res = await fetch("/api/admin/players/quick-create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ firstName, lastName, skillLevel }),
-    });
-    const data = await res.json();
-    if (!res.ok) return { error: data.error ?? "Unbekannter Fehler" };
-    return {
-      player: { id: data.id, name: data.name, skillLevel: data.skillLevel },
-    };
-  } catch {
-    return { error: "Netzwerkfehler beim Anlegen" };
-  }
+/** Farbiges Gruppen-Kürzel (A, B, C, …) an Listeneinträgen und Tischen. */
+function GroupBadge({ index }: { index: number }) {
+  return (
+    <span
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(index)}`}
+    >
+      {groupLabel(index)}
+    </span>
+  );
 }
 
 /** Splittet einen frei getippten Namen naiv in Vorname/Nachname. */
@@ -104,25 +91,33 @@ function splitTypedName(text: string): { firstName: string; lastName: string | n
 export default function CasualClient({
   players: initialPlayers,
   initialTables,
+  initialPublished,
 }: {
   players: PlayerOption[];
   /**
    * Die zuletzt gespeicherte Zuteilung, sofern sie jung genug ist (siehe
-   * `getRecentCasualPairing()`). Dadurch überlebt sie einen Reload der
+   * `getCasualPairing()`). Dadurch überlebt sie einen Reload der
    * Admin-Seite, ohne dass hier etwas zusätzlich persistiert werden muss.
    */
-  initialTables: TableResult[] | null;
+  initialTables: CasualTable[] | null;
+  /** Ob diese Zuteilung schon live geschaltet ist. */
+  initialPublished: boolean;
 }) {
   const [players, setPlayers] = useState<PlayerOption[]>(initialPlayers);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [groups, setGroups] = useState<PlayerGroup[]>([]);
   const [hydrated, setHydrated] = useState(false);
-  const [search, setSearch] = useState("");
+  const { search, setSearch, filtered, enterTarget, noMatch } =
+    usePlayerSearch(players);
   const [mode, setMode] = useState<Mode>("random");
   // Ein einzelner 5er-Tisch, wo er die Verteilung verbessert (siehe SPEC.md
   // Abschnitt 3.1). Standard aus, damit sich ohne Zutun nichts ändert.
   const [allowFiveTable, setAllowFiveTable] = useState(false);
-  const [tables, setTables] = useState<TableResult[] | null>(initialTables);
+  const [tables, setTables] = useState<CasualTable[] | null>(initialTables);
+  // Warteraum wie in der Liga: eine neue Zuteilung sieht erst nach «Live
+  // schalten» jemand ausser dem Organisator (siehe SPEC.md Abschnitt 4.3).
+  const [published, setPublished] = useState(initialPublished);
+  const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [swapPick, setSwapPick] = useState<{ table: number; player: string } | null>(
@@ -327,17 +322,22 @@ export default function CasualClient({
     if (!newFirstName.trim()) return;
     setAdding(true);
     setAddError(null);
-    const { player, error: err } = await createPlayerQuick(
-      newFirstName.trim(),
-      newLastName.trim() || null,
-      newSkill,
-    );
+    let result: Awaited<ReturnType<typeof quickCreatePlayer>>;
+    try {
+      result = await quickCreatePlayer({
+        firstName: newFirstName,
+        lastName: newLastName,
+        skillLevel: newSkill,
+      });
+    } catch {
+      result = { error: "Fehler beim Anlegen" };
+    }
     setAdding(false);
-    if (err || !player) {
-      setAddError(err ?? "Unbekannter Fehler");
+    if ("error" in result) {
+      setAddError(result.error);
       return;
     }
-    addToSelection(player);
+    addToSelection(result.player);
     setNewFirstName("");
     setNewLastName("");
     setNewSkill(0);
@@ -381,24 +381,20 @@ export default function CasualClient({
     setSwapPick(null);
     setSelectedForReshuffle(new Set());
     try {
-      const res = await fetch("/api/admin/casual/pair", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerIds: [...selected],
-          mode,
-          allowFiveTable,
-          groups: groups.map((g) => ({ id: g.id, playerIds: g.playerIds })),
-        }),
+      const result = await computeCasual({
+        playerIds: [...selected],
+        mode,
+        allowFiveTable,
+        groups: groups.map((g) => ({ id: g.id, playerIds: g.playerIds })),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Unbekannter Fehler");
+      if ("error" in result) {
+        setError(result.error);
         return;
       }
-      setTables(data.tables);
+      setTables(result.tables);
+      setPublished(false);
     } catch {
-      setError("Netzwerkfehler beim Berechnen der Zuteilung");
+      setError("Fehler beim Berechnen der Zuteilung");
     } finally {
       setLoading(false);
     }
@@ -430,8 +426,9 @@ export default function CasualClient({
     setTables(next);
     setSwapPick(null);
 
-    // Auch öffentlich übernehmen, damit die Lese-Ansicht dasselbe zeigt.
-    void persistCasualPairing(
+    // Speichern — ist die Zuteilung schon live, sieht die öffentliche
+    // Seite den Tausch sofort.
+    void saveCasualSwap(
       next.map((t) => ({
         tableNumber: t.tableNumber,
         playerIds: t.players.map((p) => p.id),
@@ -463,34 +460,29 @@ export default function CasualClient({
     setError(null);
     setReshuffling(true);
     try {
-      const res = await fetch("/api/admin/casual/reshuffle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tables: tables.map((t) => ({
-            tableNumber: t.tableNumber,
-            playerIds: t.players.map((p) => p.id),
-          })),
-          tableNumbers: [...selectedForReshuffle],
-          mode,
-          keepGroups,
-          groups: groups.map((g) => ({ id: g.id, playerIds: g.playerIds })),
-        }),
+      const result = await reshuffleCasual({
+        tables: tables.map((t) => ({
+          tableNumber: t.tableNumber,
+          playerIds: t.players.map((p) => p.id),
+        })),
+        tableNumbers: [...selectedForReshuffle],
+        mode,
+        keepGroups,
+        groups: groups.map((g) => ({ id: g.id, playerIds: g.playerIds })),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Unbekannter Fehler");
+      if ("error" in result) {
+        setError(result.error);
         return;
       }
-      const updatedByNumber = new Map<number, TableResult>(
-        (data.tables as TableResult[]).map((t) => [t.tableNumber, t]),
+      const updatedByNumber = new Map(
+        result.tables.map((t) => [t.tableNumber, t]),
       );
       setTables((prev) =>
         prev ? prev.map((t) => updatedByNumber.get(t.tableNumber) ?? t) : prev,
       );
       setSelectedForReshuffle(new Set());
     } catch {
-      setError("Netzwerkfehler beim Neumischen");
+      setError("Fehler beim Neumischen");
     } finally {
       setReshuffling(false);
     }
@@ -499,39 +491,26 @@ export default function CasualClient({
   /** Verwirft die Zuteilung. Spielerauswahl und Gruppen bleiben bewusst stehen. */
   function handleReset() {
     setTables(null);
+    setPublished(false);
     setSwapPick(null);
     setSelectedForReshuffle(new Set());
     setError(null);
-    void resetCasualPairing();
+    void resetCasual();
   }
 
-  const allPlayersSorted = useMemo(
-    () => [...players].sort((a, b) => a.name.localeCompare(b.name)),
-    [players],
-  );
-
-  // Eine einzige, stabil alphabetische Liste — die Suche filtert alle
-  // Einträge gleich, unabhängig von der Auswahl. Antippen ändert nur den
-  // Zustand des Eintrags, nie seine Position (siehe Grill-Notizen Q2/Q4).
-  const filteredPlayers = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return allPlayersSorted;
-    return allPlayersSorted.filter((p) => p.name.toLowerCase().includes(q));
-  }, [allPlayersSorted, search]);
-
-  /**
-   * Was ein Enter im Suchfeld gerade treffen würde (siehe
-   * `handleSearchKeyDown`). Wird in der Liste sichtbar hervorgehoben, damit
-   * vor dem Tastendruck klar ist, wen es trifft.
-   *
-   * Nur bei nicht-leerer Suche: sonst leuchtete die Kachel auch bei leerem
-   * Feld auf, sobald der Verein nur einen einzigen Spieler hat.
-   */
-  const searchActive = search.trim().length > 0;
-  const enterTargetId =
-    searchActive && filteredPlayers.length === 1 ? filteredPlayers[0].id : null;
-  /** Bei null Treffern ist der Anlegen-Knopf das Enter-Ziel. */
-  const enterCreatesNew = searchActive && filteredPlayers.length === 0;
+  /** «Live schalten»: ab jetzt zeigt die öffentliche Seite die Tische. */
+  async function handlePublish() {
+    setError(null);
+    setPublishing(true);
+    try {
+      await publishCasual();
+      setPublished(true);
+    } catch {
+      setError("Fehler beim Live schalten");
+    } finally {
+      setPublishing(false);
+    }
+  }
 
   /**
    * Enter im Suchfeld — die Tastatur-Abkürzung für den häufigsten
@@ -546,44 +525,15 @@ export default function CasualClient({
    *   getippten Namen.
    * - Mehrere Treffer: nichts, es wäre nicht entscheidbar, wer gemeint ist.
    */
-  function handleSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-
-    if (filteredPlayers.length === 1) {
-      const only = filteredPlayers[0];
-      if (groupModeActive) handleGroupModeTap(only.id);
-      else if (!selected.has(only.id)) toggle(only.id);
+  function handleSearchEnter() {
+    if (enterTarget) {
+      if (groupModeActive) handleGroupModeTap(enterTarget.id);
+      else if (!selected.has(enterTarget.id)) toggle(enterTarget.id);
       setSearch("");
       return;
     }
-
-    if (filteredPlayers.length === 0 && search.trim()) openAddForm();
+    if (noMatch) openAddForm();
   }
-
-  // Mindesthöhe für die Liste, reserviert für den vollen (ungefilterten)
-  // Bestand in der jeweils aktuellen Spaltenzahl (Worst Case) — sonst
-  // schrumpft die Seite bei jedem Tastendruck im Suchfeld mit der Anzahl
-  // Treffer und die Ansicht springt hin und her, weil der sichtbare
-  // Ausschnitt bei jedem Tastendruck neu berechnet wird. ROW_HEIGHT/GAP
-  // entsprechen den Tailwind-Klassen `min-h-11`/`gap-2` der Kacheln unten.
-  // Mobil (2 Spalten), ab `sm` 3 und ab `xl` 4 Spalten reservieren
-  // unterschiedlich viele Zeilen — alle Werte werden berechnet und die
-  // Umschaltung passiert per CSS-Custom-Property an denselben Breakpoint-
-  // Grenzen wie die Spaltenzahl, ohne ResizeObserver/matchMedia in JS.
-  const listMinHeight = useMemo(() => {
-    const ROW_HEIGHT = 44;
-    const ROW_GAP = 8;
-    const heightForColumns = (columns: number) => {
-      const rows = Math.ceil(allPlayersSorted.length / columns);
-      return rows > 0 ? rows * ROW_HEIGHT + (rows - 1) * ROW_GAP : 0;
-    };
-    return {
-      mobile: heightForColumns(2),
-      desktop: heightForColumns(3),
-      wide: heightForColumns(4),
-    };
-  }, [allPlayersSorted.length]);
 
   const nameById = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players]);
 
@@ -681,13 +631,23 @@ export default function CasualClient({
           schaut man darauf, nicht auf die Auswahlliste darunter. */}
       {tables && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium">
-            Tischzuteilung — klicke zwei Spieler an, um sie zu tauschen
-          </h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-sm font-medium">
+              Tischzuteilung — {published ? "live" : "Warteraum"}
+            </h2>
+            {!published && (
+              <PrimaryButton loading={publishing} onClick={handlePublish}>
+                {publishing ? "Schalte live…" : "Live schalten"}
+              </PrimaryButton>
+            )}
+          </div>
           <p className="text-xs opacity-70">
-            Diese Zuteilung ist auf der öffentlichen Pairing-Seite sichtbar.
-            Tippe auf einen Tisch-Titel, um ihn für ein selektives
-            Neumischen auszuwählen (mindestens 2 Tische).
+            {published
+              ? "Diese Zuteilung ist auf der öffentlichen Pairing-Seite sichtbar. Änderungen erscheinen dort sofort."
+              : "Diese Zuteilung ist noch nicht öffentlich sichtbar. Prüfe sie und passe sie an, dann „Live schalten“."}{" "}
+            Tippe zwei Spieler an, um sie zu tauschen, oder einen Tisch-Titel,
+            um ihn für ein selektives Neumischen auszuwählen (mindestens 2
+            Tische).
           </p>
           <div className="flex flex-wrap gap-4">
             {tables.map((table) => {
@@ -695,28 +655,18 @@ export default function CasualClient({
                 table.tableNumber,
               );
               return (
-                <div
+                <TableCard
                   key={table.tableNumber}
-                  className={`w-full rounded border p-3 sm:w-48 ${
-                    isSelectedForReshuffle
-                      ? "border-blue-500 bg-blue-500/5"
-                      : "border-white/20"
-                  }`}
+                  tableNumber={table.tableNumber}
+                  size={table.size}
+                  tone={isSelectedForReshuffle ? "selected" : "default"}
+                  onTitleClick={() => toggleTableSelection(table.tableNumber)}
+                  aside={
+                    isSelectedForReshuffle && (
+                      <span className="text-blue-400">ausgewählt</span>
+                    )
+                  }
                 >
-                  <button
-                    type="button"
-                    onClick={() => toggleTableSelection(table.tableNumber)}
-                    className="mb-2 flex min-h-11 w-full items-center justify-between gap-2 rounded text-left text-sm font-semibold"
-                  >
-                    <span>
-                      Tisch {table.tableNumber} ({table.size} Spieler)
-                    </span>
-                    {isSelectedForReshuffle && (
-                      <span className="shrink-0 text-xs font-normal text-blue-400">
-                        ausgewählt
-                      </span>
-                    )}
-                  </button>
                   <ul className="flex flex-col gap-1.5">
                     {table.players.map((p) => {
                       const isPicked = swapPick?.player === p.id;
@@ -733,19 +683,13 @@ export default function CasualClient({
                             }`}
                           >
                             <span className="truncate flex-1">{p.name}</span>
-                            {groupIndex !== undefined && (
-                              <span
-                                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(groupIndex)}`}
-                              >
-                                {groupLabel(groupIndex)}
-                              </span>
-                            )}
+                            {groupIndex !== undefined && <GroupBadge index={groupIndex} />}
                           </button>
                         </li>
                       );
                     })}
                   </ul>
-                </div>
+                </TableCard>
               );
             })}
           </div>
@@ -804,18 +748,12 @@ export default function CasualClient({
             Anwesende Spieler auswählen ({selectedCount})
           </h2>
 
-          <label className="flex flex-col gap-1.5 text-sm">
-            Spieler suchen
-            <input
-              type="text"
-              ref={searchRef}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              placeholder="Name eingeben…"
-              className="min-h-9 w-full max-w-sm rounded border border-white/20 px-3 py-2"
-            />
-          </label>
+          <PlayerSearchField
+            value={search}
+            onChange={setSearch}
+            onEnter={handleSearchEnter}
+            inputRef={searchRef}
+          />
 
           {/* Fester Trigger direkt unter dem Suchfeld — bleibt immer an
               derselben Stelle erreichbar, unabhängig von der Länge der
@@ -825,7 +763,7 @@ export default function CasualClient({
               type="button"
               onClick={openAddForm}
               className={`flex min-h-11 w-fit items-center gap-2 rounded border border-dashed border-white/20 px-3 py-2 text-left text-sm ${
-                enterCreatesNew ? "ring-2 ring-foreground/60" : ""
+                noMatch ? "ring-2 ring-foreground/60" : ""
               }`}
             >
               <span>
@@ -833,7 +771,7 @@ export default function CasualClient({
                   ? `+ „${search.trim()}“ als neuen Spieler anlegen`
                   : "+ Neuen Spieler erfassen"}
               </span>
-              {enterCreatesNew && (
+              {noMatch && (
                 <span
                   aria-hidden="true"
                   className="shrink-0 text-xs opacity-70"
@@ -900,60 +838,22 @@ export default function CasualClient({
               Eintrags an seiner Position, nichts springt (siehe
               Grill-Notizen Q2). Im Gruppen-Modus nimmt ein Tap den Spieler
               statt in die Gruppe auf. */}
-          <div
-            className="grid min-h-[var(--list-min-height-mobile)] grid-cols-2 content-start gap-2 sm:min-h-[var(--list-min-height-desktop)] sm:grid-cols-3 xl:min-h-[var(--list-min-height-wide)] xl:grid-cols-4"
-            style={
-              {
-                "--list-min-height-mobile": `${listMinHeight.mobile}px`,
-                "--list-min-height-desktop": `${listMinHeight.desktop}px`,
-                "--list-min-height-wide": `${listMinHeight.wide}px`,
-              } as CSSProperties
-            }
-          >
-            {filteredPlayers.map((p) => {
-              const isSelected = selected.has(p.id);
-              const isPending = groupModeActive && pendingGroupMembers.includes(p.id);
+          <PlayerTileGrid totalCount={players.length}>
+            {filtered.map((p) => {
               const groupIndex = playerGroupIndex.get(p.id);
               return (
-                <button
+                <PlayerTile
                   key={p.id}
-                  type="button"
+                  name={p.name}
+                  selected={selected.has(p.id)}
+                  pending={groupModeActive && pendingGroupMembers.includes(p.id)}
+                  enterTarget={p.id === enterTarget?.id}
+                  badge={groupIndex !== undefined && <GroupBadge index={groupIndex} />}
                   onClick={() => handleRowTap(p.id)}
-                  className={`flex min-h-11 w-full items-center gap-1.5 rounded border px-3 py-2 text-left text-sm transition-colors ${
-                    isPending
-                      ? "border-amber-500 bg-amber-500/10 hover:bg-amber-500/20"
-                      : isSelected
-                        ? "border-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
-                        : "border-white/10 hover:bg-white/5"
-                  } ${
-                    // Der Ring legt sich über den bestehenden Zustand, statt
-                    // ihn zu ersetzen — eine vierte Rahmenfarbe neben amber
-                    // und blau wäre nicht mehr unterscheidbar.
-                    p.id === enterTargetId ? "ring-2 ring-foreground/60" : ""
-                  }`}
-                >
-                  <span className="w-4 shrink-0">{isSelected ? "✓" : ""}</span>
-                  <span className="truncate flex-1">{p.name}</span>
-                  {p.id === enterTargetId && (
-                    <span
-                      aria-hidden="true"
-                      className="shrink-0 text-xs opacity-70"
-                      title="Enter wählt diesen Spieler aus"
-                    >
-                      ↵
-                    </span>
-                  )}
-                  {groupIndex !== undefined && (
-                    <span
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(groupIndex)}`}
-                    >
-                      {groupLabel(groupIndex)}
-                    </span>
-                  )}
-                </button>
+                />
               );
             })}
-          </div>
+          </PlayerTileGrid>
         </section>
       </div>
 
@@ -1023,11 +923,7 @@ export default function CasualClient({
                       key={g.id}
                       className="flex min-h-11 items-center gap-2 rounded border border-white/10 px-3 py-2"
                     >
-                      <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(i)}`}
-                      >
-                        {groupLabel(i)}
-                      </span>
+                      <GroupBadge index={i} />
                       <span className="truncate flex-1 text-sm">
                         {g.playerIds.map((id) => nameById.get(id) ?? "?").join(", ")}
                       </span>

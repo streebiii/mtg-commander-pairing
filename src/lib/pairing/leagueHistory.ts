@@ -1,77 +1,52 @@
 import { prisma } from "@/lib/prisma";
-import { pairKey, tablePairKeys } from "./leagueAssignment";
+import { tablePairKeys } from "./leagueAssignment";
 
-/**
- * Baut die Menge aller Spielerpaare, die an diesem Abend bereits in einer
- * früheren Runde am selben Tisch saßen (für die Rematch-Vermeidung,
- * siehe SPEC.md Abschnitt 5.2).
- *
- * @param beforeRoundNumber Wenn gesetzt, werden nur Runden mit einer
- *   kleineren Rundennummer berücksichtigt — nützlich beim Neu-Auswürfeln
- *   einer Runde, deren eigene (noch zu ersetzende) Paarungen nicht als
- *   "bereits gespielt" zählen sollen.
- */
-export async function buildPreviousPairings(
-  eveningId: string,
-  beforeRoundNumber?: number,
-): Promise<Set<string>> {
-  const rounds = await prisma.round.findMany({
-    where: {
-      eveningId,
-      ...(beforeRoundNumber !== undefined
-        ? { number: { lt: beforeRoundNumber } }
-        : {}),
-    },
-    include: { tables: { include: { assignments: true } } },
-  });
-
-  const pairings = new Set<string>();
-  for (const round of rounds) {
-    for (const table of round.tables) {
-      const playerIds = table.assignments.map((a) => a.playerId);
-      for (const key of tablePairKeys(playerIds)) {
-        pairings.add(key);
-      }
-    }
-  }
-  return pairings;
+export interface EveningHistory {
+  /**
+   * Alle Spielerpaare, die an diesem Abend bereits am selben Tisch sassen
+   * (für die Rematch-Vermeidung, siehe SPEC.md Abschnitt 5.2).
+   */
+  previousPairings: Set<string>;
+  /**
+   * Alle Spieler, die an diesem Abend bereits an einem Nicht-4er-Tisch
+   * (i.d.R. ein 3er) sassen — damit dieselbe Person nicht an noch einem
+   * kleineren Tisch landet, wenn es sich vermeiden lässt.
+   */
+  wiederholteNichtVierer: Set<string>;
 }
 
 /**
- * Baut die Menge aller Spieler, die an diesem Abend bereits an einem
- * Nicht-4er-Tisch (i.d.R. ein 3er) sassen — damit dieselbe Person nicht
- * an noch einem kleineren Tisch landet, wenn es sich vermeiden lässt
- * (siehe `assignLeagueRound` in leagueAssignment.ts).
+ * Liest, was an einem Abend schon gespielt wurde — die Grundlage für den
+ * Tausch-Optimierer in `assignLeagueRound`.
  *
- * @param beforeRoundNumber Wenn gesetzt, werden nur Runden mit einer
- *   kleineren Rundennummer berücksichtigt — nützlich beim Neu-Auswürfeln
- *   einer Runde, deren eigene (noch zu ersetzende) Zuteilung nicht als
- *   "schon dabei gewesen" zählen soll.
+ * @param beforeRoundNumber Wenn gesetzt, zählen nur Runden mit einer
+ *   kleineren Nummer — beim Neu-Auswürfeln einer Runde sollen deren
+ *   eigene (noch zu ersetzende) Tische nicht als "schon gespielt" zählen.
  */
-export async function buildPreviousNonFourTablePlayers(
+export async function loadEveningHistory(
   eveningId: string,
   beforeRoundNumber?: number,
-): Promise<Set<string>> {
-  const rounds = await prisma.round.findMany({
+): Promise<EveningHistory> {
+  const tables = await prisma.table.findMany({
     where: {
-      eveningId,
-      ...(beforeRoundNumber !== undefined
-        ? { number: { lt: beforeRoundNumber } }
-        : {}),
+      round: {
+        eveningId,
+        ...(beforeRoundNumber !== undefined
+          ? { number: { lt: beforeRoundNumber } }
+          : {}),
+      },
     },
-    include: { tables: { include: { assignments: true } } },
+    select: { size: true, assignments: { select: { playerId: true } } },
   });
 
-  const players = new Set<string>();
-  for (const round of rounds) {
-    for (const table of round.tables) {
-      if (table.size === 4) continue;
-      for (const assignment of table.assignments) {
-        players.add(assignment.playerId);
-      }
+  const previousPairings = new Set<string>();
+  const wiederholteNichtVierer = new Set<string>();
+  for (const table of tables) {
+    const playerIds = table.assignments.map((a) => a.playerId);
+    for (const key of tablePairKeys(playerIds)) previousPairings.add(key);
+    if (table.size !== 4) {
+      for (const id of playerIds) wiederholteNichtVierer.add(id);
     }
   }
-  return players;
+  return { previousPairings, wiederholteNichtVierer };
 }
-
-export { pairKey };
