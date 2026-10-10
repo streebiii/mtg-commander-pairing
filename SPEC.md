@@ -577,8 +577,10 @@ bestätigt den Vorgang. Gilt für beide Tabs.
 ## 9. Ausdrücklich ausserhalb des Scopes (v1)
 
 - Kein Multi-User/Rollenmodell.
-- Keine Digitalisierung des vollständigen Achievement-Sheets (25 Punkte pro
-  Abend einzeln) — nur Gesamtsumme pro Spieler/Runde.
+- Keine Ziehung der rotierenden Achievements in der App — die macht
+  mtgbl.ch, die App übernimmt sie nur (Abschnitt 11). Die Erfassung der
+  erreichten Achievements am Abendende ist geplant (BACKLOG.md), aber noch
+  nicht umgesetzt.
 - Kein automatischer Import/Sync mit mtgbl.ch.
 - Keine saisonübergreifende Rematch-Vermeidung.
 - Keine Sonderbehandlung für „zu wenige Spieler" (< 3 anwesend) — tritt
@@ -598,3 +600,66 @@ bestätigt den Vorgang. Gilt für beide Tabs.
   (`docker-compose.yml`), identisch zur Produktions-Datenbank-Engine.
 - Eigene Domain (statt `*.vercel.app`) ist optional und kann jederzeit
   nachträglich in Vercel eingerichtet werden.
+
+## 11. Achievements
+
+Die Liga vergibt Punkte über Achievements; massgeblich ist die Liste auf
+https://mtgbl.ch/liga/commander/2026/achievements. Die App führt sie als
+Katalog im Tab **«Achievements»**.
+
+### 11.1 Katalog
+
+- Drei Kategorien: **fix**, **Deckbau** und **rotierend**. Es gilt, was
+  **aktiv** ist: alle fixen und Deckbau-Achievements (solange aktiv) und
+  bei den rotierenden die 10 der aktuellen Ziehung — zusammen
+  üblicherweise 25.
+- Je Achievement: Titel, Beschreibung, Punkte, Kategorie, **Art** und
+  **aktiv**. Die Art ist eine von: 1x pro Match, 1x pro Abend, 1x am Ende
+  der Liga, **pro Spieler** (z.B. «+1/Spieler») oder **mehrmals pro
+  Abend**. Die letzten beiden zählen mehrfach; die Erfassung zeigt dort
+  ein Anzahl-Feld statt eines Häkchens.
+- Die Art wird beim Anlegen aus der Kategorie vorbelegt (fix und
+  rotierend pro Match, Deckbau pro Abend) und ist danach änderbar —
+  Evergreen ist Deckbau, zählt aber einmal am Ende der Liga.
+- Variable Punktwerte der Website («+2/+1») werden mit dem höheren Wert
+  geführt und bei der Erfassung korrigiert.
+- Die Kategorie ist nach dem Anlegen nicht mehr änderbar.
+- Der Katalog besteht aus drei Tabellen (fix, Deckbau, rotierend), die
+  über Reiter mit Anzahl umgeschaltet werden. Darüber Suche und Filter
+  nach Art und Status (standardmässig alle); Titel, Art und Punkte sind
+  sortierbar. Spalten: Titel, Beschreibung, Art, Punkte, Aktiv. Über der
+  Tabelle steht, wie viele im offenen Reiter aktiv sind («10 von 76
+  aktiv»).
+- Bearbeitet wird direkt in der Tabelle: ein Klick auf eine Zelle macht
+  sie zum Eingabefeld, Enter oder Verlassen speichert, Esc verwirft. Die
+  Spalte «Aktiv» ist ein Schalter, ein Klick stellt um. Die Reihenfolge
+  bleibt dabei stehen; inaktive Zeilen sind abgeblendet.
+  Angelegt wird in einem Seitenpanel mit ausdrücklichem «Anlegen».
+- Achievements werden nie gelöscht, nur inaktiv gestellt.
+- Die Startdaten (Stand 08.10.2026: 6 fixe, 9 Deckbau, 76 rotierende)
+  stammen einmalig von der Website; danach wird nur in der App gepflegt.
+
+### 11.2 Vom Ende eines Liga-Abends bis zum nächsten
+
+1. **Abend beenden** im Liga-Tab. Die 25 Achievements des Abends bleiben
+   bei ihm gespeichert.
+2. **mtgbl.ch zieht** die 10 rotierenden für den nächsten Abend und
+   veröffentlicht sie (ausserhalb der App).
+3. Im Achievements-Tab, Reiter **Rotierend**, werden die 10 neuen
+   **aktiv** und die bisherigen **inaktiv** gestellt. Jeder Klick
+   speichert sofort. Ohne Sperre auf 10, weil die Ziehung übernommen und
+   nicht hier entschieden wird; die Anzeige «10 von 76 aktiv» dient zur
+   Kontrolle.
+4. Beim **Start des nächsten Liga-Abends** übernimmt der Abend, in
+   derselben Transaktion wie Abend und Runde 1, alle aktiven
+   Achievements als **eingefrorene Kopie** (Titel, Beschreibung, Punkte,
+   Kategorie, Art). Der Katalog bleibt unverändert — die rotierenden
+   bleiben aktiv, bis nach der nächsten Ziehung umgestellt wird.
+
+Ein gestarteter Abend behält seine Liste: Änderungen im Katalog wirken
+erst auf den nächsten Abend, auch während ein Abend läuft.
+
+### 11.3 Öffentliche Ansicht
+
+Während ein Liga-Abend läuft, zeigt die öffentliche Lese-Ansicht unter den
+Tischen die geltenden Achievements des Abends, nach Kategorie gruppiert.

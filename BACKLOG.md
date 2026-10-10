@@ -239,59 +239,84 @@ mtgbl.ch einfügen kannst.
   fortgeschrieben. Aktualisiert wird er beim nächsten Import. Sonst gäbe
   es zwei Quellen für dieselbe Zahl.
 
-**Nächster Schritt:** Umsetzen, nachdem der Sieger-Umbau steht.
+**Nächster Schritt:** Umsetzen — der Achievement-Katalog steht (Eintrag
+unten), jeder Abend trägt seine 25 geltenden Achievements bereits als
+`EveningAchievement`. Erfasst wird vom Organisator anhand der
+Papierzettel (bestätigt 08.10.2026).
 
-## Achievement-Katalog und Ziehung der rotierenden
+## Achievement-Katalog und Auswahl der rotierenden
 
-**Status:** Fertig gegrillt, bereit zur Umsetzung.
+**Status:** Umgesetzt (08./09.10.2026), siehe SPEC.md Abschnitt 11.
+Ersetzt den früheren Entwurf mit Zufallsziehung in der App.
 
 **Worum es geht:** Die Achievements liegen als pflegbare Stammdaten in
-der App, und die App zieht nach jedem Abend die rotierenden für das
-nächste Mal.
+der App. Pro Abend gelten 25: alle 6 fixen und 9 Deckbau-Achievements
+automatisch, dazu die 10 rotierenden der aktuellen Ziehung — es gilt,
+was im Katalog aktiv ist.
 
 **Entschieden:**
-- **Katalog in der Datenbank**, in der App verwaltbar: Name, Punktwert,
-  Kategorie (fix, Deckbau, rotierend). Keine Code-Änderung nötig, wenn
-  sich etwas ändert.
-- Pro Abend gelten **6 fixe, 9 Deckbau und 10 rotierende** — zusammen 25.
-  Am Punkteblatt vom 22.05.2026 nachgezählt: 16 × `1x pro Match`
-  (6 fixe + 10 rotierende), 8 × `1x pro Abend` und 1 × `1x am Ende der
-  Liga` (Evergreen) = 9 Deckbau. Deckt sich mit mtgbl.ch.
-- **Massgeblich ist ausschliesslich die Website** — die Achievements unter
-  https://mtgbl.ch/liga/commander/2026/achievements und die Regeln unter
-  https://mtgbl.ch/liga/commander/2026/regeln. Die Dateien in
-  `information-files/` (Konzeptdokument, xlsx-Stammliste, gedrucktes
-  Blatt) sind Hintergrund und stellenweise veraltet: die xlsx führt eine
-  siebte fixe (`−3 I'm Too Young To Die!`) und eine zehnte
-  Deckbau-Position (`Family`), die es auf der Website nicht gibt, und
-  setzt „Winner winner – chicken dinner" auf +2 statt +1. Im Zweifel
-  gewinnt die Website.
-- Der **Pool der rotierenden umfasst rund 70** Achievements. Bei 10 pro
-  Abend und 6 Abenden pro Saison werden nie mehr als 60 gebraucht.
-- Ein Achievement braucht **Punkte, Titel, Beschreibung** (die drei
-  Spalten der Website) plus die **Kategorie** (fix / Deckbau /
-  rotierend).
-- **Die Art muss nicht erfasst werden — sie folgt aus der Kategorie.**
-  Fixe und rotierende zählen pro Match, Deckbau pro Abend, einzige
-  Ausnahme ist Evergreen („über die gesamte Liga"). Am gedruckten Blatt
-  gegengezählt und exakt bestätigt: 16 × pro Match (6 fixe + 10
-  rotierende), 8 × pro Abend, 1 × am Ende der Liga.
-- Die Ziehung passiert **automatisch beim Abschluss eines Abends** und
-  gilt für den nächsten. Das Ergebnis wird zum Kopieren angezeigt — die
-  Veröffentlichung ist laut Konzeptdokument Pflicht, weil die Spieler ihr
-  Deck danach gezielt anpassen dürfen.
-- **Reiner Zufall**, keine Ausschlussregel — dasselbe Achievement darf
-  zweimal hintereinander gelten.
+- **Die Ziehung macht die Website, nicht die App.** mtgbl.ch zieht die
+  10 rotierenden am Ende eines Abends für den nächsten und
+  veröffentlicht sie (z.B. «Rotierende Achievements 16.10.26»). Die App
+  übernimmt sie nur. Eine Zufallsziehung in der App entfällt.
+- **Eigener Tab «Achievements»** in der Navigation, neben Liga und
+  Spieler. Dort: Katalog nach Kategorie (fix, Deckbau, rotierend),
+  anlegen, ändern, aktiv/inaktiv stellen.
+- **Katalog einmal mitliefern:** die Liste von
+  https://mtgbl.ch/liga/commander/2026/achievements wird als Startdaten
+  übernommen (Stand 08.10.2026: 6 fixe, 9 Deckbau, 76 rotierende).
+  Danach wird nur noch in der App gepflegt. Massgeblich bleibt die
+  Website, die Dateien in `information-files/` sind veraltet.
+- **Punkte als Zahl, Mehrfach-Zählung über die Art:** ein fester
+  Punktwert pro Erfüllung. Die Art kennt neben «1x pro Match», «1x pro
+  Abend» und «1x am Ende der Liga» auch **«pro Spieler»** und
+  **«mehrmals pro Abend»** — beide zählen mehrfach und bekommen bei der
+  Erfassung ein Anzahl-Feld statt eines Häkchens (`Commander Classic
+  Win`, «+1/Spieler», ist «pro Spieler»). Ein eigenes Flag «mehrfach»
+  gibt es nicht (Korrektur vom 08.10.2026). `It's Good to Be the King/Queen`
+  («+2/+1») ist ebenfalls «pro Spieler» und wird als +2 geführt; die +1
+  für Spätere wird bei Bedarf bei der Erfassung korrigiert. Alle übrigen
+  rotierenden zählen «1x pro Match», wie auf dem Punkteblatt vom
+  22.05.2026.
+- **Aktiv heisst «gilt am nächsten Liga-Abend»** (Entscheid vom
+  09.10.2026, ersetzt die frühere Kachel-Auswahl): bei den rotierenden
+  stellst du nach jeder Ziehung im Katalog die neuen 10 aktiv und die
+  bisherigen inaktiv. Ein separates «deaktiviert» gibt es nicht —
+  nicht gezogene rotierende sind schlicht inaktiv. Gepflegt wird **nur
+  im Achievements-Tab**, der Schritt «Abend beenden» bleibt unverändert.
+- **Abendstart übernimmt alle aktiven** und lässt den Katalog
+  unverändert; die rotierenden bleiben aktiv bis zur nächsten Umstellung.
+- **Keine Korrektur am laufenden Abend** — ein gestarteter Abend behält
+  seine Liste.
+- **Keine Anzahl-Sperre** — die 10 werden von der Website übernommen.
+  Zur Kontrolle zeigt der Katalog «10 von 76 aktiv».
+- **Die Ziehung vom 16.10.2026 wird mitgeliefert**: diese 10 rotierenden
+  sind in den Startdaten aktiv — Fog, Boundless Realms, Smash!,
+  Commander Classic Win, The Sheriff is Near, Necropotence, Crumbling
+  Sanctuary, Endurance, Fateful Hour, Serial Killer.
+- **Der Abend friert eine Kopie ein:** beim Start kopiert der Abend
+  Titel, Beschreibung, Punkte, Kategorie und Art seiner 25.
+  Katalogänderungen wirken nur auf künftige Abende. Entfernen heisst
+  inaktiv stellen, nie löschen.
+- **Öffentliche Lese-Ansicht** (SPEC.md Abschnitt 8) zeigt beim
+  laufenden Abend die 25 geltenden Achievements.
+
+- **Katalog als drei Tabellen im Stil von CRM-Listen**, umgeschaltet
+  über Reiter mit Anzahl: Suche, Filter nach Art und Status, sortierbare
+  Spalten, Titel und Beschreibung als getrennte Spalten, Bearbeiten per
+  Klick in die Zelle, «Aktiv» als Schalter. Angelegt wird in einem
+  Seitenpanel.
 
 **Zu beachten:**
-- Ein Abend braucht damit eine feste Zuordnung, welche 25 an ihm galten
-  — sonst lässt sich eine alte Erfassung später nicht mehr lesen. Der
-  Katalog darf sich ändern, ohne vergangene Abende umzuschreiben.
-- Der erste Abend hat keinen Vorgänger, aus dem gezogen wurde. Es braucht
-  einen Weg, die geltenden Achievements auch von Hand zu setzen.
+- Die Art (pro Match, pro Abend, am Ende der Liga) folgt aus der
+  Kategorie, mit Evergreen als einziger Ausnahme. Damit die Ausnahme
+  nicht im Code steckt, wird die Art als eigenes Feld gespeichert und
+  beim Mitliefern aus der Kategorie vorbelegt.
+- Schema-Änderung (Katalog, Abend-Kopie), additiv.
+  Migration vor dem Merge in Produktion einspielen.
 
-**Nächster Schritt:** Umsetzen, zusammen mit oder nach der
-Abendend-Erfassung — sie braucht den Katalog.
+**Nächster Schritt:** Die Abendend-Erfassung (Eintrag oben), erfasst
+anhand der Papierzettel.
 
 ## Saison als eigenes Objekt
 

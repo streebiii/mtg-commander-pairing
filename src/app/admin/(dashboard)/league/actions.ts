@@ -10,6 +10,7 @@ import {
   buildPreviousPairings,
 } from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
+import { adoptAchievementsForEvening } from "@/lib/achievements";
 
 /**
  * Zwei Runden pro Liga-Abend — so steht es in den Liga-Regeln auf
@@ -94,10 +95,13 @@ export async function startEvening(formData: FormData) {
 
   // Abend + Runde 1 atomar anlegen (siehe createRoundInDb) — sonst bliebe
   // bei einem Fehler zwischen den beiden Schritten ein Abend ohne jede
-  // Runde zurück, der die Liga-Seite dauerhaft zum Absturz bringt.
+  // Runde zurück, der die Liga-Seite dauerhaft zum Absturz bringt. Die
+  // geltenden Achievements gehören mit in dieselbe Transaktion, damit es
+  // keinen Abend ohne seine Achievements gibt.
   await prisma.$transaction(async (tx) => {
     const evening = await tx.evening.create({ data: { mode: "LEAGUE" } });
     await createRoundInDb(tx, evening.id, 1, tables);
+    await adoptAchievementsForEvening(tx, evening.id);
   });
 
   // Öffentlich wird immer nur eines gezeigt — eine offene Casual-Zuteilung
@@ -105,6 +109,7 @@ export async function startEvening(formData: FormData) {
   await clearCasualPairing();
 
   revalidatePath("/admin/league");
+  revalidatePath("/admin/achievements");
   revalidatePath("/");
 }
 
@@ -435,4 +440,5 @@ export async function finishEvening(formData: FormData) {
     data: { finishedAt: new Date() },
   });
   revalidatePath("/admin/league");
+  revalidatePath("/admin/achievements");
 }

@@ -62,7 +62,8 @@ model Evening {
   finishedAt DateTime?
   createdAt  DateTime    @default(now())
 
-  rounds Round[]
+  rounds       Round[]
+  achievements EveningAchievement[]
 
   @@map("evenings")
 }
@@ -163,6 +164,76 @@ model CasualSeat {
   @@unique([playerId])
   @@index([tableNumber])
   @@map("casual_seats")
+}
+
+/// Ein Achievement aus dem Katalog der Liga (siehe SPEC.md Abschnitt 11).
+/// Massgeblich ist die Liste auf mtgbl.ch; die Startdaten stammen von dort
+/// (Migration `add_achievements`), gepflegt wird danach im Achievements-Tab.
+/// Achievements werden nie gelöscht, nur inaktiv gestellt — vergangene
+/// Abende tragen ohnehin eine eigene Kopie (EveningAchievement).
+model Achievement {
+  id          String              @id @default(cuid())
+  title       String
+  description String
+  /// Punkte pro Erfüllung. Variable Werte der Website («+2/+1») werden
+  /// mit dem höheren Wert geführt und bei der Erfassung korrigiert.
+  points      Int
+  category    AchievementCategory
+  /// Wie oft das Achievement zählen kann. Folgt meist aus der Kategorie,
+  /// ist aber ein eigenes Feld, damit Ausnahmen wie Evergreen (Deckbau,
+  /// aber einmal pro Liga) nicht im Code stecken. PER_PLAYER und MULTIPLE
+  /// zählen mehrfach — die Erfassung zeigt dort ein Anzahl-Feld statt
+  /// eines Häkchens.
+  scope       AchievementScope
+  /// Gilt an Liga-Abenden: der Abendstart übernimmt alle aktiven. Bei den
+  /// rotierenden heisst aktiv «gehört zur aktuellen Ziehung» — nach jeder
+  /// Ziehung auf mtgbl.ch werden die neuen 10 aktiv und die alten inaktiv
+  /// gestellt (siehe SPEC.md Abschnitt 11.2).
+  active      Boolean             @default(true)
+  /// Reihenfolge wie auf mtgbl.ch, innerhalb der Kategorie.
+  sortOrder   Int                 @default(0)
+  createdAt   DateTime            @default(now())
+
+  eveningAchievements EveningAchievement[]
+
+  @@index([category, sortOrder])
+  @@map("achievements")
+}
+
+enum AchievementCategory {
+  FIXED        // fix, gilt jeden Abend
+  DECKBUILDING // Deckbau, gilt jeden Abend
+  ROTATING     // rotierend, 10 pro Abend
+}
+
+enum AchievementScope {
+  MATCH      // 1x pro Match
+  EVENING    // 1x pro Abend
+  SEASON     // 1x am Ende der Liga
+  PER_PLAYER // pro Spieler (z.B. je eliminiertem Spieler)
+  MULTIPLE   // mehrmals pro Abend
+}
+
+/// Ein an einem Liga-Abend geltendes Achievement — eine eingefrorene
+/// Kopie aus dem Katalog. Spätere Katalogänderungen schreiben vergangene
+/// Abende damit nicht um (siehe BACKLOG.md).
+model EveningAchievement {
+  id            String              @id @default(cuid())
+  eveningId     String
+  evening       Evening             @relation(fields: [eveningId], references: [id], onDelete: Cascade)
+  /// Herkunft im Katalog. Bleibt gesetzt, solange es das Achievement gibt;
+  /// verhindert, dass dasselbe Achievement doppelt an einem Abend gilt.
+  achievementId String?
+  achievement   Achievement?        @relation(fields: [achievementId], references: [id], onDelete: SetNull)
+  title         String
+  description   String
+  points        Int
+  category      AchievementCategory
+  scope         AchievementScope
+  sortOrder     Int
+
+  @@unique([eveningId, achievementId])
+  @@map("evening_achievements")
 }
 
 /// Einmal-Code für den passwortlosen Email-Login (siehe SPEC.md

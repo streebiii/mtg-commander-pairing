@@ -4,7 +4,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen">
       <header className="border-b border-white/10 px-4 py-4">
-        <nav className="mx-auto flex w-full max-w-lg text-sm font-medium">
+        <nav className="mx-auto flex w-full max-w-xl text-sm font-medium">
           <Link
             href="/admin"
             className="flex min-h-11 flex-1 items-center justify-center"
@@ -28,6 +28,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="flex min-h-11 flex-1 items-center justify-center"
           >
             Spieler
+          </Link>
+          <Link
+            href="/admin/achievements"
+            className="flex min-h-11 flex-1 items-center justify-center"
+          >
+            Achievements
           </Link>
         </nav>
       </header>
