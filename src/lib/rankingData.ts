@@ -49,7 +49,7 @@ export async function loadRanking() {
     }),
     prisma.playerEntry.findMany({
       where: { eveningId: { in: eveningIds } },
-      select: { eveningId: true, playerId: true, marks: true },
+      select: { eveningId: true, playerId: true, marks: true, games: true },
     }),
   ]);
 
@@ -60,11 +60,17 @@ export async function loadRanking() {
     const lastEvening = isLastEvening(evening.date);
 
     // Wer in einer veröffentlichten Runde sass, hat gespielt — auch ohne
-    // eigene Erfassung (dann zählt nur Participation).
+    // eigene Erfassung (dann zählt nur Participation). Nachgetragene Abende
+    // haben keine Tische; dort steht in der Erfassung, welche Spiele es waren.
     const games = new Map<string, number[]>();
     for (const a of assignments) {
       if (a.table.round.eveningId !== evening.id) continue;
       games.set(a.playerId, [...(games.get(a.playerId) ?? []), a.table.round.number]);
+    }
+    for (const e of entries) {
+      if (e.eveningId === evening.id && e.games.length > 0 && !games.has(e.playerId)) {
+        games.set(e.playerId, e.games);
+      }
     }
 
     const results = new Map<string, Breakdown>();

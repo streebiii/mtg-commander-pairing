@@ -102,11 +102,14 @@ export async function deletePlayer(formData: FormData) {
   });
   if (inRunningEvening > 0) return;
 
-  const assignmentCount = await prisma.tableAssignment.count({
-    where: { playerId: id },
-  });
+  // Historie sind Tischzuteilungen und Achievement-Erfassungen — auch
+  // nachgetragene Abende ohne Tische (siehe SPEC.md Abschnitt 13).
+  const [assignmentCount, entryCount] = await Promise.all([
+    prisma.tableAssignment.count({ where: { playerId: id } }),
+    prisma.playerEntry.count({ where: { playerId: id } }),
+  ]);
 
-  if (assignmentCount === 0) {
+  if (assignmentCount === 0 && entryCount === 0) {
     await prisma.player.delete({ where: { id } });
   } else {
     await prisma.player.update({

@@ -823,7 +823,29 @@ offizielle Wertung bleibt auf mtgbl.ch.
   Fähigkeit (`hover: hover`), nicht nach Bildschirmbreite — ein Tablet mit
   Touch bekommt das Sheet.
 
-### 13.3 Auf dem Handy
+### 13.3 Nachgetragene Abende
+
+Die Abende vor der Selbsterfassung (R1–R4) lassen sich aus den
+Punkteblättern nachtragen, damit auch sie Details haben. Ein
+nachgetragener Abend ist ein gewöhnlicher Abend der App — mit seinen 25
+Achievements (fix und Deckbau aus dem Katalog, dazu die 10 rotierenden
+der damaligen Ziehung), einer Erfassung pro Spieler und geschlossener
+Erfassung in seiner Spalte. Tische hat er keine: welche Spiele jemand
+gespielt hat, steht stattdessen in der Erfassung (`PlayerEntry.games`).
+
+- Eingespielt wird mit `npm run import:evening -- <datei.json>` (Probelauf)
+  bzw. `… --apply`; das Format steht in `scripts/import-evening.ts`. Die
+  Datei mit Namen und Achievements liegt in `information-files/` und
+  gehört nicht ins öffentliche Repository.
+- **mtgbl.ch ist massgeblich**: jeder Spieler trägt das Abendtotal von
+  mtgbl.ch mit. Weicht die Summe seiner Achievements davon ab, schreibt
+  das Skript nichts. Unklare oder widersprüchliche Blätter werden vorher
+  mit dem Organisator geklärt.
+- Eine schon belegte Spalte lehnt das Skript ab.
+- Spieler mit einer Erfassung, aber ohne Tische, werden beim Entfernen
+  archiviert statt gelöscht — ihre Punkte gehören zur Rangliste.
+
+### 13.4 Auf dem Handy
 
 Rang mit Δ, Spieler (mit den Farbpunkten) und Total bleiben links
 fixiert, die Spalten R1–R6 scrollen horizontal. Die Seite selbst scrollt
