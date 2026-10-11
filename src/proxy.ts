@@ -27,11 +27,6 @@ export async function proxy(request: NextRequest) {
   const isValid = await verifySessionToken(token);
 
   if (!isValid) {
-    // API-Routen bekommen eine 401-JSON-Antwort statt eines Redirects,
-    // alles andere (Seiten unter /admin) wird zum Login geschickt.
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-    }
     const loginUrl = new URL("/admin/login", request.url);
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
@@ -49,9 +44,9 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
+// Server Actions schützt der Proxy nicht zuverlässig — jede Organisator-
+// Action prüft die Anmeldung deshalb zusätzlich selbst (siehe
+// src/lib/adminGuard.ts).
 export const config = {
-  // /api/admin/** enthält alle Organisator-only-API-Routen (z.B. Modus-A/B-
-  // Pairing-Berechnung). Öffentliche APIs (z.B. für die Lese-Ansicht) liegen
-  // bewusst außerhalb dieses Präfixes.
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: ["/admin/:path*"],
 };

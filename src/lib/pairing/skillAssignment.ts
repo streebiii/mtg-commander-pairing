@@ -5,8 +5,8 @@ import { PairingError } from "./errors";
 import { averageValue, packGroupsIntoTables, type PlayerGroup } from "./groups";
 
 /**
- * Zufalls-Rauschen (in Skill-Stufen) für die Sortierung beim
- * skill-balancierten Modus A. Die Skill-Skala umfasst nur 0-3
+ * Zufalls-Rauschen (in Skill-Stufen) für die Sortierung bei der
+ * ausgewogenen Casual-Zuteilung. Die Skill-Skala umfasst nur 0-3
  * (siehe SPEC.md Abschnitt 6), ein Rauschen von ±1 lässt benachbarte
  * Stufen also schon spürbar variieren, ohne z.B. Anfänger und erfahrene
  * Spieler zu mischen.
@@ -30,16 +30,17 @@ function randomSkillLevel(): number {
 }
 
 /**
- * Weist Spieler den Tischen einer skill-balancierten Modus-A-Runde zu.
+ * Weist Spieler den Tischen einer ausgewogenen Casual-Zuteilung zu.
  *
- * Nutzt denselben Rang-Gruppierungs-Mechanismus wie Modus B (siehe
- * SPEC.md Abschnitt 5.1), nur mit Skill-Level statt Liga-Punkten als
- * Sortier-Kriterium. Für unbewertete Spieler (skillLevel = 0) wird pro
+ * Sortiert nach Stufe (mit Rauschen) und teilt in Blöcke ein, siehe
+ * `groupByValueWithJitter`. Bewusst nicht das Hälften-Modell der Liga:
+ * hier sollen ähnlich starke Spieler zusammensitzen (SPEC.md Abschnitt
+ * 4.2). Für unbewertete Spieler (skillLevel = 0) wird pro
  * Berechnung eine zufällige Stufe gewürfelt — sie können damit an jedem
  * Tisch landen, statt systematisch immer in derselben Region zu
  * erscheinen (siehe SPEC.md Abschnitt 4.2).
  *
- * Keine Rematch-Vermeidung nötig: Modus A ist immer eine Einzelrunde ohne
+ * Keine Rematch-Vermeidung nötig: Casual ist immer eine Einzelrunde ohne
  * Verlauf (siehe SPEC.md Abschnitt 4).
  *
  * Gruppen (siehe SPEC.md Abschnitt 4.1 bzw. Grill-Notizen) zählen dabei

@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/adminGuard";
+import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_SCOPE,
   parseCategory,

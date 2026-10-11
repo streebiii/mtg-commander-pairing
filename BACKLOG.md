@@ -19,7 +19,7 @@ Umsetzung.
    Hälfte legt.
 2. **Wiederholte Nicht-4er-Zuteilung vermeiden**: wer an diesem Abend
    schon an einem Nicht-4er-Tisch sass, wird beim Tausch-Optimierer
-   bevorzugt nicht noch einmal dorthin gesetzt (`buildPreviousNonFourTablePlayers`
+   bevorzugt nicht noch einmal dorthin gesetzt (`loadEveningHistory`
    in leagueHistory.ts).
 3. **Sieger bevorzugt zusammen**: derselbe Optimierer erhöht zusätzlich
    die Chance, dass zwei Sieger der Vorrunde am selben Tisch landen.
@@ -88,8 +88,9 @@ sich jetzt aber primär an der Hälften-Grenze aus, nicht mehr durchgehend
 ## Wie der Liga-Abend wirklich abläuft
 
 Ergebnis der Konzept-Session. Diese Beschreibung ist die Grundlage aller
-Liga-Einträge unten; sie weicht in wesentlichen Punkten von SPEC.md
-Abschnitt 5 ab.
+Liga-Einträge unten. SPEC.md Abschnitt 5 ist inzwischen danach neu
+geschrieben; der Abschnitt «Warum der Liga-Tab bisher ungenutzt blieb»
+beschreibt den Stand davor.
 
 - Alle Anwesenden sind vor Beginn da, die Teilnehmerliste steht fest und
   ändert sich während des Abends nicht.
@@ -242,6 +243,35 @@ prüft und schliesst die Erfassung.
 
 **Nächster Schritt:** Öffentliche Rangliste (Eintrag unten).
 
+## Liga-Punkte aus der Erfassung übernehmen
+
+**Status:** Offen, bewusst zurückgestellt (Bereinigung vom 10.10.2026).
+
+**Worum es geht:** Die App erfasst die Achievement-Punkte inzwischen
+selbst, gepaart wird Runde 1 aber weiterhin nach `Player.points` und
+`attendedEvenings` — beides kommt nur über den Import von mtgbl.ch, wohin
+die Punkte wiederum aus der App gelangen. Nach dem Schliessen einer
+Erfassung könnten Punkte und Abendzahl direkt aus den Einträgen
+nachgeführt werden; der Import bräuchte es dann nur noch für die Abende
+vor der App.
+
+**Zu beachten:**
+- `TableAssignment.pointsAwarded` ist seit der Sieger-Erfassung unbenutzt.
+  Entfernen gehört zu diesem Schritt — die Spalte trägt noch Werte alter
+  Abende.
+- Hängt eng mit der öffentlichen Rangliste (unten) zusammen.
+
+## Tischkarten bei offener Erfassung und Casual-Abend
+
+**Status:** Offen, klein (Bereinigung vom 10.10.2026).
+
+Die Erfassung eines Liga-Abends bleibt nach «Abend beenden» offen, bis der
+Organisator sie schliesst. Findet in dieser Zeit ein Casual-Abend statt,
+zeigen die Tischkarten-QR-Codes (`/tisch/<nr>`) weiterhin die Spieler des
+letzten Liga-Tisches. Im Alltag unwahrscheinlich, weil die Erfassung vorher
+geschlossen wird; falls doch, wäre der einfachste Weg, die Tischseite bei
+einer live geschalteten Casual-Zuteilung auszublenden.
+
 ## Öffentliche Rangliste mit Achievements
 
 **Status:** Gegrillt (Session vom 10.10.2026), Gestaltungsvorschlag
@@ -329,7 +359,7 @@ was im Katalog aktiv ist.
   Titel, Beschreibung, Punkte, Kategorie und Art seiner 25.
   Katalogänderungen wirken nur auf künftige Abende. Entfernen heisst
   inaktiv stellen, nie löschen.
-- **Öffentliche Lese-Ansicht** (SPEC.md Abschnitt 8) zeigt beim
+- **Öffentliche Lese-Ansicht** (SPEC.md Abschnitt 11.3) zeigt beim
   laufenden Abend die 25 geltenden Achievements.
 
 - **Katalog als drei Tabellen im Stil von CRM-Listen**, umgeschaltet

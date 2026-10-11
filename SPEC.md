@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-08-21 (nach Grill-Session zu Mobile-Optimierung und Gruppen im Casual-Modus)
+Stand: 2026-10-10 (Bereinigung: Casual-Warteraum, ein Abend-Modell, Login-Prüfung in allen Actions)
 
 ## 1. Zweck
 
@@ -13,8 +13,10 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
 - **Single-User (Organisator)**: eine Person verwaltet Spieler, Abende,
   Pairings und Ergebnisse. Kein Multi-User, keine Rollen/Rechte.
 - **Organisator-Navigation**: nach dem Login landet der Organisator auf
-  einem Dashboard (`/admin`) mit Links zu den drei Arbeitsbereichen. Die
-  Nav ist durchgängig vierteilig: Dashboard, Casual, Liga, Spieler.
+  einem Dashboard (`/admin`) mit Links zu allen Bereichen. Die Nav zeigt
+  Dashboard, Casual, Liga, Spieler und Achievements; die
+  Achievement-Erfassung erreicht man über das Dashboard und den Hinweis im
+  Liga-Tab (Abschnitt 12.3).
 - **Zugriffsschutz — passwortloser Email-Login mit Zahlencode**: kein
   Passwort. Der Organisator klickt "Login-Code anfordern" und bekommt einen
   **sechsstelligen Zahlencode** an eine fest konfigurierte Adresse
@@ -53,8 +55,9 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   bewusst nicht vorgesehen; eine Sitzung endet durch Ablauf oder durch
   Löschen der Browserdaten.
 - **Öffentliche Lese-Ansicht**: separate URL ohne Login, zeigt nur die
-  aktuellen Tischzuteilungen des laufenden Abends (z. B. für einen Bildschirm
-  vor Ort oder zum Teilen mit den Spielern). Keine Bearbeitungsmöglichkeit.
+  live geschalteten Tischzuteilungen des laufenden Abends (z. B. für einen
+  Bildschirm vor Ort oder zum Teilen mit den Spielern). Keine
+  Bearbeitungsmöglichkeit.
 - **Hosting — Hybrid**: die App UND die Datenbank (Vercel Postgres)
   laufen auf Vercel (Node.js-fähig) — cyon.ch selbst kann keine dauerhaft
   laufende Node.js-App hosten, und cyons Datenbanken lassen sich nur per
@@ -63,7 +66,10 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   weiterhin über das bestehende cyon.ch-Hosting des Auftraggebers (siehe
   DEPLOYMENT.md).
 - **Sicherheitshärtung**: Sicherheits-HTTP-Header (siehe `next.config.ts`),
-  Rate-Limiting auf den Login-Code-Versand, Prisma-parametrisierte
+  Rate-Limiting auf den Login-Code-Versand, Login-Prüfung in **jeder**
+  Organisator-Server-Action (`requireAdmin`, `src/lib/adminGuard.ts`) —
+  der Proxy schützt nur die Seiten unter `/admin`, Server Actions lassen
+  sich aber auch über andere Pfade auslösen —, Prisma-parametrisierte
   Datenbankzugriffe (kein SQL-Injection-Risiko), keine Secrets im
   Client-Bundle. Der Zugriffsschutz auf das Hosting-Konto selbst
   (cyon-Kundencenter-Login, SSH) liegt ausserhalb der App und damit
@@ -105,7 +111,7 @@ Ziel: aus N anwesenden Spielern eine Aufteilung auf Tische bestimmen.
 | 10 | 1×4 + 2×3 (nicht 2×5) |
 | 11 | 1×3 + 2×4         |
 | 12 | 3×4               |
-| 13 | 1×4 + 1×3 + 1×3 + ... bzw. 3×4 + 1×... → konkret: 1×4+3×3 |
+| 13 | 1×4 + 3×3         |
 | 14 | 2×4 + 2×3         |
 
 > Tie-Break-Regel innerhalb der reinen 3/4-Lösungen (z. B. bei Zahlen, wo
@@ -193,11 +199,20 @@ frei ist, weicht sie auf einen grösseren aus.
 - **Einzelrunde**: keine Mehrrunden-Logik, keine Rematch-Vermeidung.
 - **Keine Ergebnis-/Punkteerfassung, kein Verlauf** — rein für lockere
   Spieleabende ohne Bezug zur Liga-Rangliste.
+- **Warteraum wie in der Liga**: eine berechnete Zuteilung sieht zuerst nur
+  der Organisator. Erst **"Live schalten"** macht sie öffentlich
+  (Abschnitt 4.3).
 - Organisator kann die Zuteilung manuell anpassen (Spieler zwischen Tischen
-  tauschen); die Änderung wird sofort übernommen.
-- **Neu auswürfeln**: erneutes "Tische berechnen" ersetzt die Zuteilung.
+  tauschen, einzelne Tische neu mischen) — im Warteraum wie nach dem Live
+  schalten. Ist sie schon live, sieht die öffentliche Seite die Änderung
+  sofort.
+- **Neu auswürfeln**: erneutes "Tische berechnen" ersetzt die Zuteilung;
+  die neue landet wieder im Warteraum.
 - **Zurücksetzen**: verwirft die Zuteilung. Die Spielerauswahl bleibt
   bestehen, die öffentliche Ansicht ist danach wieder leer.
+- Die Spielerauswahl (Liste, Suche, Enter-Kette) ist dieselbe wie beim
+  Start eines Liga-Abends (`src/components/PlayerPicker.tsx`); nur Casual
+  kann dabei neue Spieler anlegen.
 
 ### 4.1 Gruppen — Spieler, die garantiert zusammen sitzen
 
@@ -259,12 +274,17 @@ Vor der Berechnung wählt der Organisator zwischen zwei Untermodi:
   sich nichts ändert — sonst wäre nicht erkennbar, ob der Haken überhaupt
   greift. Wirkt wie die Zuteilungsart erst bei der nächsten Berechnung;
   eine bereits stehende Zuteilung bleibt unangetastet.
-- **Ausgewogen**: nutzt dieselbe Rang-Gruppierungs-Logik wie
-  die Liga (Abschnitt 5.1), aber mit der Skill-Einstufung der Spieler
-  (Abschnitt 6) statt Liga-Punkten als Sortier-Kriterium, inkl. Zufalls-
-  Rauschen (±1 Skill-Stufe — kleiner als bei der Liga, da die Skala nur
-  0-3 umfasst), damit nicht stur die exakt gleich starken Spieler
-  zusammen landen.
+- **Ausgewogen**: sortiert nach der Skill-Einstufung (Abschnitt 6) mit
+  Zufalls-Rauschen (±1 Stufe, die Skala umfasst nur 0-3) und teilt die
+  Reihe in aufeinanderfolgende Blöcke — ähnlich starke Spieler sitzen
+  zusammen, ohne dass stur immer dieselben am selben Tisch landen
+  (`src/lib/pairing/rankGrouping.ts`).
+
+  **Bewusst eine andere Logik als die Liga.** Die Liga teilt in zwei
+  Hälften und verteilt darin zufällig (Abschnitt 5.1), weil sich dort mit
+  Rang-Blöcken die Stärksten immer wieder am selben Tisch fanden. Casual
+  will genau das Gegenteil: ausgeglichene Partien innerhalb eines Tisches,
+  an einem einzelnen Abend ohne Saisonrangliste.
   - Für noch nicht eingestufte Spieler (Stufe = 0) wird pro Berechnung eine
     zufällige Stufe aus 1-3 gewürfelt. Sie können damit an jedem Tisch
     landen, statt systematisch immer in derselben Region zu erscheinen —
@@ -281,38 +301,43 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
 
 - Es existiert immer nur **die eine aktuelle** Zuteilung (`CasualSeat`).
   Neu berechnen ersetzt sie vollständig, Zurücksetzen löscht sie.
+- **Warteraum**: eine neu berechnete Zuteilung ist zunächst nicht
+  öffentlich (`CasualSeat.publishedAt` leer). "Live schalten" setzt den
+  Zeitpunkt; Tauschen und Neumischen einzelner Tische lassen ihn stehen.
 - Sie liegt bewusst in einer eigenen Tabelle, getrennt von den
   Liga-Abenden (`Evening`/`Round`/`Table`). Dadurch zählt sie **nicht** als
   Abend-Teilnahme und blockiert nie das harte Löschen eines Spielers
   (Abschnitt 6.2). Wird ein Spieler gelöscht, verschwindet sein Platz per
   Cascade mit.
 - Gespeichert wird in erster Linie, damit die öffentliche Lese-Ansicht die
-  Tische zeigen kann — ohne das sähe sie niemand ausser dem Organisator.
+  Tische zeigen kann.
 - Ein Spieler, der zwischenzeitlich archiviert wurde, behält seinen Platz
   in einer bestehenden Zuteilung und lässt sich weiterhin tauschen und
   neu mischen — beim Neumischen wird nicht entschieden, wer anwesend ist,
   sondern nur die bestehende Belegung umgestellt. In die Auswahlliste für
   eine **neue** Berechnung kommt er nicht mehr.
 - Die Admin-Seite liest die gespeicherte Zuteilung beim Laden ebenfalls und
-  zeigt sie als Startzustand an. Ein Reload verschluckt sie dadurch nicht
-  mehr. Das gilt nur für Zuteilungen, die **jünger als 24 Stunden** sind —
-  was älter ist, gehört zu einem vergangenen Abend und wird dem
-  Organisator nicht als aktueller Stand untergeschoben. Die Frist betrifft
-  ausschliesslich diese Auto-Anzeige: die Zeilen bleiben stehen und die
-  öffentliche Seite zeigt sie unbegrenzt weiter, bis zurückgesetzt wird.
+  zeigt sie als Startzustand an — ein Reload verschluckt sie nicht.
+- **Nach 24 Stunden gilt eine Zuteilung als abgelaufen**, für den
+  Organisator wie für die öffentliche Seite: sie gehört dann zu einem
+  vergangenen Abend. Früher galt die Frist nur im Admin-Bereich; öffentlich
+  hing eine alte Zuteilung dann weiter, ohne dass der Organisator sie noch
+  sah und zurücksetzen konnte.
 - Öffentlich wird immer nur **eines von beidem** gezeigt: existiert eine
-  Casual-Zuteilung, hat sie Vorrang; sonst der laufende Liga-Abend. Das
-  Starten eines Liga-Abends verwirft eine offene Casual-Zuteilung, damit
-  die Regel nicht aufweichen kann.
+  live geschaltete Casual-Zuteilung, hat sie Vorrang; sonst der laufende
+  Liga-Abend. Casual- und Liga-Abende finden nie gleichzeitig statt; das
+  Starten eines Liga-Abends verwirft eine offene Casual-Zuteilung trotzdem,
+  damit die Regel nicht aufweichen kann.
 
 ## 5. Liga — Rangliste-Pairing
 
 - Kontext: bestehende Saison-Liga mit Achievement-basiertem Punktesystem
   (siehe https://mtgbl.ch/liga/commander/2026/achievements — 25
   Achievements pro Abend, u. a. Teilnahme, Sieg, erste Eliminierung,
-  Deckbau- und rotierende Achievements). Die App bildet **nicht** das
-  komplette Achievement-Sheet ab — der Organisator hält während des Abends
-  nur fest, wer seinen Tisch gewonnen hat (siehe unten).
+  Deckbau- und rotierende Achievements). Für die **Paarung** zählt davon
+  nur, wer seinen Tisch gewonnen hat — das hält der Organisator während
+  des Abends fest (siehe unten). Die Achievements selbst erfassen die
+  Spieler (Abschnitt 12).
 - **Ablauf pro Abend:**
   1. Anwesende Spieler aus den Liga-teilnehmenden Vereinsspielern auswählen
      (siehe Abschnitt 6 — nicht jeder Vereinsspieler nimmt an der Liga teil).
@@ -350,8 +375,8 @@ zufällig.
 **Keine Punkteerfassung pro Runde.** Die App führt den Punktestand eines
 Abends nicht mehr fort; `Player.points` ist die über den Import gepflegte
 Kopie des Saisonstands von mtgbl.ch und dient allein der Paarung von
-Runde 1. Die Achievement-Punkte werden am Abendende erfasst (siehe
-BACKLOG.md) und wandern von dort nach mtgbl.ch.
+Runde 1. Die Achievement-Punkte erfassen die Spieler (Abschnitt 12); von
+dort wandern sie nach mtgbl.ch.
 
 - **Kein separates "Abend verwerfen"**: "Abend beenden" verlangt keine
   vollständigen Ergebnisse (mehr) — ein versehentlich gestarteter Abend
@@ -568,8 +593,10 @@ bestätigt den Vorgang. Gilt für beide Tabs.
 
 ## 8. Verlauf / Historie
 
-- Vergangene Abende (Datum, Modus, Tischzuteilungen je Runde, eingetragene
-  Ergebnisse) werden dauerhaft gespeichert.
+- Vergangene Liga-Abende (Datum, Tischzuteilungen je Runde, Sieger,
+  Achievement-Erfassungen) werden dauerhaft gespeichert. Eine Ansicht
+  dafür gibt es noch nicht. Casual hinterlässt keinen Verlauf
+  (Abschnitt 4.3) — ein Abend ist in der App immer ein Liga-Abend.
 - Zweck: Nachvollziehbarkeit der Saison, Basis für Statistiken. Wird
   **nicht** für saisonübergreifende Rematch-Vermeidung genutzt (siehe 5.2 —
   nur innerhalb desselben Abends).
@@ -724,4 +751,7 @@ und der Organisator erfasst für ihn.
   offene Erfassung.
 - Welcher Liga-Abend (1–6) ein Abend ist, leitet die App aus den
   Terminen auf mtgbl.ch ab (`src/lib/season.ts`). Bei einer
-  Terminverschiebung muss die Liste angepasst werden.
+  Terminverschiebung muss die Liste angepasst werden. Ein Abend nach dem
+  letzten Termin liegt ausserhalb der Saison: er bekommt keine Nummer und
+  zählt nicht als letzter Abend — sonst erschiene Evergreen bis zum
+  Nachführen der Liste an jedem Abend.

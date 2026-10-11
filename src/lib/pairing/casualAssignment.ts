@@ -1,9 +1,10 @@
 import { shuffle } from "./shuffle";
 import { PairingError } from "./errors";
 import { packGroupsIntoTables, type PlayerGroup } from "./groups";
+import { dealIntoTables } from "./tableSizes";
 
 /**
- * Weist Spieler zufällig den Tischen einer Modus-A-Runde (Casual) zu.
+ * Weist Spieler zufällig den Tischen einer Casual-Zuteilung zu.
  * Keine Rangliste, keine Rematch-Vermeidung, keine Mehrrunden-Logik
  * (siehe SPEC.md Abschnitt 4).
  *
@@ -32,18 +33,7 @@ export function assignCasualRound(
     );
   }
 
-  if (groups.length === 0) {
-    const shuffled = shuffle(playerIds);
-    const orderedSizes = [...tableSizes].sort((a, b) => b - a);
-
-    const tables: string[][] = [];
-    let cursor = 0;
-    for (const size of orderedSizes) {
-      tables.push(shuffled.slice(cursor, cursor + size));
-      cursor += size;
-    }
-    return tables;
-  }
+  if (groups.length === 0) return dealIntoTables(shuffle(playerIds), tableSizes);
 
   const orderedSizes = [...tableSizes].sort((a, b) => b - a);
   const groupSizeEntries = groups.map((g) => ({

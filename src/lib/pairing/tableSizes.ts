@@ -94,3 +94,24 @@ export function computeTableSizes(
     `Keine gültige Tischverteilung für ${n} Spieler gefunden`,
   );
 }
+
+/**
+ * Verteilt die übergebenen IDs in ihrer Reihenfolge auf Tische — grösste
+ * Tische zuerst, damit die Reihenfolge der Tische immer dieselbe ist.
+ * Gemeinsamer letzter Schritt aller Zuteilungen: was vorher passiert
+ * (mischen, nach Stufe sortieren, in Hälften teilen), bestimmt nur die
+ * Reihenfolge der IDs.
+ */
+export function dealIntoTables(
+  orderedIds: readonly string[],
+  tableSizes: readonly number[],
+): string[][] {
+  const orderedSizes = [...tableSizes].sort((a, b) => b - a);
+  const tables: string[][] = [];
+  let cursor = 0;
+  for (const size of orderedSizes) {
+    tables.push(orderedIds.slice(cursor, cursor + size));
+    cursor += size;
+  }
+  return tables;
+}

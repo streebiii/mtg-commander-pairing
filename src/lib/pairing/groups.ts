@@ -22,6 +22,41 @@ export const MAX_GROUP_SIZE = 4;
 /** Kleinste sinnvolle Gruppengröße — darunter ist "Gruppe" bedeutungslos. */
 export const MIN_GROUP_SIZE = 2;
 
+/**
+ * Prüft Gruppen, wie sie vom Browser kommen: Format, Grösse und dass
+ * niemand in zwei Gruppen steckt. Ob die Mitglieder anwesend sind bzw. auf
+ * den betroffenen Tischen sitzen, entscheidet der Aufrufer.
+ */
+export function parseGroups(raw: unknown): PlayerGroup[] | { error: string } {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) return { error: "Ungültiges Gruppen-Format" };
+
+  const seenPlayers = new Set<string>();
+  const groups: PlayerGroup[] = [];
+  for (const entry of raw) {
+    const id = entry?.id;
+    const playerIds = entry?.playerIds;
+    if (
+      typeof id !== "string" ||
+      !Array.isArray(playerIds) ||
+      playerIds.some((p: unknown) => typeof p !== "string")
+    ) {
+      return { error: "Ungültiges Gruppen-Format" };
+    }
+    if (playerIds.length < MIN_GROUP_SIZE || playerIds.length > MAX_GROUP_SIZE) {
+      return {
+        error: `Gruppen müssen zwischen ${MIN_GROUP_SIZE} und ${MAX_GROUP_SIZE} Spieler haben`,
+      };
+    }
+    for (const pid of playerIds as string[]) {
+      if (seenPlayers.has(pid)) return { error: "Ein Spieler ist in mehreren Gruppen" };
+      seenPlayers.add(pid);
+    }
+    groups.push({ id, playerIds: playerIds as string[] });
+  }
+  return groups;
+}
+
 export interface GroupPackingResult {
   /**
    * Parallel zu den übergebenen tableSizes: für jeden Tisch die IDs der

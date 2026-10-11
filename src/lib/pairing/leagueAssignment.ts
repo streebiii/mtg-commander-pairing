@@ -1,5 +1,11 @@
 import { shuffle } from "./shuffle";
-import { computeTableSizes } from "./tableSizes";
+import { computeTableSizes, dealIntoTables } from "./tableSizes";
+
+/**
+ * Zwei Runden pro Liga-Abend — so steht es in den Liga-Regeln auf
+ * mtgbl.ch ("Pro Liga-Abend werden zwei Spiele gespielt").
+ */
+export const MAX_ROUNDS = 2;
 
 export interface RankedPlayer {
   id: string;
@@ -33,17 +39,9 @@ function countRematches(table: readonly string[], previousPairings: ReadonlySet<
 /** Tische brauchen mindestens 3 Spieler — siehe `computeTableSizes`. */
 const MIN_HAELFTE = 3;
 
-/** Verteilt eine Gruppe komplett zufällig auf Tische der übergebenen Größen. */
-function assignRandomly(ids: readonly string[], tableSizes: readonly number[]): string[][] {
-  const shuffled = shuffle(ids);
-  const orderedSizes = [...tableSizes].sort((a, b) => b - a);
-  const tables: string[][] = [];
-  let cursor = 0;
-  for (const size of orderedSizes) {
-    tables.push(shuffled.slice(cursor, cursor + size));
-    cursor += size;
-  }
-  return tables;
+/** Verteilt Spieler komplett zufällig auf so viele Tische wie nötig. */
+function assignRandomly(ids: readonly string[]): string[][] {
+  return dealIntoTables(shuffle(ids), computeTableSizes(ids.length));
 }
 
 /** Wie viele Tische einer Grösse ungleich 4 eine Tischgrössen-Liste enthält. */
@@ -159,7 +157,7 @@ function bewerteTisch(
 }
 
 /**
- * Weist Spieler den Tischen einer Modus-B-Runde zu.
+ * Weist Spieler den Tischen einer Liga-Runde zu.
  *
  * Vorgehen (siehe SPEC.md Abschnitt 5.1 und 5.2, sowie BACKLOG.md für die
  * Herleitung):
@@ -207,10 +205,7 @@ export function assignLeagueRound(
     previousPairings.size > 0 || wiederholteNichtVierer.size > 0 || sieger.size > 0;
 
   if (sortiert.length < MIN_HAELFTE * 2) {
-    const tables = assignRandomly(
-      sortiert.map((p) => p.id),
-      computeTableSizes(sortiert.length),
-    );
+    const tables = assignRandomly(sortiert.map((p) => p.id));
     if (hatVerbesserungspotential) {
       verbessereZuteilung(tables, previousPairings, wiederholteNichtVierer, sieger);
     }
@@ -218,14 +213,8 @@ export function assignLeagueRound(
   }
 
   const [oben, unten] = splitInHalves(sortiert);
-  const obenTables = assignRandomly(
-    oben.map((p) => p.id),
-    computeTableSizes(oben.length),
-  );
-  const untenTables = assignRandomly(
-    unten.map((p) => p.id),
-    computeTableSizes(unten.length),
-  );
+  const obenTables = assignRandomly(oben.map((p) => p.id));
+  const untenTables = assignRandomly(unten.map((p) => p.id));
 
   if (hatVerbesserungspotential) {
     // Getrennt pro Hälfte aufgerufen, damit ein Tausch nie über die

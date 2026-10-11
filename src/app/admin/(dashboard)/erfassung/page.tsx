@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { formatPlayerName } from "@/lib/players";
 import { type EntryStatus, findOpenEvening, loadEveningOverview } from "@/lib/entries";
-import { eveningNumber } from "@/lib/season";
+import { eveningLabel } from "@/lib/season";
 import { releaseDevice, reopenEntry } from "./actions";
 import CloseEntryButton from "./CloseEntryButton";
 
@@ -42,7 +42,7 @@ export default async function EntryOverviewPage() {
     <div className="flex flex-col gap-6">
       <Header />
       <p className="text-sm opacity-70">
-        Liga-Abend {eveningNumber(evening.date)} ·{" "}
+        {eveningLabel(evening.date)} ·{" "}
         {evening.date.toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" })}
         {evening.finishedAt ? " · Abend beendet" : " · Abend läuft"} ·{" "}
         <span className="font-medium opacity-100">

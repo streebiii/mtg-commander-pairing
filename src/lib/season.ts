@@ -25,9 +25,17 @@ function zurichDay(date: Date): string {
 /**
  * Nummer des Liga-Abends (1–6) zu einem Datum: der letzte Termin, der am
  * oder vor diesem Tag liegt. Ein Testabend vor dem ersten Termin ergibt 1.
+ *
+ * Ab dem übernächsten Tag nach dem letzten Termin ist die Saison vorbei —
+ * dann `null` (ein Tag Spielraum für einen Abend über Mitternacht). Sonst
+ * zählte jeder spätere Abend (auch einer der nächsten Saison, solange
+ * diese Liste nicht nachgeführt ist) als letzter Abend, und Evergreen
+ * erschiene jedes Mal.
  */
-export function eveningNumber(date: Date): number {
+export function eveningNumber(date: Date): number | null {
   const day = zurichDay(date);
+  const dayBefore = zurichDay(new Date(date.getTime() - 24 * 60 * 60 * 1000));
+  if (dayBefore > SEASON_2026_DATES[SEASON_2026_DATES.length - 1]) return null;
   let number = 1;
   SEASON_2026_DATES.forEach((d, i) => {
     if (d <= day) number = i + 1;
@@ -37,4 +45,10 @@ export function eveningNumber(date: Date): number {
 
 export function isLastEvening(date: Date): boolean {
   return eveningNumber(date) === EVENINGS_PER_SEASON;
+}
+
+/** "Liga-Abend 3" — oder ohne Nummer, wenn der Abend ausserhalb der Saison liegt. */
+export function eveningLabel(date: Date): string {
+  const number = eveningNumber(date);
+  return number === null ? "Liga-Abend (ausserhalb der Saison)" : `Liga-Abend ${number}`;
 }

@@ -5,13 +5,7 @@ import { SecondaryButton } from "@/components/Button";
 import { finishEvening } from "./actions";
 
 /** "Abend beenden" — mit Ladetext, Hover/Pressed via SecondaryButton. */
-export default function FinishEveningButton({
-  eveningId,
-  disabled,
-}: {
-  eveningId: string;
-  disabled: boolean;
-}) {
+export default function FinishEveningButton({ eveningId }: { eveningId: string }) {
   const [isPending, startTransition] = useTransition();
 
   function submit() {
@@ -23,7 +17,7 @@ export default function FinishEveningButton({
   }
 
   return (
-    <SecondaryButton onClick={submit} disabled={disabled} loading={isPending}>
+    <SecondaryButton onClick={submit} loading={isPending}>
       {isPending ? "Beende…" : "Abend beenden"}
     </SecondaryButton>
   );

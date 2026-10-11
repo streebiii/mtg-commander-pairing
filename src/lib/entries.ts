@@ -50,7 +50,7 @@ function sameHash(a: string, b: string): boolean {
  */
 export async function findOpenEvening() {
   return prisma.evening.findFirst({
-    where: { mode: "LEAGUE", entryClosedAt: null, rounds: { some: {} } },
+    where: { entryClosedAt: null, rounds: { some: {} } },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -89,6 +89,20 @@ export async function gamesPlayed(eveningId: string, playerId: string) {
   return rounds.map((r) => r.number);
 }
 
+/** Ein Abend-Achievement, wie das Erfassungsblatt es braucht. */
+function toSheetAchievement(a: SheetAchievement): SheetAchievement {
+  return {
+    id: a.id,
+    title: a.title,
+    description: a.description,
+    points: a.points,
+    category: a.category,
+    scope: a.scope,
+    systemKey: a.systemKey,
+    sortOrder: a.sortOrder,
+  };
+}
+
 export interface SheetData {
   achievements: SheetAchievement[];
   marks: SheetMark[];
@@ -116,16 +130,7 @@ export async function loadSheet(
   const lastEvening = isLastEvening(evening.date);
   return {
     achievements: visibleAchievements(
-      achievements.map((a) => ({
-        id: a.id,
-        title: a.title,
-        description: a.description,
-        points: a.points,
-        category: a.category,
-        scope: a.scope,
-        systemKey: a.systemKey,
-        sortOrder: a.sortOrder,
-      })),
+      achievements.map(toSheetAchievement),
       lastEvening,
     ),
     marks:
@@ -227,16 +232,7 @@ export async function loadEveningOverview(eveningId: string) {
     }),
   ]);
   const lastEvening = isLastEvening(evening.date);
-  const sheetAchievements: SheetAchievement[] = achievements.map((a) => ({
-    id: a.id,
-    title: a.title,
-    description: a.description,
-    points: a.points,
-    category: a.category,
-    scope: a.scope,
-    systemKey: a.systemKey,
-    sortOrder: a.sortOrder,
-  }));
+  const sheetAchievements = achievements.map(toSheetAchievement);
 
   const players = new Map<
     string,

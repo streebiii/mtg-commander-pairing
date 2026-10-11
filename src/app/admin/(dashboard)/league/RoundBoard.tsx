@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
+import TableCard from "@/components/TableCard";
 import { formatPlayerName } from "@/lib/players";
 import { setTableResult, swapPlayers } from "./actions";
 
@@ -156,24 +157,19 @@ export default function RoundBoard({
         const erfasst = table.resultEnteredAt !== null;
         const sieger = table.assignments.find((a) => a.isWinner);
         return (
-          <div
+          <TableCard
             key={table.id}
-            className={`w-full rounded border p-3 sm:w-64 ${
-              mode === "live" && !erfasst
-                ? "border-amber-500/60"
-                : "border-white/20"
-            }`}
-          >
-            <div className="mb-2 flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">
-                Tisch {table.tableNumber} ({table.size} Spieler)
-              </span>
-              {mode === "live" && (
-                <span className="shrink-0 text-xs opacity-70">
+            tableNumber={table.tableNumber}
+            size={table.size}
+            tone={mode === "live" && !erfasst ? "attention" : "default"}
+            aside={
+              mode === "live" && (
+                <span className="opacity-70">
                   {!erfasst ? "offen" : sieger ? "Sieger steht" : "unentschieden"}
                 </span>
-              )}
-            </div>
+              )
+            }
+          >
             <ul className="flex flex-col gap-2">
               {table.assignments.map((a) => {
                 const isArmed = armed === a.id;
@@ -226,7 +222,7 @@ export default function RoundBoard({
                 Unentschieden
               </button>
             )}
-          </div>
+          </TableCard>
         );
       })}
     </div>

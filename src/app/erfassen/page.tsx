@@ -1,7 +1,7 @@
 import EntrySheet from "@/components/EntrySheet";
 import { formatPlayerName } from "@/lib/players";
 import { getDeviceEntry, loadSheet } from "@/lib/entries";
-import { eveningNumber } from "@/lib/season";
+import { eveningLabel } from "@/lib/season";
 import { setMyMark } from "./actions";
 import SubmitEntryButton from "./SubmitEntryButton";
 
@@ -34,7 +34,7 @@ export default async function MyEntryPage() {
       <div>
         <h1 className="text-xl font-semibold">{formatPlayerName(entry.player)}</h1>
         <p className="text-sm opacity-70">
-          Liga-Abend {eveningNumber(entry.evening.date)} ·{" "}
+          {eveningLabel(entry.evening.date)} ·{" "}
           {entry.evening.date.toLocaleDateString("de-CH", {
             timeZone: "Europe/Zurich",
           })}

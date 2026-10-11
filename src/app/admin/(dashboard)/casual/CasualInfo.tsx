@@ -19,11 +19,15 @@ const TOPICS: { title: string; text: string }[] = [
   },
   {
     title: "Tische berechnen",
-    text: "Die berechnete Zuteilung ist sofort auf der öffentlichen Pairing-Seite sichtbar. Sie bleibt dort stehen, bis sie zurückgesetzt wird oder ein Liga-Abend startet.",
+    text: "Die berechnete Zuteilung landet zuerst im Warteraum: nur du siehst sie. Ein erneutes Berechnen ersetzt sie.",
   },
   {
-    title: "Nachträglich anpassen",
+    title: "Anpassen",
     text: "Zwei Spieler antippen tauscht ihre Plätze — auch über Tische hinweg und auch dann, wenn das eine Gruppe trennt. Ein Tap auf einen Tisch-Titel wählt ihn zum Neumischen aus; ab zwei ausgewählten Tischen werden deren Spieler untereinander neu verteilt, die übrigen Tische bleiben unangetastet.",
+  },
+  {
+    title: "Live schalten",
+    text: "Erst jetzt erscheint die Zuteilung auf der öffentlichen Pairing-Seite. Spätere Tausche und Neumischungen sind dort sofort sichtbar. Nach 24 Stunden gilt eine Zuteilung als abgelaufen und verschwindet von selbst.",
   },
   {
     title: "Zurücksetzen",
