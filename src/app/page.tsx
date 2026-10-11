@@ -1,4 +1,4 @@
-import Image from "next/image";
+import PublicHeader from "@/components/PublicHeader";
 import { prisma } from "@/lib/prisma";
 import { getCasualPairing } from "@/lib/casualPairing";
 import { formatPlayerName } from "@/lib/players";
@@ -108,21 +108,7 @@ export default async function Home() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
-      <div className="flex items-center gap-3">
-        {/* Vereinslogo von mtgbl.ch. Der Bär ist schwarz auf transparentem
-            Grund und wird invertiert, damit er auf dem dunklen Hintergrund
-            sichtbar bleibt. Die App kennt nur noch Dunkel, deshalb fest und
-            nicht mehr als `dark:`-Variante. */}
-        <Image
-          src="/logo.png"
-          alt="MTG Baselland"
-          width={213}
-          height={191}
-          priority
-          className="h-10 w-auto invert"
-        />
-        <h1 className="text-2xl font-semibold">Pairings</h1>
-      </div>
+      <PublicHeader active="pairings" />
 
       {tables.length === 0 ? (
         <p className="text-sm opacity-70">

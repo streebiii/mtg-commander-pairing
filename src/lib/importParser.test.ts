@@ -16,7 +16,7 @@ describe("parseLeagueImport", () => {
   it("extrahiert Spielername und Total-Punktestand für jede Zeile", () => {
     const { rows, warnings } = parseLeagueImport(SAMPLE);
     expect(warnings).toEqual([]);
-    expect(rows).toEqual([
+    expect(rows).toMatchObject([
       { importName: "Marc S.", total: 50, attendedEvenings: 3 },
       { importName: "Thomas S.", total: 44, attendedEvenings: 3 },
       { importName: "Tyrone", total: 40, attendedEvenings: 3 },
@@ -38,7 +38,7 @@ describe("parseLeagueImport", () => {
 | 50    | Marc S. | 14 |
 `;
     const { rows } = parseLeagueImport(reordered);
-    expect(rows).toEqual([
+    expect(rows).toMatchObject([
       { importName: "Marc S.", total: 50, attendedEvenings: 1 },
     ]);
   });
@@ -57,7 +57,7 @@ describe("parseLeagueImport", () => {
 | Pausiert | -    | -  |
 `;
     const { rows, warnings } = parseLeagueImport(withBye);
-    expect(rows).toEqual([
+    expect(rows).toMatchObject([
       { importName: "Marc S.", total: 50, attendedEvenings: 1 },
     ]);
     expect(warnings.length).toBe(1);
@@ -93,9 +93,46 @@ describe("parseLeagueImport", () => {
 | Marc S. | 50    |
 `;
     const { rows, warnings } = parseLeagueImport(ohneRunden);
-    expect(rows).toEqual([
+    expect(rows).toMatchObject([
       { importName: "Marc S.", total: 50, attendedEvenings: 0 },
     ]);
     expect(warnings.some((w) => w.includes("Rundenspalten"))).toBe(true);
+  });
+
+  it("liest die Punkte pro Abend mit ihrer Rundennummer", () => {
+    const teilweise = `
+| Spieler | Total | R1 | R2 | R3 |
+|:--------|:-----:|:--:|:--:|:--:|
+| David   | 11    | —  | —  | 11 |
+| Mario   | 21    | 11 | 10 |    |
+`;
+    const { rows } = parseLeagueImport(teilweise);
+    expect(rows.map((r) => r.roundPoints)).toEqual([
+      [{ round: 3, points: 11 }],
+      [
+        { round: 1, points: 11 },
+        { round: 2, points: 10 },
+      ],
+    ]);
+  });
+
+  it("liest die Farbidentität aus der Spalte F in WUBRG-Reihenfolge", () => {
+    const farben = `
+| Spieler | F  | Total | R1 |
+|:--------|:--:|:-----:|:--:|
+| Marc S. | RW | 14    | 14 |
+| Leer    |    | 3     | 3  |
+`;
+    const { rows } = parseLeagueImport(farben);
+    expect(rows.map((r) => r.colorIdentity)).toEqual(["WR", null]);
+  });
+
+  it("lässt die Farbidentität offen, wenn die Spalte F fehlt", () => {
+    const { rows } = parseLeagueImport(`
+| Spieler | Total | R1 |
+|:--------|:-----:|:--:|
+| Marc S. | 14    | 14 |
+`);
+    expect(rows[0]).not.toHaveProperty("colorIdentity");
   });
 });

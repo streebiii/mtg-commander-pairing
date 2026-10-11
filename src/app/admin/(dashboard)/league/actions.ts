@@ -9,6 +9,7 @@ import { rankValues } from "@/lib/pairing/leagueRanking";
 import { loadEveningHistory } from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
 import { adoptAchievementsForEvening } from "@/lib/achievements";
+import { normalizeColorIdentity } from "@/lib/colorIdentity";
 
 /**
  * Auto-Save für die Liga-Verwaltung: Punktestand eines Spielers. Die
@@ -28,6 +29,22 @@ export async function updateLeaguePlayer(formData: FormData) {
     data: { points },
   });
   revalidatePath("/admin/league");
+}
+
+/**
+ * Auto-Save der Farbidentität (Spalte F der Rangliste, siehe SPEC.md
+ * Abschnitt 13). Leer oder ohne erkennbare Farbe entfernt sie.
+ */
+export async function updateColorIdentity(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await prisma.player.update({
+    where: { id },
+    data: { colorIdentity: normalizeColorIdentity(String(formData.get("colorIdentity") ?? "")) },
+  });
+  revalidatePath("/admin/league");
+  revalidatePath("/rangliste");
 }
 
 /**

@@ -90,7 +90,7 @@ export async function gamesPlayed(eveningId: string, playerId: string) {
 }
 
 /** Ein Abend-Achievement, wie das Erfassungsblatt es braucht. */
-function toSheetAchievement(a: SheetAchievement): SheetAchievement {
+export function toSheetAchievement(a: SheetAchievement): SheetAchievement {
   return {
     id: a.id,
     title: a.title,

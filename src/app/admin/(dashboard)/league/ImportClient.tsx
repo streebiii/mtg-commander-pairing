@@ -86,6 +86,8 @@ export default function ImportClient({
             playerId: r.playerId!,
             total: m.total,
             attendedEvenings: m.attendedEvenings,
+            roundPoints: m.roundPoints,
+            colorIdentity: m.colorIdentity,
           };
         }
         return {
@@ -94,6 +96,8 @@ export default function ImportClient({
           lastName: r.lastName ?? null,
           total: m.total,
           attendedEvenings: m.attendedEvenings,
+          roundPoints: m.roundPoints,
+          colorIdentity: m.colorIdentity,
         };
       });
       const data = await applyImport(payload);
@@ -120,10 +124,11 @@ export default function ImportClient({
         Rangliste aus Text importieren (Liga)
       </h2>
       <p className="text-xs opacity-70">
-        Füge die Tabelle aus der Liga-Übersicht ein (Spalten &quot;Spieler&quot;
-        und &quot;Total&quot; werden automatisch erkannt, egal wie viele
-        Runden-Spalten es gibt). Importierte Spieler werden dabei automatisch
-        als Liga-teilnehmend markiert.
+        Füge die Tabelle aus der Liga-Übersicht ein. Erkannt werden die
+        Spalten &quot;Spieler&quot;, &quot;F&quot; (Farben), &quot;Total&quot;
+        und die Punkte pro Abend (R1, R2, …) — sie erscheinen in der
+        Rangliste. Importierte Spieler werden automatisch als
+        Liga-teilnehmend markiert.
       </p>
       <textarea
         value={text}

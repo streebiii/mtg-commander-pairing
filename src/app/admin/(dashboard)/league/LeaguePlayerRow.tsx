@@ -2,7 +2,8 @@
 
 import { useRef, useState, useTransition } from "react";
 import { formatPlayerName } from "@/lib/players";
-import { updateLeaguePlayer } from "./actions";
+import { colorsOf } from "@/lib/colorIdentity";
+import { updateColorIdentity, updateLeaguePlayer } from "./actions";
 
 interface Player {
   id: string;
@@ -10,6 +11,7 @@ interface Player {
   lastName: string | null;
   points: number;
   attendedEvenings: number;
+  colorIdentity: string | null;
 }
 
 /**
@@ -24,17 +26,18 @@ interface Player {
  */
 export default function LeaguePlayerRow({ player }: { player: Player }) {
   const [points, setPoints] = useState(String(player.points));
+  const [colors, setColors] = useState(player.colorIdentity ?? "");
   const [isPending, startTransition] = useTransition();
   const [justSaved, setJustSaved] = useState(false);
   const savedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function save(nextPoints: string) {
+  function save(action: (fd: FormData) => Promise<void>, field: string, value: string) {
     const fd = new FormData();
     fd.set("id", player.id);
-    fd.set("points", nextPoints);
+    fd.set(field, value);
 
     startTransition(async () => {
-      await updateLeaguePlayer(fd);
+      await action(fd);
       setJustSaved(true);
       if (savedTimeout.current) clearTimeout(savedTimeout.current);
       savedTimeout.current = setTimeout(() => setJustSaved(false), 1500);
@@ -63,9 +66,29 @@ export default function LeaguePlayerRow({ player }: { player: Player }) {
           value={points}
           onChange={(e) => {
             setPoints(e.target.value);
-            save(e.target.value);
+            save(updateLeaguePlayer, "points", e.target.value);
           }}
           className="min-h-9 w-20 rounded border border-white/20 px-3 py-2"
+        />
+      </td>
+      <td className="py-2 pr-3">
+        {/* Textfeld mit Speichern beim Verlassen (SPEC.md 6.4); beim
+            Speichern auf die erkannten Farben in WUBRG-Reihenfolge
+            normalisiert, wie es auch der Server tut. */}
+        <input
+          type="text"
+          value={colors}
+          onChange={(e) => setColors(e.target.value)}
+          onBlur={() => {
+            const normalized = colorsOf(colors.toUpperCase()).join("");
+            setColors(normalized);
+            if (normalized !== (player.colorIdentity ?? "")) {
+              save(updateColorIdentity, "colorIdentity", normalized);
+            }
+          }}
+          aria-label={`Farbidentität von ${formatPlayerName(player)}`}
+          placeholder="z.B. WR"
+          className="min-h-9 w-28 rounded border border-white/20 px-3 py-2 uppercase"
         />
       </td>
       <td className="py-2 pr-3 text-xs">

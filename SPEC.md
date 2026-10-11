@@ -57,7 +57,9 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
 - **Öffentliche Lese-Ansicht**: separate URL ohne Login, zeigt nur die
   live geschalteten Tischzuteilungen des laufenden Abends (z. B. für einen
   Bildschirm vor Ort oder zum Teilen mit den Spielern). Keine
-  Bearbeitungsmöglichkeit.
+  Bearbeitungsmöglichkeit. Daneben, ebenfalls ohne Login, die Rangliste
+  der Saison unter `/rangliste` (Abschnitt 13); eine Umschaltung
+  „Pairings | Rangliste“ verbindet die beiden.
 - **Hosting — Hybrid**: die App UND die Datenbank (Vercel Postgres)
   laufen auf Vercel (Node.js-fähig) — cyon.ch selbst kann keine dauerhaft
   laufende Node.js-App hosten, und cyons Datenbanken lassen sich nur per
@@ -545,9 +547,10 @@ Beide Fälle werden über denselben Bestätigungsdialog abgefragt.
 - Die Liga-Verwaltung listet **nur die Liga-Teilnehmenden**
   (`leagueActive`). Je Spieler steht dort der aktuelle
   Gesamt-Liga-Punktestand (Kopie des Standes von mtgbl.ch, gepflegt über
-  den Import aus Abschnitt 7, hier aber auch manuell editierbar) und die
+  den Import aus Abschnitt 7, hier aber auch manuell editierbar), die
   Anzahl besuchter Abende, die aus denselben Importdaten stammt und in die
-  Paarung eingeht (Abschnitt 5.1).
+  Paarung eingeht (Abschnitt 5.1), und die **Farbidentität** (z. B.
+  «WR»), ebenfalls aus dem Import und hier änderbar (Abschnitt 13).
 - Die Teilnahme selbst lässt sich hier **nicht** ändern — das geht nur im
   Spieler-Tab. Wer dort den Haken entfernt, verschwindet aus der
   Liga-Verwaltung; seine Punkte bleiben gespeichert und sind beim
@@ -590,6 +593,12 @@ bestätigt den Vorgang. Gilt für beide Tabs.
 - Der Import ist **kein Aufaddieren**: er setzt Punktestand und
   Abendzahl auf die importierten Werte und markiert die Spieler als
   liga-teilnehmend. Er kann vor jedem Abend wiederholt werden.
+- Zusätzlich übernimmt er für die Rangliste (Abschnitt 13) die **Punkte
+  pro Abend** und die **Farbidentität** aus der Spalte **F**. Die
+  Abendpunkte eines Spielers werden dabei komplett ersetzt — aber nur bei
+  Spielern, die der Import übernimmt; wer übersprungen wird oder nicht im
+  Text steht, behält seine Werte. Fehlt die Spalte F, bleiben die
+  gespeicherten Farben unangetastet.
 
 ## 8. Verlauf / Historie
 
@@ -606,8 +615,8 @@ bestätigt den Vorgang. Gilt für beide Tabs.
 - Kein Multi-User/Rollenmodell.
 - Keine Ziehung der rotierenden Achievements in der App — die macht
   mtgbl.ch, die App übernimmt sie nur (Abschnitt 11). Die erreichten
-  Achievements erfassen die Spieler selbst (Abschnitt 12); eine
-  Rangliste in der App ist geplant (BACKLOG.md).
+  Achievements erfassen die Spieler selbst (Abschnitt 12), die Rangliste
+  zeigt sie (Abschnitt 13).
 - Kein automatischer Import/Sync mit mtgbl.ch.
 - Keine saisonübergreifende Rematch-Vermeidung.
 - Keine Sonderbehandlung für „zu wenige Spieler" (< 3 anwesend) — tritt
@@ -746,7 +755,10 @@ und der Organisator erfasst für ihn.
   «Als abgegeben markieren»), «Wieder öffnen» und «Handy freigeben».
 - **Erfassung schliessen** (mit Rückfrage) beendet die Erfassung des
   Abends. Danach können die Spieler nichts mehr ändern, und der Abend
-  zählt in der Rangliste. Startet ein neuer Liga-Abend, wird eine noch
+  zählt in der Rangliste. Die Rückfrage bestätigt zugleich die **Spalte**
+  (R1–R6), in der er zählt — aus dem Datum vorbelegt und änderbar —, oder
+  «Testabend — zählt nicht». Jede Spalte gehört höchstens einem Abend der
+  Saison; ist sie schon vergeben, lehnt die App ab und nennt den Abend. Startet ein neuer Liga-Abend, wird eine noch
   offene Erfassung automatisch geschlossen. Es gibt immer nur eine
   offene Erfassung.
 - Welcher Liga-Abend (1–6) ein Abend ist, leitet die App aus den
@@ -755,3 +767,64 @@ und der Organisator erfasst für ihn.
   letzten Termin liegt ausserhalb der Saison: er bekommt keine Nummer und
   zählt nicht als letzter Abend — sonst erschiene Evergreen bis zum
   Nachführen der Liste an jedem Abend.
+
+## 13. Rangliste
+
+Öffentlich unter `/rangliste`, ohne Login — dieselbe Rangliste wie auf
+mtgbl.ch, zusätzlich mit den erreichten Achievements pro Abend. Die
+offizielle Wertung bleibt auf mtgbl.ch.
+
+### 13.1 Inhalt
+
+- **Spalten** wie auf mtgbl.ch: #, Δ, Spieler, F (Farbidentität als
+  farbige Punkte in den Magic-Farben W, U, B, R, G), Total, R1–R6.
+- **Wer erscheint**: alle Liga-Teilnehmenden (`leagueActive`), auch ohne
+  gespielten Abend (Total 0). Massgebend ist allein der Haken im
+  Spieler-Tab.
+- **Abendpunkte**: für die Abende vor der App (bis R4) aus dem Import
+  (Abschnitt 7), danach aus der Achievement-Erfassung (Abschnitt 12).
+  Ein Abend aus der App zählt erst, wenn seine Erfassung geschlossen und
+  einer Spalte zugeordnet ist (Abschnitt 12.3). Gibt es für eine Spalte
+  einen Abend aus der App, gilt er für alle — auch für wen der Import dort
+  einen Wert hätte. Wer am Abend an einem Tisch sass, aber nichts erfasst
+  hat, bekommt die automatische Participation.
+- **Total** rechnet die Rangliste selbst aus den Abendpunkten.
+  `Player.points` (Paarung von Runde 1) bleibt davon vorerst getrennt und
+  wird weiterhin über den Import gepflegt (BACKLOG.md).
+- **Rang**: gleiches Total heisst gleicher Rang (1, 2, 2, 4), innerhalb
+  eines Rangs alphabetisch.
+- **Streichresultat**: während der Saison zählt die Summe aller Abende.
+  Sobald R6 Punkte hat, wird je Spieler das schlechteste Resultat
+  gestrichen und durchgestrichen angezeigt. Ein verpasster Abend zählt als
+  0 und ist damit das schlechteste; bei mehreren gleich schlechten trifft
+  es den letzten.
+- **Δ**: Veränderung gegenüber dem Stand vor dem letzten Abend (höchste
+  Spalte mit Punkten), nach denselben Regeln gerechnet — ▲ grün, ▼ rot,
+  nichts bei gleichem Rang. Wer vor dem letzten Abend noch keinen hatte,
+  bekommt «neu». Nach R6 vergleicht Δ den Stand mit Streichresultat mit
+  dem nach R5 ohne. Vor dem zweiten Abend gibt es kein Δ.
+- Bis es ein Saison-Objekt gibt (BACKLOG.md), gilt als Saison das
+  Kalenderjahr bis zum letzten Termin (`src/lib/season.ts`).
+
+### 13.2 Details pro Abend
+
+- Punkte aus der App sind **unterstrichen**; importierte Abende haben
+  keine Details und sind nicht markiert.
+- Die Details zeigen Spieler, Spalte, Datum und Punkte des Abends, darunter
+  gegliedert wie das Punkteblatt: **Spiel 1**, **Spiel 2** und **Ganzer
+  Abend** (Deckbau, «mehrmals pro Abend», Evergreen), je mit Teilsumme;
+  pro Achievement Titel, Punkte und bei mehrfach zählenden die Anzahl
+  (×3). Participation steht mit drin, damit die Summen aufgehen.
+- **Geräte, die hovern können** (Maus, Trackpad): ein kleines Popover
+  direkt an der Zahl, beim Hovern und beim Fokussieren per Tastatur.
+- **Touch-Geräte**: ein **Bottom Sheet**, das sanft von unten hochfährt
+  (250 ms), die Seite dahinter abgedunkelt. Schliesst mit Tippen daneben,
+  mit ×, mit Escape und mit der Zurück-Geste. Unterschieden wird nach
+  Fähigkeit (`hover: hover`), nicht nach Bildschirmbreite — ein Tablet mit
+  Touch bekommt das Sheet.
+
+### 13.3 Auf dem Handy
+
+Rang mit Δ, Spieler (mit den Farbpunkten) und Total bleiben links
+fixiert, die Spalten R1–R6 scrollen horizontal. Die Seite selbst scrollt
+nie seitlich.

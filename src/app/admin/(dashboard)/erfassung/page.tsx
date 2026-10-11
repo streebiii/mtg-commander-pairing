@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { formatPlayerName } from "@/lib/players";
 import { type EntryStatus, findOpenEvening, loadEveningOverview } from "@/lib/entries";
-import { eveningLabel } from "@/lib/season";
+import { eveningLabel, eveningNumber } from "@/lib/season";
 import { releaseDevice, reopenEntry } from "./actions";
 import CloseEntryButton from "./CloseEntryButton";
 
@@ -111,6 +111,7 @@ export default async function EntryOverviewPage() {
       <CloseEntryButton
         eveningId={evening.id}
         openCount={rows.length - submitted}
+        suggestedRound={eveningNumber(evening.date)}
       />
     </div>
   );

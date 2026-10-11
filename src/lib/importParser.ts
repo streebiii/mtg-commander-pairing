@@ -10,19 +10,26 @@
  * (nicht anhand der Position), damit variierende Rundenanzahlen (R1..R6)
  * keine Rolle spielen.
  *
- * Die Rundenspalten (R1, R2, ...) werden mitgelesen, aber nur gezählt: aus
- * ihnen ergibt sich, an wie vielen Abenden ein Spieler dabei war. Das
- * braucht die Paarung, weil sie nach Punkten **pro Abend** sortiert und
- * nicht nach der Gesamtsumme — sonst landet, wer Abende verpasst hat,
- * systematisch an den unteren Tischen, unabhängig von seiner Stärke
- * (siehe SPEC.md Abschnitt 5.1).
+ * Aus den Rundenspalten (R1, R2, ...) kommen die Punkte pro Abend für die
+ * Rangliste (SPEC.md Abschnitt 13) und die Zahl der besuchten Abende für
+ * die Paarung, die nach Punkten **pro Abend** sortiert statt nach der
+ * Gesamtsumme (Abschnitt 5.1). Die Spalte F liefert die Farbidentität.
  */
+
+import { normalizeColorIdentity } from "./colorIdentity";
 
 export interface ParsedImportRow {
   importName: string;
   total: number;
   /** Anzahl Rundenspalten mit einer Zahl — also besuchte Liga-Abende. */
   attendedEvenings: number;
+  /** Punkte je besuchtem Abend; ein Strich oder eine leere Zelle fehlt hier. */
+  roundPoints: { round: number; points: number }[];
+  /**
+   * Farbidentität aus der Spalte F. undefined, wenn die Tabelle keine
+   * Spalte F hat — dann bleibt die gespeicherte unangetastet.
+   */
+  colorIdentity?: string | null;
 }
 
 export interface ParseResult {
@@ -55,11 +62,12 @@ export function parseLeagueImport(text: string): ParseResult {
   const headerCells = splitTableRow(lines[0]).map((c) => c.toLowerCase());
   const nameIdx = headerCells.findIndex((c) => c.includes("spieler"));
   const totalIdx = headerCells.findIndex((c) => c.includes("total"));
+  const colorIdx = headerCells.findIndex((c) => c === "f");
   // Rundenspalten heissen R1, R2, ... — Leerzeichen und Grossschreibung egal.
-  const roundIdxs = headerCells
-    .map((c, i) => ({ c, i }))
-    .filter(({ c }) => /^r\s*\d+$/.test(c))
-    .map(({ i }) => i);
+  const roundCols = headerCells
+    .map((c, i) => ({ match: /^r\s*(\d+)$/.exec(c), i }))
+    .filter(({ match }) => match !== null)
+    .map(({ match, i }) => ({ round: Number(match![1]), idx: i }));
 
   if (nameIdx === -1 || totalIdx === -1) {
     return {
@@ -70,7 +78,7 @@ export function parseLeagueImport(text: string): ParseResult {
     };
   }
 
-  if (roundIdxs.length === 0) {
+  if (roundCols.length === 0) {
     warnings.push(
       "Keine Rundenspalten (R1, R2, ...) gefunden — die Paarung sortiert dann " +
         "nach Gesamtpunkten statt nach Punkten pro Abend.",
@@ -99,11 +107,20 @@ export function parseLeagueImport(text: string): ParseResult {
 
     // Ein Abend zählt als besucht, sobald in seiner Spalte eine Zahl steht.
     // Leere Zellen und Platzhalter wie "—" bedeuten: nicht dabei gewesen.
-    const attendedEvenings = roundIdxs.filter((idx) =>
-      Number.isFinite(Number.parseInt(cells[idx]?.trim() ?? "", 10)),
-    ).length;
+    const roundPoints = roundCols.flatMap(({ round, idx }) => {
+      const points = Number.parseInt(cells[idx]?.trim() ?? "", 10);
+      return Number.isFinite(points) ? [{ round, points }] : [];
+    });
 
-    rows.push({ importName, total, attendedEvenings });
+    rows.push({
+      importName,
+      total,
+      attendedEvenings: roundPoints.length,
+      roundPoints,
+      ...(colorIdx === -1
+        ? {}
+        : { colorIdentity: normalizeColorIdentity(cells[colorIdx]) }),
+    });
   }
 
   return { rows, warnings };
