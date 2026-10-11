@@ -1,5 +1,5 @@
 import type { AchievementCategory, AchievementScope } from "@prisma/client";
-import { isRepeatable } from "@/lib/achievements";
+import { CATEGORIES, isRepeatable } from "@/lib/achievements";
 
 // Reine Logik des Erfassungsblatts (siehe SPEC.md Abschnitt 12) — ohne
 // Datenbankzugriff, damit dieselben Regeln im Browser (laufende Summe)
@@ -76,10 +76,25 @@ export function validGame(
 }
 
 /**
- * Summen wie auf dem Punkteblatt: Core (fix), Deckbau, Rotate. Participation
- * zählt automatisch einmal je gespieltem Spiel. Markierungen für Spiele,
- * die der Spieler nicht gespielt hat, oder für ausgeblendete Achievements
- * werden ignoriert.
+ * Wie oft ein Achievement in welchem Spiel zählt (Spiel 0 = ganzer Abend).
+ * Participation zählt automatisch einmal je gespieltem Spiel; Markierungen
+ * für Spiele, die der Spieler nicht gespielt hat, werden ignoriert.
+ */
+function countsByGame(
+  a: SheetAchievement,
+  marks: Map<string, number>,
+  gamesPlayed: number[],
+): { game: number; count: number }[] {
+  if (isParticipation(a)) return gamesPlayed.map((game) => ({ game, count: 1 }));
+  if (isPerGame(a.scope)) {
+    return gamesPlayed.map((game) => ({ game, count: marks.get(markKey(a.id, game)) ?? 0 }));
+  }
+  return [{ game: 0, count: marks.get(markKey(a.id, 0)) ?? 0 }];
+}
+
+/**
+ * Summen wie auf dem Punkteblatt: Core (fix), Deckbau, Rotate.
+ * Ausgeblendete Achievements (Evergreen ausser am letzten Abend) zählen nicht.
  */
 export function computeTotals(
   achievements: SheetAchievement[],
@@ -89,14 +104,7 @@ export function computeTotals(
 ): SheetTotals {
   const totals: SheetTotals = { core: 0, deckbau: 0, rotate: 0, total: 0 };
   for (const a of visibleAchievements(achievements, lastEvening)) {
-    let count = 0;
-    if (isParticipation(a)) {
-      count = gamesPlayed.length;
-    } else if (isPerGame(a.scope)) {
-      for (const g of gamesPlayed) count += marks.get(markKey(a.id, g)) ?? 0;
-    } else {
-      count = marks.get(markKey(a.id, 0)) ?? 0;
-    }
+    const count = countsByGame(a, marks, gamesPlayed).reduce((s, c) => s + c.count, 0);
     const points = a.points * count;
     if (a.category === "FIXED") totals.core += points;
     else if (a.category === "DECKBUILDING") totals.deckbau += points;
@@ -104,6 +112,66 @@ export function computeTotals(
   }
   totals.total = totals.core + totals.deckbau + totals.rotate;
   return totals;
+}
+
+export interface BreakdownItem {
+  title: string;
+  /** Punkte pro Erfüllung. */
+  points: number;
+  count: number;
+}
+
+export interface BreakdownSection {
+  /** «Spiel 1», «Spiel 2» oder «Ganzer Abend». */
+  label: string;
+  total: number;
+  items: BreakdownItem[];
+}
+
+export interface Breakdown {
+  sections: BreakdownSection[];
+  total: number;
+}
+
+/**
+ * Was ein Spieler an einem Abend erreicht hat, gegliedert wie das
+ * Punkteblatt: je gespieltes Spiel, dann alles, was für den ganzen Abend
+ * zählt (Deckbau, «mehrmals pro Abend», Evergreen). Für die Details in
+ * der Rangliste (SPEC.md Abschnitt 13); die Summe entspricht immer
+ * `computeTotals`.
+ */
+export function computeBreakdown(
+  achievements: SheetAchievement[],
+  marks: Map<string, number>,
+  gamesPlayed: number[],
+  lastEvening: boolean,
+): Breakdown {
+  const order = (a: SheetAchievement) =>
+    CATEGORIES.indexOf(a.category) * 100_000 + a.sortOrder;
+  const sorted = [...visibleAchievements(achievements, lastEvening)].sort(
+    (x, y) => order(x) - order(y),
+  );
+
+  const games = [...gamesPlayed].sort((x, y) => x - y);
+  const sections: BreakdownSection[] = [...games, 0].map((game) => ({
+    label: game === 0 ? "Ganzer Abend" : `Spiel ${game}`,
+    total: 0,
+    items: [],
+  }));
+  const sectionOf = (game: number) =>
+    sections[game === 0 ? games.length : games.indexOf(game)];
+
+  for (const a of sorted) {
+    for (const { game, count } of countsByGame(a, marks, games)) {
+      if (count === 0) continue;
+      const section = sectionOf(game);
+      section.items.push({ title: a.title, points: a.points, count });
+      section.total += a.points * count;
+    }
+  }
+
+  const filled = sections.filter((s) => s.items.length > 0);
+  return { sections: filled, total: filled.reduce((sum, s) => sum + s.total, 0) };
 }
 
 export function marksToMap(marks: SheetMark[]): Map<string, number> {

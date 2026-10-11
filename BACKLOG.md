@@ -274,36 +274,31 @@ einer live geschalteten Casual-Zuteilung auszublenden.
 
 ## Öffentliche Rangliste mit Achievements
 
-**Status:** Gegrillt (Session vom 10.10.2026), Gestaltungsvorschlag
-gemacht, bereit zur Umsetzung nach der Selbsterfassung.
+**Status:** Umgesetzt (11.10.2026), siehe SPEC.md Abschnitt 13.
 
-**Worum es geht:** pairings.mtgbl.ch zeigt eine Rangliste wie
-https://mtgbl.ch/liga/commander/2026/rangliste — zusätzlich mit den
-erreichten Achievements pro Abend.
+**Entschieden in der Grill-Session vom 11.10.2026** (ergänzt die vom
+10.10.2026):
+- Eigene Seite `/rangliste` mit Umschaltung „Pairings | Rangliste“.
+- Das Total rechnet die Rangliste selbst; `Player.points` und die
+  Paarung bleiben vorerst unverändert (siehe «Liga-Punkte aus der
+  Erfassung übernehmen» oben).
+- Die Spalte (R1–R6) eines App-Abends wird beim Schliessen der Erfassung
+  bestätigt, aus dem Datum vorbelegt; «Testabend» zählt nicht. Für
+  dieselbe Spalte gewinnt die App vor dem Import.
+- Angezeigt werden alle Liga-Teilnehmenden, auch mit Total 0.
+- Gleiches Total, gleicher Rang; innerhalb alphabetisch.
+- Streichresultat ab R6; ein verpasster Abend zählt als 0 und wird damit
+  gestrichen.
+- Details gegliedert nach Spiel 1, Spiel 2, Ganzer Abend. Desktop:
+  Popover beim Hovern; Touch: Bottom Sheet mit sanfter Animation.
+- Handy: Rang, Spieler, Total fixiert, R-Spalten scrollen, Farbpunkte
+  beim Namen.
+- Farbidentität aus dem Import, änderbar in der Liga-Verwaltung.
+- Ein Import ersetzt Abendpunkte nur bei den Spielern, die er übernimmt.
+- Δ gegen den Stand ohne den letzten Abend, «neu» beim ersten Abend.
 
-**Entschieden:**
-- **Spalten wie auf mtgbl.ch:** Δ, #, Spieler, F (Farbidentität, als
-  farbige Punkte), Total, R1–R6.
-- **Achievement-Details pro Abend:** Punktzahlen aus der App sind
-  markiert; Überfahren (Desktop) oder Antippen (Handy) zeigt darunter die
-  Aufschlüsselung Spiel 1 / Spiel 2 / Deckbau mit Achievements und
-  Teilsummen.
-- **Abende vor der App (R1–R4)** kommen über den erweiterten Import: er
-  speichert künftig die Punkte pro Abend und die Farbidentität (F), nicht
-  nur Total und Anzahl. Für diese Abende gibt es keine Details.
-- Ein Abend erscheint erst, wenn der Organisator die Erfassung
-  geschlossen hat.
-- **Streichresultat** (laut mtgbl.ch zählt das schlechteste Resultat
-  nicht): während der Saison Summe aller Abende, erst nach Abend 6 wird
-  das schlechteste gestrichen und durchgestrichen angezeigt.
-- Die Rangliste auf mtgbl.ch wird später automatisch aktualisiert — eine
-  Kopier-Ausgabe für mtgbl.ch braucht es vorerst nicht.
-
-**Zu beachten:**
-- `Player.points` ist heute die Kopie des mtgbl-Totals; mit der
-  Rangliste wird das Total aus den Abendpunkten berechnet. Klären, ob
-  `points` dann nur noch für die Paarung von Runde 1 dient.
-- Δ = Rangveränderung gegenüber dem Stand vor dem letzten Abend.
+**Nach dem Deploy:** einmal die aktuelle Rangliste von mtgbl.ch neu
+importieren, damit R1–R4 und die Farben in der App stehen.
 
 ## Achievement-Katalog und Auswahl der rotierenden
 

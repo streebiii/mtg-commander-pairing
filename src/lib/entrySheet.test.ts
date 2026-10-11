@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   type SheetAchievement,
+  computeBreakdown,
   computeTotals,
   markKey,
   maxCount,
@@ -86,6 +87,45 @@ describe("Regeln des Blatts", () => {
     expect(maxCount("MATCH")).toBe(1);
     expect(maxCount("PER_PLAYER")).toBeGreaterThan(1);
     expect(maxCount("MULTIPLE")).toBeGreaterThan(1);
+  });
+});
+
+describe("computeBreakdown", () => {
+  const all = [smash, pauper, participation, winner, classic, evergreen];
+  const marks = new Map([
+    [markKey("winner", 1), 1],
+    [markKey("classic", 1), 3],
+    [markKey("smash", 2), 1],
+    [markKey("pauper", 0), 1],
+    [markKey("evergreen", 0), 1],
+  ]);
+
+  it("gliedert nach Spiel und ganzem Abend, in der Reihenfolge des Blatts", () => {
+    const b = computeBreakdown(all, marks, [2, 1], true);
+    expect(b.sections.map((s) => [s.label, s.total])).toEqual([
+      ["Spiel 1", 5],
+      ["Spiel 2", 3],
+      ["Ganzer Abend", 11],
+    ]);
+    expect(b.sections[0].items).toEqual([
+      { title: "participation", points: 1, count: 1 },
+      { title: "winner", points: 1, count: 1 },
+      { title: "classic", points: 1, count: 3 },
+    ]);
+    expect(b.total).toBe(19);
+  });
+
+  it("ergibt dieselbe Summe wie computeTotals", () => {
+    for (const last of [false, true]) {
+      expect(computeBreakdown(all, marks, [1, 2], last).total).toBe(
+        computeTotals(all, marks, [1, 2], last).total,
+      );
+    }
+  });
+
+  it("lässt leere Abschnitte und Evergreen ausser am letzten Abend weg", () => {
+    const b = computeBreakdown([participation, evergreen], marks, [1], false);
+    expect(b.sections.map((s) => s.label)).toEqual(["Spiel 1"]);
   });
 });
 

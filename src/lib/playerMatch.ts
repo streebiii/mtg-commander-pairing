@@ -13,28 +13,13 @@ export interface MatchCandidate {
 }
 
 export type ImportMatch =
-  | {
-      importName: string;
-      total: number;
-      attendedEvenings: number;
-      matchType: "exact";
-      matchedPlayerId: string;
-    }
-  | {
-      importName: string;
-      total: number;
-      attendedEvenings: number;
-      matchType: "ambiguous";
-      candidates: MatchCandidate[];
-    }
-  | {
-      importName: string;
-      total: number;
-      attendedEvenings: number;
+  | (ParsedImportRow & { matchType: "exact"; matchedPlayerId: string })
+  | (ParsedImportRow & { matchType: "ambiguous"; candidates: MatchCandidate[] })
+  | (ParsedImportRow & {
       matchType: "new";
       suggestedFirstName: string;
       suggestedLastName: string | null;
-    };
+    });
 
 function splitImportName(importName: string): {
   first: string;
@@ -86,9 +71,7 @@ export function matchImportRows(
 
     if (sameFirstName.length === 0) {
       return {
-        importName: row.importName,
-        total: row.total,
-        attendedEvenings: row.attendedEvenings,
+        ...row,
         matchType: "new",
         suggestedFirstName: first,
         suggestedLastName: lastToken ? normalizeLastTokenForStorage(lastToken) : null,
@@ -101,9 +84,7 @@ export function matchImportRows(
 
     if (narrowed.length === 1) {
       return {
-        importName: row.importName,
-        total: row.total,
-        attendedEvenings: row.attendedEvenings,
+        ...row,
         matchType: "exact",
         matchedPlayerId: narrowed[0].id,
       };
@@ -115,18 +96,14 @@ export function matchImportRows(
       // "K.") — vermutlich eine andere Person, trotzdem dem Organisator
       // zur Entscheidung vorlegen statt automatisch zu duplizieren.
       return {
-        importName: row.importName,
-        total: row.total,
-        attendedEvenings: row.attendedEvenings,
+        ...row,
         matchType: "ambiguous",
         candidates: sameFirstName,
       };
     }
 
     return {
-      importName: row.importName,
-      total: row.total,
-      attendedEvenings: row.attendedEvenings,
+      ...row,
       matchType: "ambiguous",
       candidates: narrowed.length > 0 ? narrowed : sameFirstName,
     };

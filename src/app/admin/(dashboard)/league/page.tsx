@@ -58,6 +58,7 @@ export default async function LeaguePage() {
         points: true,
         attendedEvenings: true,
         leagueActive: true,
+        colorIdentity: true,
       },
     }),
   ]);
@@ -86,18 +87,20 @@ export default async function LeaguePage() {
         Liga-Verwaltung ({activePlayers.length} Spieler)
       </h2>
       <p className="text-xs opacity-70">
-        Punktestand der Liga-Teilnehmenden. Wer an der Liga teilnimmt, legst
-        du im Spieler-Tab fest — der Import unten nimmt importierte Spieler
-        automatisch auf. Änderungen werden automatisch gespeichert.
+        Punktestand und Farbidentität (z.B. «WR») der Liga-Teilnehmenden. Wer
+        an der Liga teilnimmt, legst du im Spieler-Tab fest — der Import unten
+        nimmt importierte Spieler automatisch auf. Änderungen werden
+        automatisch gespeichert.
       </p>
       {activePlayers.length > 0 && (
         <div className="w-full max-w-2xl overflow-x-auto">
-          <table className="w-full min-w-[360px] text-sm">
+          <table className="w-full min-w-[440px] text-sm">
             <thead>
               <tr className="border-b border-white/10 text-left">
                 <th className="py-2 pr-3">Spieler</th>
                 <th className="py-2 pr-3">Abende</th>
                 <th className="py-2 pr-3">Punkte</th>
+                <th className="py-2 pr-3">Farben</th>
                 <th className="py-2 pr-3"></th>
               </tr>
             </thead>

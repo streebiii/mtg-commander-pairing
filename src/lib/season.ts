@@ -15,6 +15,9 @@ export const SEASON_2026_DATES = [
 
 export const EVENINGS_PER_SEASON = SEASON_2026_DATES.length;
 
+/** Die laufende Saison — bis es ein Saison-Objekt gibt, das Kalenderjahr. */
+export const SEASON_YEAR = 2026;
+
 /** Kalendertag in Schweizer Zeit als "YYYY-MM-DD". */
 function zurichDay(date: Date): string {
   return new Intl.DateTimeFormat("sv-SE", {
@@ -51,4 +54,12 @@ export function isLastEvening(date: Date): boolean {
 export function eveningLabel(date: Date): string {
   const number = eveningNumber(date);
   return number === null ? "Liga-Abend (ausserhalb der Saison)" : `Liga-Abend ${number}`;
+}
+
+/**
+ * Gehört ein Abend zur laufenden Saison? Abende früherer Jahre oder nach
+ * dem letzten Termin zählen in der Rangliste nicht mit.
+ */
+export function isInSeason(date: Date): boolean {
+  return zurichDay(date).startsWith(`${SEASON_YEAR}-`) && eveningNumber(date) !== null;
 }

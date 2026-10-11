@@ -42,11 +42,16 @@ model Player {
   /// (siehe SPEC.md Abschnitt 6). Archivierte Spieler tauchen in keiner
   /// Liste mehr auf; ihre Tischzuteilungen und Ergebnisse bleiben intakt.
   archivedAt   DateTime?
+  /// Ausgeloste Farbidentität der Saison als Buchstaben in WUBRG-Reihenfolge
+  /// (z.B. «WR»), wie in der Spalte F auf mtgbl.ch. Kommt über den Import,
+  /// änderbar in der Liga-Verwaltung; die Rangliste zeigt sie als Punkte.
+  colorIdentity String?
   createdAt    DateTime  @default(now())
 
-  assignments TableAssignment[]
-  casualSeat  CasualSeat?
-  entries     PlayerEntry[]
+  assignments    TableAssignment[]
+  casualSeat     CasualSeat?
+  entries        PlayerEntry[]
+  importedScores ImportedEveningScore[]
 
   @@map("players")
 }
@@ -63,6 +68,11 @@ model Evening {
   /// Abends geschlossen hat. Bis dahin können die Spieler eintragen, auch
   /// nach «Abend beenden» (siehe SPEC.md Abschnitt 12).
   entryClosedAt DateTime?
+  /// Für welche Spalte der Rangliste (R1–R6) dieser Abend zählt. Wird beim
+  /// Schliessen der Erfassung bestätigt, aus dem Datum vorbelegt; null =
+  /// zählt nicht (Testabend oder Abend vor der Selbsterfassung). Siehe
+  /// SPEC.md Abschnitt 13.
+  seasonRound   Int?
 
   rounds       Round[]
   achievements EveningAchievement[]
@@ -284,6 +294,21 @@ model AchievementMark {
 
   @@unique([entryId, eveningAchievementId, game])
   @@map("achievement_marks")
+}
+
+/// Punkte eines Spielers an einem Liga-Abend vor der App (R1–R4), aus dem
+/// Import der Rangliste von mtgbl.ch. Gibt es für dieselbe Spalte einen
+/// Abend aus der App, gilt dieser (siehe SPEC.md Abschnitt 13).
+model ImportedEveningScore {
+  id       String @id @default(cuid())
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /// Spalte der Rangliste, 1 = R1.
+  round    Int
+  points   Int
+
+  @@unique([playerId, round])
+  @@map("imported_evening_scores")
 }
 
 /// Einmal-Code für den passwortlosen Email-Login (siehe SPEC.md
