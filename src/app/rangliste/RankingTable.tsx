@@ -304,19 +304,33 @@ function Popover({
   const ref = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
 
+  // Bevorzugt unter der Zahl, sonst darüber. Ist das Fenster für beides zu
+  // hoch (ein Abend mit vielen Achievements), steht es seitlich daneben —
+  // es soll die Zahl, auf die man zeigt, nie verdecken.
   useLayoutEffect(() => {
     const box = ref.current!.getBoundingClientRect();
     const target = anchor.getBoundingClientRect();
-    const below = target.bottom + GAP;
-    const top =
-      below + box.height <= window.innerHeight - GAP
-        ? below
-        : Math.max(GAP, target.top - GAP - box.height);
-    const left = Math.min(
-      Math.max(GAP, target.left + target.width / 2 - box.width / 2),
-      window.innerWidth - box.width - GAP,
-    );
-    setPosition({ top, left });
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const clamp = (value: number, max: number) => Math.min(Math.max(GAP, value), max);
+
+    if (target.bottom + GAP + box.height <= vh - GAP) {
+      setPosition({
+        top: target.bottom + GAP,
+        left: clamp(target.left + target.width / 2 - box.width / 2, vw - box.width - GAP),
+      });
+    } else if (target.top - GAP - box.height >= GAP) {
+      setPosition({
+        top: target.top - GAP - box.height,
+        left: clamp(target.left + target.width / 2 - box.width / 2, vw - box.width - GAP),
+      });
+    } else {
+      const right = target.right + GAP;
+      setPosition({
+        top: clamp(target.top + target.height / 2 - box.height / 2, vh - box.height - GAP),
+        left: right + box.width <= vw - GAP ? right : Math.max(GAP, target.left - GAP - box.width),
+      });
+    }
   }, [anchor]);
 
   // Beim Scrollen bliebe das Fenster sonst stehen, während die Zahl wegwandert.
@@ -329,8 +343,12 @@ function Popover({
     <div
       ref={ref}
       role="tooltip"
-      style={{ top: position?.top ?? 0, left: position?.left ?? 0 }}
-      className={`pointer-events-none fixed z-50 w-80 rounded-lg border border-white/15 bg-surface p-4 shadow-xl shadow-black/50 transition-opacity duration-150 motion-reduce:transition-none ${
+      style={{
+        top: position?.top ?? 0,
+        left: position?.left ?? 0,
+        maxHeight: `calc(100vh - ${2 * GAP}px)`,
+      }}
+      className={`pointer-events-none fixed z-50 w-80 overflow-hidden rounded-lg border border-white/15 bg-surface p-4 shadow-xl shadow-black/50 transition-opacity duration-150 motion-reduce:transition-none ${
         position ? "opacity-100" : "opacity-0"
       }`}
     >

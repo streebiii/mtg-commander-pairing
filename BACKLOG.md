@@ -300,6 +300,12 @@ einer live geschalteten Casual-Zuteilung auszublenden.
 **Nach dem Deploy:** einmal die aktuelle Rangliste von mtgbl.ch neu
 importieren, damit R1–R4 und die Farben in der App stehen.
 
+**Nachgetragene Abende** (Entscheid vom 11.10.2026): R1–R4 werden aus
+den Fotos der Punkteblätter abgelesen und als echte Abende eingespielt
+(SPEC.md Abschnitt 13.3), mtgbl.ch ist dabei massgeblich. R2 (22.05.)
+ist abgelesen und geklärt; R1, R3 und R4 folgen, sobald die Fotos
+vorliegen.
+
 ## Achievement-Katalog und Auswahl der rotierenden
 
 **Status:** Umgesetzt (08./09.10.2026), siehe SPEC.md Abschnitt 11.

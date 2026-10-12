@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "import:evening": "node scripts/import-evening.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -32,6 +33,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
+    "jiti": "2.7.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
