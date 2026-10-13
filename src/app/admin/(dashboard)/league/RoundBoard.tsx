@@ -3,11 +3,13 @@
 import { useOptimistic, useState, useTransition } from "react";
 import TableCard from "@/components/TableCard";
 import { formatPlayerName } from "@/lib/players";
-import { setTableResult, swapPlayers } from "./actions";
+import { dropPlayer, setTableResult, swapPlayers, undoDrop } from "./actions";
 
 interface AssignmentView {
   id: string;
+  playerId: string;
   isWinner: boolean;
+  droppedAt: Date | null;
   player: { firstName: string; lastName: string | null };
 }
 
@@ -21,7 +23,8 @@ interface TableView {
 
 type OptimisticAction =
   | { type: "swap"; assignmentAId: string; assignmentBId: string }
-  | { type: "setResult"; tableId: string; winnerAssignmentId: string };
+  | { type: "setResult"; tableId: string; winnerAssignmentId: string }
+  | { type: "drop"; assignmentId: string; dropped: boolean };
 
 /**
  * Wendet dieselbe Logik wie `swapPlayers`/`setTableResult` in actions.ts
@@ -61,6 +64,17 @@ function applyOptimisticAction(
     return next;
   }
 
+  if (action.type === "drop") {
+    return tables.map((table) => ({
+      ...table,
+      assignments: table.assignments.map((a) =>
+        a.id === action.assignmentId
+          ? { ...a, droppedAt: action.dropped ? new Date() : null }
+          : a,
+      ),
+    }));
+  }
+
   return tables.map((table) => {
     if (table.id !== action.tableId) return table;
     const bisherigerSieger = table.assignments.find((a) => a.isWinner)?.id ?? "";
@@ -90,6 +104,11 @@ function applyOptimisticAction(
  * "draft"-Modus (Warteraum) gibt es noch keine Sieger, nur den Tausch —
  * die Spieler sitzen ja noch nicht öffentlich sichtbar am Tisch.
  *
+ * Mit `eveningId` erscheint neben der Krone zusätzlich «Drop» (bzw.
+ * «Zurück» bei einem schon gedroppten Spieler, siehe SPEC.md Abschnitt
+ * 5.3). Im Warteraum mischt ein Drop die Runde neu — das wartet auf den
+ * Server; in einer laufenden Runde wird nur markiert, das wirkt sofort.
+ *
  * Tausch/Krone/Unentschieden zeigen ihre Wirkung **sofort** über
  * `useOptimistic`, statt auf die Server-Antwort (inkl. revalidatePath) zu
  * warten — bei spürbarer Netzwerklatenz zur DB wirkte das Tippen sonst wie
@@ -98,9 +117,12 @@ function applyOptimisticAction(
 export default function RoundBoard({
   tables,
   mode,
+  eveningId,
 }: {
   tables: TableView[];
   mode: "draft" | "live";
+  /** Gesetzt, solange sich an den Anwesenden noch etwas ändern lässt. */
+  eveningId?: string;
 }) {
   const [armed, setArmed] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -140,6 +162,18 @@ export default function RoundBoard({
     });
   }
 
+  function handleDrop(assignment: AssignmentView) {
+    if (!eveningId) return;
+    const dropped = assignment.droppedAt === null;
+    setArmed(null);
+    startTransition(async () => {
+      if (mode === "live") {
+        applyOptimistic({ type: "drop", assignmentId: assignment.id, dropped });
+      }
+      await (dropped ? dropPlayer : undoDrop)(eveningId, assignment.playerId);
+    });
+  }
+
   function handleTie(tableId: string) {
     const formData = new FormData();
     formData.set("tableId", tableId);
@@ -173,6 +207,7 @@ export default function RoundBoard({
             <ul className="flex flex-col gap-2">
               {table.assignments.map((a) => {
                 const isArmed = armed === a.id;
+                const isDropped = a.droppedAt !== null;
                 return (
                   <li key={a.id} className="flex items-center gap-2">
                     <button
@@ -190,7 +225,12 @@ export default function RoundBoard({
                       <span className="w-4 shrink-0" aria-hidden="true">
                         {a.isWinner ? "🏆" : ""}
                       </span>
-                      <span className="truncate">{formatPlayerName(a.player)}</span>
+                      <span className={`truncate ${isDropped ? "line-through opacity-60" : ""}`}>
+                        {formatPlayerName(a.player)}
+                      </span>
+                      {isDropped && (
+                        <span className="ml-auto shrink-0 text-xs opacity-70">gedroppt</span>
+                      )}
                     </button>
                     {mode === "live" && isArmed && (
                       <button
@@ -202,6 +242,24 @@ export default function RoundBoard({
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded border border-amber-500 text-lg transition-colors hover:bg-amber-500/10 disabled:opacity-60"
                       >
                         👑
+                      </button>
+                    )}
+                    {eveningId && isArmed && (
+                      <button
+                        type="button"
+                        onClick={() => handleDrop(a)}
+                        disabled={isPending}
+                        aria-label={`${formatPlayerName(a.player)} ${isDropped ? "zurückholen" : "droppen"}`}
+                        title={
+                          isDropped
+                            ? "Drop zurücknehmen"
+                            : mode === "live"
+                              ? "Spielt die nächste Runde nicht mehr"
+                              : "Spielt nicht mit — Runde wird neu gemischt"
+                        }
+                        className="flex h-11 shrink-0 items-center justify-center rounded border border-red-500/60 px-3 text-sm transition-colors hover:bg-red-500/10 disabled:opacity-60"
+                      >
+                        {isDropped ? "Zurück" : "Drop"}
                       </button>
                     )}
                   </li>

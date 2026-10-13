@@ -4,6 +4,7 @@ import TableCard from "@/components/TableCard";
 import { MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
 import { rankValues } from "@/lib/pairing/leagueRanking";
 import { startEvening } from "./actions";
+import AttendancePanel from "./AttendancePanel";
 import EntryBanner from "./EntryBanner";
 import FinishEveningButton from "./FinishEveningButton";
 import ImportClient from "./ImportClient";
@@ -25,6 +26,7 @@ export default async function LeaguePage() {
       where: { finishedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
+        lateArrivals: { include: { player: true }, orderBy: { createdAt: "asc" } },
         rounds: {
           orderBy: { number: "asc" },
           include: {
@@ -165,6 +167,30 @@ export default async function LeaguePage() {
   const lastRoundComplete = lastRound.tables.every(
     (t) => t.resultEnteredAt !== null,
   );
+  // An den Anwesenden lässt sich etwas ändern, bis Runde 2 live ist (siehe
+  // SPEC.md Abschnitt 5.3) — danach ändert ein Drop an keiner Paarung mehr
+  // etwas.
+  const attendanceOpen = !(lastRound.number >= MAX_ROUNDS && lastRoundPublished);
+  const attendancePhase =
+    lastRound.number === 1
+      ? lastRoundPublished
+        ? "round1Live"
+        : "round1Draft"
+      : "round2Draft";
+  const firstRoundAssignments = evening.rounds[0].tables.flatMap((t) => t.assignments);
+  const droppedPlayers = firstRoundAssignments
+    .filter((a) => a.droppedAt !== null)
+    .map((a) => ({ id: a.playerId, name: formatPlayerName(a.player) }));
+  const inEvening = new Set([
+    ...evening.rounds.flatMap((r) =>
+      r.tables.flatMap((t) => t.assignments.map((a) => a.playerId)),
+    ),
+    ...evening.lateArrivals.map((l) => l.playerId),
+  ]);
+  const lateArrivalCandidates = activePlayers
+    .filter((p) => !inEvening.has(p.id))
+    .map((p) => ({ id: p.id, name: formatPlayerName(p) }))
+    .sort((a, b) => a.name.localeCompare(b.name, "de-CH"));
 
   return (
     <div className="flex flex-col gap-8">
@@ -213,7 +239,11 @@ export default async function LeaguePage() {
                 sichtbar. Tippe zwei Spieler an, um sie zu tauschen. Passt
                 alles: „Live schalten“.
               </p>
-              <RoundBoard tables={round.tables} mode="draft" />
+              <RoundBoard
+                tables={round.tables}
+                mode="draft"
+                eveningId={attendanceOpen ? evening.id : undefined}
+              />
 
               <details className="text-xs opacity-70">
                 <summary className="cursor-pointer">
@@ -249,7 +279,11 @@ export default async function LeaguePage() {
               </p>
             )}
             {isLastRound ? (
-              <RoundBoard tables={round.tables} mode="live" />
+              <RoundBoard
+                tables={round.tables}
+                mode="live"
+                eveningId={attendanceOpen ? evening.id : undefined}
+              />
             ) : (
               <div className="flex flex-wrap gap-4">
                 {round.tables.map((table) => (
@@ -267,9 +301,14 @@ export default async function LeaguePage() {
                           <span className="w-4 shrink-0" aria-hidden="true">
                             {a.isWinner ? "🏆" : ""}
                           </span>
-                          <span className="truncate">
+                          <span
+                            className={`truncate ${a.droppedAt ? "line-through opacity-60" : ""}`}
+                          >
                             {formatPlayerName(a.player)}
                           </span>
+                          {a.droppedAt && (
+                            <span className="shrink-0 text-xs opacity-70">gedroppt</span>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -281,7 +320,20 @@ export default async function LeaguePage() {
         );
       })}
 
-      <div className="flex flex-wrap gap-3">
+      {attendanceOpen && (
+        <AttendancePanel
+          eveningId={evening.id}
+          phase={attendancePhase}
+          dropped={droppedPlayers}
+          lateArrivals={evening.lateArrivals.map((l) => ({
+            id: l.playerId,
+            name: formatPlayerName(l.player),
+          }))}
+          candidates={lateArrivalCandidates}
+        />
+      )}
+
+      <div className="flex flex-wrap items-start gap-3">
         {/* Solange die letzte Runde noch im Warteraum ist, steht hier
             statt "Nächste Runde starten" der Live-schalten-Knopf — beide
             sind exklusiv (vor dem Publizieren gibt es noch keine
@@ -298,7 +350,10 @@ export default async function LeaguePage() {
             sich auch beenden lassen, wenn Runde 2 nicht (mehr) ausgewertet
             wird — z.B. weil an dem Abend keine Achievement-Punkte für
             Runde 2 vergeben werden. */}
-        <FinishEveningButton eveningId={evening.id} />
+        <FinishEveningButton
+          eveningId={evening.id}
+          roundsMissing={MAX_ROUNDS - lastRound.number + (lastRoundPublished ? 0 : 1)}
+        />
       </div>
       {lastRoundPublished && !lastRoundComplete && lastRound.number < MAX_ROUNDS && (
         <p className="text-xs opacity-70">
