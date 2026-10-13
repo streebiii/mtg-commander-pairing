@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-10-10 (Bereinigung: Casual-Warteraum, ein Abend-Modell, Login-Prüfung in allen Actions)
+Stand: 2026-10-13 (Liga: Drop und Nachzügler, Rückfrage bei «Abend beenden»)
 
 ## 1. Zweck
 
@@ -386,6 +386,11 @@ dort wandern sie nach mtgbl.ch.
   eigenen Lösch-Weg braucht. Die Historie bleibt dabei stehen (siehe
   "Keine Punkteerfassung pro Runde" oben — sie wird ohnehin nicht
   ausgewertet).
+- **"Abend beenden" fragt nach.** Es lässt sich nicht rückgängig machen,
+  und der Knopf steht direkt neben "Nächste Runde starten". Ist Runde 2
+  noch nicht live, warnt die Rückfrage ausdrücklich davor. Ein Fehltipp
+  nach Runde 1 hätte sonst den Abend gekostet: ein neu gestarteter Abend
+  schliesst die offene Achievement-Erfassung des alten (Abschnitt 12.3).
 - **Tie-Break bei Punktegleichstand**: zufällige Reihenfolge.
 - **Rematch-Vermeidung**: weiches Kriterium, gilt nur **innerhalb desselben
   Abends** (nicht saisonübergreifend). Priorität bleibt die
@@ -506,6 +511,36 @@ Tische und die Tischgrössen bleiben unberührt; oben bleibt der 4er-Tisch.
 In Runde 1 gibt es noch keine Rematches, dort ändert sich nichts.
 Entscheid des Organisators vom 13.10.2026: 4er-Tische oben sind wichtiger
 als eine strikte Grenze.
+
+### 5.3 Drop und Nachzügler
+
+Die Anwesenden stehen beim Start fest, aber nicht unverrückbar: wer früher
+geht, «droppt», und wer später kommt, wird nachgetragen. Beides ist
+möglich, bis Runde 2 live ist — danach ändert es an keiner Paarung mehr
+etwas.
+
+- **Drop**: Spieler an der Tischkachel antippen, neben der Krone erscheint
+  «Drop».
+  - Runde 1 im Warteraum: er hat noch nicht gespielt, fliegt aus der Runde,
+    und sie wird neu gemischt.
+  - Runde 1 live: er spielt sie zu Ende (seine Partie, sein Sieg und Spiel 1
+    seiner Erfassung bleiben) und wird in Runde 2 nicht eingeteilt. Seine
+    Kachel zeigt ihn durchgestrichen.
+  - Runde 2 im Warteraum: wie eben, und Runde 2 wird ohne ihn neu gemischt.
+  Gespeichert wird der Drop an seiner Zuordnung der zuletzt gespielten
+  Runde (`TableAssignment.droppedAt`).
+- **Nachzügler** werden im Abschnitt «Anwesenheit» unter den Tischen aus
+  den Liga-Teilnehmenden gewählt. Ist Runde 1 noch im Warteraum, kommt er
+  direkt dorthin (sie wird neu gemischt). Sonst spielt er ab Runde 2 mit
+  (`LateArrival`); steht Runde 2 schon im Warteraum, wird sie mit ihm neu
+  gemischt. Für Spiel 1 bekommt er nichts — auch keine Participation.
+- **Rücknahme**: Gedroppte lassen sich zurückholen, Nachzügler entfernen,
+  beides im Abschnitt «Anwesenheit» (ein Drop auch über die Tischkachel).
+  Wer im Warteraum von Runde 1 gedroppt wurde, ist schlicht nicht mehr
+  dabei und wird bei Bedarf wieder als Nachzügler hinzugefügt.
+- Neu gemischt wird immer nach denselben Regeln wie beim ersten Berechnen
+  (Hälften, Sieg-Bonus, Rematch-Vermeidung). Manuelle Tausche in der
+  betroffenen Runde gehen dabei verloren.
 
 ## 6. Spielerverwaltung
 

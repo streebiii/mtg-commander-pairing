@@ -81,6 +81,111 @@ async function createRoundInDb(
   });
 }
 
+/**
+ * Wer in der Runde nach `roundNumber` gepaart wird: die Spieler dieser
+ * Runde ohne die gedroppten, dazu die Nachzügler (siehe SPEC.md
+ * Abschnitt 5.3).
+ */
+async function attendeesAfterRound(
+  eveningId: string,
+  roundNumber: number,
+): Promise<string[]> {
+  const [assignments, lateArrivals] = await Promise.all([
+    prisma.tableAssignment.findMany({
+      where: { table: { round: { eveningId, number: roundNumber } }, droppedAt: null },
+      select: { playerId: true },
+    }),
+    prisma.lateArrival.findMany({
+      where: { eveningId },
+      select: { playerId: true },
+    }),
+  ]);
+  return [
+    ...new Set([
+      ...assignments.map((a) => a.playerId),
+      ...lateArrivals.map((l) => l.playerId),
+    ]),
+  ];
+}
+
+/**
+ * Paart eine Runde. Runde 1 nach der Rangfolge allein; ab Runde 2 rücken
+ * die Sieger der Vorrunde um SIEG_BONUS_RAENGE nach oben — das entscheidet
+ * vor allem an der Grenze zwischen oberer und unterer Hälfte (siehe
+ * assignLeagueRound in leagueAssignment.ts). Ging ein Tisch unentschieden
+ * aus, zählen alle dort als ohne Sieg.
+ */
+async function pairRound(
+  eveningId: string,
+  roundNumber: number,
+  attendeeIds: string[],
+): Promise<string[][]> {
+  const players = await prisma.player.findMany({
+    where: { id: { in: attendeeIds } },
+    select: { id: true, points: true, attendedEvenings: true },
+  });
+  if (roundNumber === 1) return assignLeagueRound(rankValues(players));
+
+  const vorrunde = await prisma.tableAssignment.findMany({
+    where: {
+      isWinner: true,
+      table: { round: { eveningId, number: roundNumber - 1 } },
+    },
+    select: { playerId: true },
+  });
+  const sieger = new Set(vorrunde.map((a) => a.playerId));
+  const { previousPairings, wiederholteNichtVierer } = await loadEveningHistory(
+    eveningId,
+    roundNumber,
+  );
+  return assignLeagueRound(
+    rankValues(players, sieger),
+    previousPairings,
+    wiederholteNichtVierer,
+    sieger,
+  );
+}
+
+/**
+ * Mischt eine Runde im Warteraum neu. Runde 1 behält ihren Spieler-Pool
+ * (oder bekommt `round1Attendees`, wenn sich die Anwesenden ändern); ab
+ * Runde 2 gilt, wer nach der Vorrunde noch da ist (siehe
+ * `attendeesAfterRound`). Beim Neuwürfeln von Runde 2 zählen die Sieger
+ * der Vorrunde weiterhin — sonst käme eine Zuteilung heraus, die nach
+ * anderen Regeln entstanden wäre als die, die sie ersetzt.
+ */
+async function rebuildDraftRound(
+  round: {
+    id: string;
+    eveningId: string;
+    number: number;
+    tables: { assignments: { playerId: string }[] }[];
+  },
+  round1Attendees?: string[],
+) {
+  const attendeeIds =
+    round.number === 1
+      ? (round1Attendees ??
+        round.tables.flatMap((t) => t.assignments.map((a) => a.playerId)))
+      : await attendeesAfterRound(round.eveningId, round.number - 1);
+  if (attendeeIds.length < 3) return;
+
+  const tables = await pairRound(round.eveningId, round.number, attendeeIds);
+  await prisma.$transaction([
+    prisma.table.deleteMany({ where: { roundId: round.id } }),
+    ...tables.map((tablePlayers, i) =>
+      prisma.table.create({
+        data: {
+          roundId: round.id,
+          tableNumber: i + 1,
+          size: tablePlayers.length,
+          assignments: { create: tablePlayers.map((playerId) => ({ playerId })) },
+        },
+      }),
+    ),
+  ]);
+}
+
 /** Startet einen neuen Liga-Abend (Modus B) mit Runde 1. */
 export async function startEvening(formData: FormData) {
   await requireAdmin();
@@ -239,32 +344,11 @@ export async function startNextRound(formData: FormData) {
   const allEntered = lastRound.tables.every((t) => t.resultEnteredAt !== null);
   if (!allEntered) return;
 
-  // Runde 2 paart nach derselben Rangfolge wie Runde 1, aber die Sieger
-  // rücken um SIEG_BONUS_RAENGE nach oben — das entscheidet vor allem an
-  // der Grenze zwischen oberer und unterer Hälfte (siehe assignLeagueRound
-  // in leagueAssignment.ts). Ging ein Tisch unentschieden aus, zählen
-  // alle dort als ohne Sieg.
-  const attendeeIds = lastRound.tables.flatMap((t) =>
-    t.assignments.map((a) => a.playerId),
-  );
-  const sieger = new Set(
-    lastRound.tables.flatMap((t) =>
-      t.assignments.filter((a) => a.isWinner).map((a) => a.playerId),
-    ),
-  );
-  const standings = await prisma.player.findMany({
-    where: { id: { in: attendeeIds } },
-    select: { id: true, points: true, attendedEvenings: true },
-  });
-
-  const { previousPairings, wiederholteNichtVierer } =
-    await loadEveningHistory(eveningId);
-  const tables = assignLeagueRound(
-    rankValues(standings, sieger),
-    previousPairings,
-    wiederholteNichtVierer,
-    sieger,
-  );
+  // Gedroppte fehlen ab jetzt, Nachzügler kommen dazu (siehe SPEC.md
+  // Abschnitt 5.3).
+  const attendeeIds = await attendeesAfterRound(eveningId, lastRound.number);
+  if (attendeeIds.length < 3) return;
+  const tables = await pairRound(eveningId, lastRound.number + 1, attendeeIds);
 
   await createRoundInDb(prisma, eveningId, lastRound.number + 1, tables);
   revalidatePath("/admin/league");
@@ -297,54 +381,7 @@ export async function regenerateRound(formData: FormData) {
 
   if (round.publishedAt) return;
 
-  const attendeeIds = round.tables.flatMap((t) =>
-    t.assignments.map((a) => a.playerId),
-  );
-  const players = await prisma.player.findMany({
-    where: { id: { in: attendeeIds } },
-    select: { id: true, points: true, attendedEvenings: true },
-  });
-
-  // Beim Neuwürfeln von Runde 2 zählen die Sieger der Vorrunde weiterhin —
-  // sonst käme eine Zuteilung heraus, die nach anderen Regeln entstanden
-  // wäre als die, die sie ersetzt.
-  const vorrunde =
-    round.number > 1
-      ? await prisma.tableAssignment.findMany({
-          where: {
-            isWinner: true,
-            table: { round: { eveningId: round.eveningId, number: round.number - 1 } },
-          },
-          select: { playerId: true },
-        })
-      : [];
-  const sieger = new Set(vorrunde.map((a) => a.playerId));
-
-  const { previousPairings, wiederholteNichtVierer } = await loadEveningHistory(
-    round.eveningId,
-    round.number,
-  );
-  const tables = assignLeagueRound(
-    rankValues(players, sieger),
-    previousPairings,
-    wiederholteNichtVierer,
-    sieger,
-  );
-
-  await prisma.$transaction([
-    prisma.table.deleteMany({ where: { roundId: round.id } }),
-    ...tables.map((tablePlayers, i) =>
-      prisma.table.create({
-        data: {
-          roundId: round.id,
-          tableNumber: i + 1,
-          size: tablePlayers.length,
-          assignments: { create: tablePlayers.map((playerId) => ({ playerId })) },
-        },
-      }),
-    ),
-  ]);
-
+  await rebuildDraftRound(round);
   revalidatePath("/admin/league");
 }
 
@@ -462,4 +499,138 @@ export async function finishEvening(formData: FormData) {
   });
   revalidatePath("/admin/league");
   revalidatePath("/admin/achievements");
+}
+
+/**
+ * Der laufende Abend mit seiner letzten Runde — sofern sich an den
+ * Anwesenden noch etwas ändern lässt: bis die letzte Runde des Abends
+ * (Runde 2) live ist. Danach ändert ein Drop an der Paarung nichts mehr
+ * (siehe SPEC.md Abschnitt 5.3).
+ */
+async function loadAttendanceContext(eveningId: string) {
+  const evening = await prisma.evening.findUnique({
+    where: { id: eveningId },
+    include: {
+      rounds: {
+        orderBy: { number: "desc" },
+        take: 1,
+        include: { tables: { include: { assignments: true } } },
+      },
+    },
+  });
+  if (!evening || evening.finishedAt) return null;
+  const lastRound = evening.rounds[0];
+  if (!lastRound) return null;
+  if (lastRound.number >= MAX_ROUNDS && lastRound.publishedAt) return null;
+  return lastRound;
+}
+
+/**
+ * «Drop»: ein Spieler verlässt den Abend.
+ *
+ * - Runde 1 im Warteraum: er hat noch nicht gespielt und fliegt aus der
+ *   Runde, die dabei neu gemischt wird.
+ * - Runde 1 live: er spielt sie zu Ende und wird in Runde 2 nicht
+ *   eingeteilt (`droppedAt` an seiner Zuordnung in Runde 1).
+ * - Runde 2 im Warteraum: wie eben, und Runde 2 wird ohne ihn neu
+ *   gemischt. Ein Nachzügler wird dabei einfach wieder gestrichen.
+ */
+export async function dropPlayer(eveningId: string, playerId: string) {
+  await requireAdmin();
+  const lastRound = await loadAttendanceContext(eveningId);
+  if (!lastRound) return;
+
+  if (lastRound.number === 1 && !lastRound.publishedAt) {
+    const rest = lastRound.tables
+      .flatMap((t) => t.assignments.map((a) => a.playerId))
+      .filter((id) => id !== playerId);
+    await rebuildDraftRound(lastRound, rest);
+  } else {
+    const playedRound = lastRound.publishedAt ? lastRound.number : lastRound.number - 1;
+    await prisma.$transaction([
+      prisma.tableAssignment.updateMany({
+        where: {
+          playerId,
+          droppedAt: null,
+          table: { round: { eveningId, number: playedRound } },
+        },
+        data: { droppedAt: new Date() },
+      }),
+      prisma.lateArrival.deleteMany({ where: { eveningId, playerId } }),
+    ]);
+    if (!lastRound.publishedAt) await rebuildDraftRound(lastRound);
+  }
+
+  revalidatePath("/admin/league");
+}
+
+/** Nimmt einen Drop zurück; eine Runde 2 im Warteraum wird neu gemischt. */
+export async function undoDrop(eveningId: string, playerId: string) {
+  await requireAdmin();
+  const lastRound = await loadAttendanceContext(eveningId);
+  if (!lastRound) return;
+
+  await prisma.tableAssignment.updateMany({
+    where: { playerId, droppedAt: { not: null }, table: { round: { eveningId } } },
+    data: { droppedAt: null },
+  });
+  if (lastRound.number > 1 && !lastRound.publishedAt) {
+    await rebuildDraftRound(lastRound);
+  }
+
+  revalidatePath("/admin/league");
+}
+
+/**
+ * Nachzügler: ist Runde 1 noch im Warteraum, wird er direkt dort
+ * eingeteilt (die Runde wird neu gemischt). Sonst spielt er ab Runde 2
+ * mit; steht sie schon im Warteraum, wird sie mit ihm neu gemischt.
+ */
+export async function addLateArrival(eveningId: string, playerId: string) {
+  await requireAdmin();
+  const lastRound = await loadAttendanceContext(eveningId);
+  if (!lastRound) return;
+
+  // Wie beim Start des Abends: nur Liga-Teilnehmende (SPEC.md Abschnitt 6).
+  const player = await prisma.player.findFirst({
+    where: { id: playerId, leagueActive: true, archivedAt: null },
+    select: { id: true },
+  });
+  if (!player) return;
+
+  // Wer an diesem Abend schon dabei ist (oder gedroppt hat), kommt nicht
+  // ein zweites Mal dazu — ein Drop wird über undoDrop zurückgenommen.
+  const [seated, late] = await Promise.all([
+    prisma.tableAssignment.count({
+      where: { playerId, table: { round: { eveningId } } },
+    }),
+    prisma.lateArrival.count({ where: { eveningId, playerId } }),
+  ]);
+  if (seated > 0 || late > 0) return;
+
+  if (lastRound.number === 1 && !lastRound.publishedAt) {
+    const attendees = lastRound.tables.flatMap((t) =>
+      t.assignments.map((a) => a.playerId),
+    );
+    await rebuildDraftRound(lastRound, [...attendees, playerId]);
+  } else {
+    await prisma.lateArrival.create({ data: { eveningId, playerId } });
+    if (!lastRound.publishedAt) await rebuildDraftRound(lastRound);
+  }
+
+  revalidatePath("/admin/league");
+}
+
+/** Streicht einen Nachzügler wieder (z.B. versehentlich hinzugefügt). */
+export async function removeLateArrival(eveningId: string, playerId: string) {
+  await requireAdmin();
+  const lastRound = await loadAttendanceContext(eveningId);
+  if (!lastRound) return;
+
+  await prisma.lateArrival.deleteMany({ where: { eveningId, playerId } });
+  if (lastRound.number > 1 && !lastRound.publishedAt) {
+    await rebuildDraftRound(lastRound);
+  }
+
+  revalidatePath("/admin/league");
 }

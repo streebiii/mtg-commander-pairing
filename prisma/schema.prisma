@@ -52,6 +52,7 @@ model Player {
   casualSeat     CasualSeat?
   entries        PlayerEntry[]
   importedScores ImportedEveningScore[]
+  lateArrivals   LateArrival[]
 
   @@map("players")
 }
@@ -77,6 +78,7 @@ model Evening {
   rounds       Round[]
   achievements EveningAchievement[]
   entries      PlayerEntry[]
+  lateArrivals LateArrival[]
 
   @@map("evenings")
 }
@@ -145,8 +147,30 @@ model TableAssignment {
   /// auf mtgbl.ch). Sortierschlüssel für die Paarung der zweiten Runde.
   isWinner Boolean @default(false)
 
+  /// Gesetzt, wenn der Spieler den Abend nach dieser Runde verlassen hat
+  /// («Drop», siehe SPEC.md Abschnitt 5.3). Steht immer an der Zuordnung
+  /// der Runde, die er zuletzt gespielt hat; die nächste Runde wird ohne
+  /// ihn gepaart.
+  droppedAt DateTime?
+
   @@unique([tableId, playerId])
   @@map("table_assignments")
+}
+
+/// Ein Spieler, der nach dem Start von Runde 1 dazukommt und ab Runde 2
+/// mitspielt (siehe SPEC.md Abschnitt 5.3). Kommt er, solange Runde 1 noch
+/// im Warteraum ist, wird er direkt in Runde 1 eingeteilt und steht nicht
+/// hier.
+model LateArrival {
+  id        String   @id @default(cuid())
+  eveningId String
+  evening   Evening  @relation(fields: [eveningId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([eveningId, playerId])
+  @@map("late_arrivals")
 }
 
 /// Die *eine* aktuell gültige Casual-Tischzuteilung (siehe SPEC.md
