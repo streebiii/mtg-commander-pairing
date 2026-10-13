@@ -25,8 +25,11 @@ export default function RegenerateButton({
     formData.set("roundId", roundId);
     // Direkter Aufruf der Server Action ohne umschliessendes <form> —
     // vermeidet verschachtelte Formulare innerhalb der Ergebnis-Form.
-    startTransition(() => {
-      regenerateRound(formData);
+    // Nach dem Mischen klappt die Rückfrage wieder zu — sonst stünde sie
+    // über den neuen Tischen, als wäre noch nichts passiert.
+    startTransition(async () => {
+      await regenerateRound(formData);
+      setConfirming(false);
     });
   }
 

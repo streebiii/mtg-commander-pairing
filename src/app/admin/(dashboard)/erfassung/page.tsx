@@ -103,9 +103,9 @@ export default async function EntryOverviewPage() {
       </div>
       <p className="text-xs opacity-70">
         «Handy freigeben» löst die Bindung an ein Gerät, z.B. nach einem
-        Handywechsel — der Spieler meldet sich danach über die Tischkarte neu
-        an, seine Einträge bleiben erhalten. Spieler mit Papierzettel
-        erfasst du über «Bearbeiten».
+        Handywechsel — danach meldet man sich über die Tischkarte neu an, die
+        Einträge bleiben erhalten. Papierzettel erfasst du über
+        «Bearbeiten».
       </p>
 
       <CloseEntryButton

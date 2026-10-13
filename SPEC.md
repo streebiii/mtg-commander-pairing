@@ -448,6 +448,12 @@ Anwesenden rechnerisch komplett in 4er-Tische auf (z.B. 28 Spieler →
 (eine exakte Hälfte von 14/14 ergäbe sonst pro Seite `[4,4,3,3]` statt
 der mit 12/16 möglichen reinen 4er-Aufteilung).
 
+**Kein 5er-Tisch.** Eine Hälfte mit genau 5 Spielern ergäbe einen
+5er-Tisch; solche Grenzen sind ausgeschlossen (Vereinsregel 4 > 3 > 5).
+Ohne diese Regel zählte ein 5er als nur ein Nicht-4er-Tisch und schlug
+damit drei 3er — bei 13 Anwesenden kam so 4+4+5 statt 4+3+3+3 heraus. Ab
+6 Anwesenden gibt es immer eine Grenze ohne 5er.
+
 **Ein unvermeidbarer Nicht-4er-Tisch landet bevorzugt in der unteren
 (schwächeren) Hälfte.** Ergeben zwei Aufteilungen dieselbe Gesamtzahl an
 Nicht-4er-Tischen (z.B. bei 11 Anwesenden sowohl Grenze 4 als auch
@@ -488,6 +494,18 @@ Hälften-Grenze hinweg, und nie auf Kosten der Tischgrössenverteilung
 Die drei Kriterien werden gemeinsam optimiert (ein Tausch zählt, wenn er
 die gewichtete Summe aller drei verbessert), nicht nacheinander — sonst
 könnte ein späteres Kriterium ein früheres wieder zunichtemachen.
+
+**Ausnahme an der Grenze.** Besteht eine Hälfte aus einem einzigen Tisch
+(z.B. bei 13 Anwesenden: oben ein 4er, unten drei 3er), kann sie
+innerhalb ihrer selbst nichts tauschen, und in Runde 2 sässen oben meist
+wieder dieselben zusammen. Dann dürfen der unterste Tisch der oberen und
+der oberste Tisch der unteren Hälfte untereinander tauschen — nur um
+Rematches aufzulösen, unter gleich guten Tauschen der mit dem kleinsten
+Rangabstand (es rutscht eher die Nummer 4 als die Nummer 1). Alle übrigen
+Tische und die Tischgrössen bleiben unberührt; oben bleibt der 4er-Tisch.
+In Runde 1 gibt es noch keine Rematches, dort ändert sich nichts.
+Entscheid des Organisators vom 13.10.2026: 4er-Tische oben sind wichtiger
+als eine strikte Grenze.
 
 ## 6. Spielerverwaltung
 
