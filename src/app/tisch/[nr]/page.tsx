@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { formatPlayerName } from "@/lib/players";
+import { loadPublicNames } from "@/lib/publicRoster";
 import { findOpenEvening, getDeviceEntry } from "@/lib/entries";
 import { claimPlayer } from "./actions";
 
@@ -52,7 +52,7 @@ export default async function TablePage({
     : null;
   const table = round?.tables[0];
 
-  const [device, entries] = await Promise.all([
+  const [device, entries, names] = await Promise.all([
     getDeviceEntry(),
     evening && table
       ? prisma.playerEntry.findMany({
@@ -63,6 +63,7 @@ export default async function TablePage({
           select: { playerId: true, deviceTokenHash: true },
         })
       : [],
+    loadPublicNames(),
   ]);
   const claimed = new Set(
     entries.filter((e) => e.deviceTokenHash).map((e) => e.playerId),
@@ -109,7 +110,7 @@ export default async function TablePage({
                     disabled={taken && !mine}
                     className="flex min-h-14 w-full items-center justify-between gap-3 rounded border border-white/20 px-4 py-3 text-left text-base transition-colors hover:bg-white/5 active:bg-white/10 disabled:opacity-40"
                   >
-                    <span className="font-medium">{formatPlayerName(a.player)}</span>
+                    <span className="font-medium">{names.get(a.playerId) ?? a.player.firstName}</span>
                     <span className="text-base opacity-70">
                       {mine ? "du" : taken ? "angemeldet" : ""}
                     </span>
@@ -135,7 +136,7 @@ export default async function TablePage({
           href="/erfassen"
           className="flex min-h-11 items-center justify-center rounded bg-foreground px-4 py-2 text-base font-medium text-background"
         >
-          Weiter als {formatPlayerName(device.player)}
+          Weiter als {names.get(device.playerId) ?? device.player.firstName}
         </Link>
       )}
 

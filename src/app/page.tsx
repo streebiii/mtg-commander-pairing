@@ -1,7 +1,7 @@
 import PublicHeader from "@/components/PublicHeader";
 import { prisma } from "@/lib/prisma";
 import { getCasualPairing } from "@/lib/casualPairing";
-import { formatPlayerName } from "@/lib/players";
+import { loadPublicNames } from "@/lib/publicRoster";
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -39,13 +39,14 @@ interface DisplayTable {
 }
 
 export default async function Home() {
-  const casual = await getCasualPairing();
+  // Öffentlich nur Vorname und Initial (siehe publicNames).
+  const [casual, names] = await Promise.all([getCasualPairing(), loadPublicNames()]);
   const casualTables = casual?.published ? casual.tables : [];
 
   let tables: DisplayTable[] = casualTables.map((t) => ({
     key: `casual-${t.tableNumber}`,
     tableNumber: t.tableNumber,
-    players: t.players.map((p) => ({ key: p.id, name: p.name })),
+    players: t.players.map((p) => ({ key: p.id, name: names.get(p.id) ?? p.name })),
   }));
 
   // Die geltenden Achievements des laufenden Liga-Abends, damit die
@@ -100,7 +101,7 @@ export default async function Home() {
         tableNumber: t.tableNumber,
         players: t.assignments.map((a) => ({
           key: a.id,
-          name: formatPlayerName(a.player),
+          name: names.get(a.playerId) ?? a.player.firstName,
         })),
       })) ?? [];
     achievements = evening?.achievements ?? [];

@@ -39,3 +39,56 @@ export function parseSkillLevel(value: unknown): number | null {
   if (parsed < SKILL_LEVEL_MIN || parsed > SKILL_LEVEL_MAX) return null;
   return parsed;
 }
+
+interface NamedRosterPlayer {
+  id: string;
+  firstName: string;
+  lastName?: string | null;
+}
+
+/**
+ * Namen für die öffentlichen Seiten (Rangliste, Pairings, Tischkarten,
+ * Erfassung): Vorname und Initial wie auf mtgbl.ch — «David L.» statt des
+ * vollen Nachnamens, der nur im Organisator-Bereich steht.
+ *
+ * Teilen sich zwei Spieler Vorname und Initial, bekommen beide so viele
+ * Buchstaben, bis sie sich unterscheiden («Marc St.», «Marc So.»).
+ * Verglichen wird gegen den ganzen übergebenen Bestand, damit derselbe
+ * Spieler auf jeder Seite gleich heisst.
+ */
+export function publicNames(roster: readonly NamedRosterPlayer[]): Map<string, string> {
+  const key = (s: string) => s.trim().toLowerCase();
+  const byFirst = new Map<string, NamedRosterPlayer[]>();
+  for (const p of roster) {
+    const group = byFirst.get(key(p.firstName)) ?? [];
+    group.push(p);
+    byFirst.set(key(p.firstName), group);
+  }
+
+  const names = new Map<string, string>();
+  for (const p of roster) {
+    const last = (p.lastName ?? "").trim();
+    if (!last) {
+      names.set(p.id, p.firstName);
+      continue;
+    }
+    const others = byFirst
+      .get(key(p.firstName))!
+      .filter((q) => q.id !== p.id && (q.lastName ?? "").trim());
+    let length = 1;
+    while (
+      length < last.length &&
+      others.some((q) => key(q.lastName!).startsWith(key(last.slice(0, length))))
+    ) {
+      length++;
+    }
+    names.set(p.id, `${p.firstName} ${last.slice(0, length).replace(/\.$/, "")}.`);
+  }
+  return names;
+}
+
+/** Einzelner öffentlicher Name ohne Bestand — nur Vorname und Initial. */
+export function shortPlayerName(player: { firstName: string; lastName?: string | null }): string {
+  const last = (player.lastName ?? "").trim();
+  return last ? `${player.firstName} ${last[0]}.` : player.firstName;
+}

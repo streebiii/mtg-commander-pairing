@@ -61,6 +61,12 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   Lese-Ansicht verlängert nichts, sie ist ja ungeschützt. Ein Abmelden ist
   bewusst nicht vorgesehen; eine Sitzung endet durch Ablauf oder durch
   Löschen der Browserdaten.
+- **Namen öffentlich nur gekürzt**: Rangliste, Pairings, Tischseite und
+  Erfassungsblatt zeigen Vorname und Initial wie auf mtgbl.ch («David
+  L.»). Teilen sich zwei Spieler Vorname und Initial, kommen so viele
+  Buchstaben dazu wie nötig («Marc St.», «Marc So.»), verglichen gegen
+  alle Spieler, damit jeder überall gleich heisst (`publicNames` in
+  `src/lib/players.ts`). Den vollen Namen sieht nur der Organisator.
 - **Öffentliche Lese-Ansicht**: separate URL ohne Login, zeigt nur die
   live geschalteten Tischzuteilungen des laufenden Abends (z. B. für einen
   Bildschirm vor Ort oder zum Teilen mit den Spielern). Keine
