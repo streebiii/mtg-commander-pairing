@@ -39,7 +39,7 @@ export default async function OrganizerEntryPage({
             ? "Abgegeben — du kannst trotzdem korrigieren."
             : entry?.deviceTokenHash
               ? "Erfasst gerade selbst auf dem Handy."
-              : "Noch nicht angemeldet — du kannst für ihn erfassen."}
+              : "Noch nicht angemeldet — du kannst hier erfassen, z.B. von einem Papierzettel."}
         </p>
       </div>
 

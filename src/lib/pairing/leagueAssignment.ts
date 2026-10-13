@@ -84,6 +84,12 @@ function waehleHaelftenGrenze(n: number): number {
   for (let grenze = MIN_HAELFTE; grenze <= n - MIN_HAELFTE; grenze++) {
     const obenSizes = computeTableSizes(grenze);
     const untenSizes = computeTableSizes(n - grenze);
+    // Eine Hälfte mit genau 5 Spielern ergäbe einen 5er-Tisch. Den gibt es
+    // in der Liga nur, wenn überhaupt nur 5 da sind (Vereinsregel 4 > 3 > 5,
+    // SPEC.md Abschnitt 3) — als "ein einziger Nicht-4er-Tisch" schnitte er
+    // sonst besser ab als drei 3er und würde bevorzugt. Ab 6 Anwesenden gibt
+    // es immer eine Grenze ohne 5er-Hälfte.
+    if (obenSizes.includes(5) || untenSizes.includes(5)) continue;
     kandidaten.push({
       grenze,
       nichtViererGesamt: nichtVierer(obenSizes) + nichtVierer(untenSizes),
@@ -223,7 +229,62 @@ export function assignLeagueRound(
     verbessereZuteilung(untenTables, previousPairings, wiederholteNichtVierer, sieger);
   }
 
+  // Besteht eine Hälfte aus einem einzigen Tisch, kann sie innerhalb ihrer
+  // selbst nichts tauschen — oben sässen dann in Runde 2 meist wieder
+  // dieselben zusammen. Für diesen Fall dürfen die beiden Tische direkt an
+  // der Grenze untereinander tauschen, aber nur, um Rematches aufzulösen.
+  if (
+    previousPairings.size > 0 &&
+    (obenTables.length === 1 || untenTables.length === 1)
+  ) {
+    const rang = new Map(sortiert.map((p, i) => [p.id, i]));
+    loeseRematchesAnDerGrenze(obenTables.at(-1)!, untenTables[0], previousPairings, rang);
+  }
+
   return [...obenTables, ...untenTables];
+}
+
+/**
+ * Tauscht Spieler zwischen dem untersten Tisch der oberen und dem obersten
+ * Tisch der unteren Hälfte, solange das die Rematches an den beiden
+ * Tischen senkt. Unter gleich guten Tauschen gewinnt der mit dem kleinsten
+ * Rangabstand — es rutscht also eher ein Spieler knapp über der Grenze nach
+ * unten als die Nummer 1. Alle übrigen Tische bleiben unberührt; die
+ * Tischgrössen ändern sich nicht.
+ */
+function loeseRematchesAnDerGrenze(
+  oben: string[],
+  unten: string[],
+  previousPairings: ReadonlySet<string>,
+  rang: ReadonlyMap<string, number>,
+): void {
+  const rematches = () =>
+    countRematches(oben, previousPairings) + countRematches(unten, previousPairings);
+
+  for (let pass = 0; pass < 20; pass++) {
+    const vorher = rematches();
+    if (vorher === 0) return;
+
+    let bester: { o: number; u: number; gewinn: number; abstand: number } | null = null;
+    for (let o = 0; o < oben.length; o++) {
+      for (let u = 0; u < unten.length; u++) {
+        [oben[o], unten[u]] = [unten[u], oben[o]];
+        const gewinn = vorher - rematches();
+        [oben[o], unten[u]] = [unten[u], oben[o]];
+        if (gewinn <= 0) continue;
+        const abstand = Math.abs(rang.get(oben[o])! - rang.get(unten[u])!);
+        if (
+          !bester ||
+          gewinn > bester.gewinn ||
+          (gewinn === bester.gewinn && abstand < bester.abstand)
+        ) {
+          bester = { o, u, gewinn, abstand };
+        }
+      }
+    }
+    if (!bester) return;
+    [oben[bester.o], unten[bester.u]] = [unten[bester.u], oben[bester.o]];
+  }
 }
 
 /**

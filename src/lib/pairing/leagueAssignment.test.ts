@@ -57,6 +57,19 @@ describe("assignLeagueRound", () => {
     }
   });
 
+  it("bildet ab 6 Anwesenden nie einen 5er-Tisch", () => {
+    // Gefunden beim Durchspielen eines Abends mit 13: Grenze 8/5 ergab
+    // 4+4 | 5 — ein 5er-Tisch zählte als nur ein Nicht-4er und schlug
+    // damit 4+3+3+3. In der Liga gilt 4 > 3 > 5.
+    for (let n = 6; n <= 40; n++) {
+      const players = makePlayers(Array.from({ length: n }, (_, i) => 100 - i));
+      for (let i = 0; i < 30; i++) {
+        const sizes = assignLeagueRound(players).map((t) => t.length);
+        expect(sizes, `n=${n}`).not.toContain(5);
+      }
+    }
+  });
+
   it("drückt einen unvermeidbaren Nicht-4er-Tisch konsequent in die untere Hälfte", () => {
     // N=11: sowohl Grenze=4 (Tischgrössen 4/[4,3]) als auch Grenze=7
     // ([4,3]/4) ergeben insgesamt genau einen Nicht-4er-Tisch — aber nur
@@ -173,23 +186,56 @@ describe("assignLeagueRound", () => {
     expect(totalRematchesMitVermeidung).toBeLessThan(totalRematchesOhneVermeidung);
   });
 
-  it("tauscht bei der Rematch-Vermeidung nie über die Hälften-Grenze hinweg", () => {
-    // 8 Spieler -> einzige optimale Grenze ist die exakte Mitte (4/4).
-    // Simuliere eine Vorrunde, in der (hypothetisch) alle in der oberen
-    // Hälfte zusammensassen — die Vermeidung darf trotzdem niemanden aus
-    // der unteren Hälfte heranziehen.
-    const players = makePlayers([100, 90, 80, 70, 60, 50, 40, 30]);
+  it("tauscht bei der Rematch-Vermeidung nie über die Hälften-Grenze hinweg, wenn beide Hälften mehrere Tische haben", () => {
+    // 16 Spieler -> 8/8, je zwei 4er-Tische. Simuliere eine Vorrunde, in
+    // der die obersten vier zusammensassen: das lässt sich innerhalb der
+    // oberen Hälfte auflösen, niemand aus der unteren wird herangezogen.
+    // (Nur wenn eine Hälfte aus einem einzigen Tisch besteht, dürfen die
+    // beiden Tische an der Grenze tauschen — siehe unten.)
+    const players = makePlayers(Array.from({ length: 16 }, (_, i) => 100 - i));
     const previousPairings = new Set(tablePairKeys(["p0", "p1", "p2", "p3"]));
 
     for (let i = 0; i < 100; i++) {
       const tables = assignLeagueRound(players, previousPairings);
-      const oben = new Set(["p0", "p1", "p2", "p3"]);
-      const unten = new Set(["p4", "p5", "p6", "p7"]);
+      const oben = new Set(Array.from({ length: 8 }, (_, k) => `p${k}`));
+      const unten = new Set(Array.from({ length: 8 }, (_, k) => `p${k + 8}`));
       for (const table of tables) {
         const hatOben = table.some((id) => oben.has(id));
         const hatUnten = table.some((id) => unten.has(id));
         expect(hatOben && hatUnten).toBe(false);
       }
+    }
+  });
+});
+
+describe("Rematches an der Hälften-Grenze (obere Hälfte nur ein Tisch)", () => {
+  // 13 Anwesende: obere Hälfte 4 (ein 4er-Tisch), untere 9 (drei 3er).
+  const players = makePlayers(Array.from({ length: 13 }, (_, i) => 100 - i));
+  const top4 = ["p0", "p1", "p2", "p3"];
+  const alleTopPaare = new Set(
+    top4.flatMap((a, i) => top4.slice(i + 1).map((b) => pairKey(a, b))),
+  );
+
+  it("lässt in Runde 1 (ohne Verlauf) den Spitzentisch unangetastet", () => {
+    for (let i = 0; i < 50; i++) {
+      const [spitze] = assignLeagueRound(players);
+      expect([...spitze].sort()).toEqual(top4);
+    }
+  });
+
+  it("tauscht in Runde 2 mit dem Tisch darunter, um Rematches aufzulösen", () => {
+    for (let i = 0; i < 50; i++) {
+      const tables = assignLeagueRound(players, alleTopPaare);
+      const [spitze, darunter, ...rest] = tables;
+      // Bestes erreichbares Ergebnis: die vier auf 2 + 2 verteilt.
+      expect(
+        countRematches(spitze, alleTopPaare) + countRematches(darunter, alleTopPaare),
+      ).toBe(2);
+      // Getauscht wird nur zwischen diesen beiden Tischen, Grössen bleiben.
+      expect(spitze).toHaveLength(4);
+      expect(rest.flat().some((id) => top4.includes(id))).toBe(false);
+      // Nach unten rutschen die beiden mit dem tiefsten Rang, nicht die Spitze.
+      expect(spitze).toEqual(expect.arrayContaining(["p0", "p1"]));
     }
   });
 });
