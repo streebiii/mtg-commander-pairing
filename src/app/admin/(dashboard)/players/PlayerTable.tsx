@@ -453,9 +453,7 @@ export default function PlayerTable({ players }: { players: TablePlayer[] }) {
         )}
       </div>
       <p className="text-base opacity-70">
-        Die Stufe ist nur hier sichtbar und dient allein der ausgewogenen
-        Zuteilung im Casual-Modus. Entfernen lässt sich ein Spieler auf seiner
-        Seite («Achievements ›»).
+        Entfernen lässt sich ein Spieler auf seiner Seite («Achievements ›»).
       </p>
 
       {creating && <NewPlayerPanel onClose={() => setCreating(false)} />}

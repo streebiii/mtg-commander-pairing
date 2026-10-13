@@ -27,15 +27,7 @@ export default async function PlayersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-semibold">Spieler</h1>
-        <p className="text-base opacity-70">
-          Alle Vereinsspieler. Wer an der Liga teilnimmt, kann an Liga-Abenden
-          ausgewählt werden und erscheint in der Rangliste. Unter
-          «Achievements ›» stehen die erfassten Achievements eines Spielers
-          pro Abend.
-        </p>
-      </div>
+      <h1 className="text-xl font-semibold">Spieler</h1>
       <PlayerTable
         players={players.map((p) => ({ ...p, seasonPoints: seasonPoints.get(p.id) ?? null }))}
       />

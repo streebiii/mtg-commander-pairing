@@ -19,14 +19,11 @@ const ACTION =
  */
 export default function AttendancePanel({
   eveningId,
-  phase,
   dropped,
   lateArrivals,
   candidates,
 }: {
   eveningId: string;
-  /** Wohin eine Änderung wirkt: in den Warteraum von Runde 1, in Runde 2 (noch nicht berechnet) oder in den Warteraum von Runde 2. */
-  phase: "round1Draft" | "round1Live" | "round2Draft";
   dropped: PlayerOption[];
   lateArrivals: PlayerOption[];
   candidates: PlayerOption[];
@@ -47,19 +44,15 @@ export default function AttendancePanel({
     run(() => addLateArrival(eveningId, playerId));
   }
 
-  const hint = {
-    round1Draft:
-      "Wer noch dazukommt, wird direkt in Runde 1 eingeteilt. Wer doch nicht spielt: an der Tischkachel antippen und «Drop». Runde 1 wird dabei jeweils neu gemischt.",
-    round1Live:
-      "Wer geht: an der Tischkachel antippen und «Drop» — er spielt Runde 1 zu Ende und wird in Runde 2 nicht eingeteilt. Nachzügler spielen ab Runde 2 mit.",
-    round2Draft:
-      "Wer geht oder dazukommt, ändert Runde 2 — sie wird dabei neu gemischt.",
-  }[phase];
+  // Nichts zurückzunehmen und niemand mehr da, der dazukommen könnte —
+  // dann keine leere Überschrift. Gedroppt wird ohnehin an der Tischkachel.
+  if (dropped.length === 0 && lateArrivals.length === 0 && candidates.length === 0) {
+    return null;
+  }
 
   return (
     <section className="flex flex-col gap-3">
       <h3 className="text-base font-medium">Anwesenheit</h3>
-      <p className="text-base opacity-70">{hint}</p>
 
       {(dropped.length > 0 || lateArrivals.length > 0) && (
         <ul className="flex flex-col gap-1 text-base">

@@ -49,12 +49,7 @@ export default async function MyEntryPage() {
         <p className="rounded border border-green-600/40 bg-green-600/10 px-3 py-2 text-base">
           Abgegeben. Für Korrekturen melde dich beim Organisator.
         </p>
-      ) : (
-        <p className="text-base opacity-70">
-          Zuerst dein Deckbau, dann Spiel für Spiel, sobald die Runde live ist.
-          Alles wird sofort gespeichert. Zum Schluss «Abgeben».
-        </p>
-      )}
+      ) : null}
 
       <EntrySheet
         sheet={sheet}

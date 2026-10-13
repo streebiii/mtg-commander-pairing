@@ -642,14 +642,6 @@ export default function CasualClient({
               </PrimaryButton>
             )}
           </div>
-          <p className="text-base opacity-70">
-            {published
-              ? "Diese Zuteilung ist auf der öffentlichen Pairing-Seite sichtbar. Änderungen erscheinen dort sofort."
-              : "Diese Zuteilung ist noch nicht öffentlich sichtbar. Prüfe sie und passe sie an, dann „Live schalten“."}{" "}
-            Tippe zwei Spieler an, um sie zu tauschen, oder einen Tisch-Titel,
-            um ihn für ein selektives Neumischen auszuwählen (mindestens 2
-            Tische).
-          </p>
           <div className="flex flex-wrap gap-4">
             {tables.map((table) => {
               const isSelectedForReshuffle = selectedForReshuffle.has(

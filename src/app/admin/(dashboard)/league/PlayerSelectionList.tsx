@@ -92,10 +92,6 @@ export default function PlayerSelectionList({
 
       <Sidebar>
         <h2 className="text-lg font-medium">Abend</h2>
-        <p className="text-base opacity-70">
-          Zwei Runden. Runde 1 nach der Rangliste der Saison, Runde 2 nach
-          den Siegern der ersten.
-        </p>
         <SecondaryButton onClick={toggleAll} className="w-full" disabled={pending}>
           {allSelected ? "Auswahl aufheben" : "Alle auswählen"}
         </SecondaryButton>

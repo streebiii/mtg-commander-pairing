@@ -120,12 +120,7 @@ export default async function EntryOverviewPage() {
 function Header() {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="text-xl font-semibold">Erfassung</h1>
-        <p className="text-base opacity-70">
-          Die Spieler erfassen ihre Achievements selbst über die Tischkarten.
-        </p>
-      </div>
+      <h1 className="text-xl font-semibold">Erfassung</h1>
       <Link
         href="/admin/erfassung/tischkarten"
         className="inline-flex min-h-11 items-center rounded border border-white/20 px-4 py-2 text-base font-medium hover:bg-white/5"

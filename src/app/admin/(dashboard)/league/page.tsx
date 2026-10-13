@@ -121,12 +121,6 @@ export default async function LeaguePage() {
   // SPEC.md Abschnitt 5.3) — danach ändert ein Drop an keiner Paarung mehr
   // etwas.
   const attendanceOpen = !(lastRound.number >= MAX_ROUNDS && lastRoundPublished);
-  const attendancePhase =
-    lastRound.number === 1
-      ? lastRoundPublished
-        ? "round1Live"
-        : "round1Draft"
-      : "round2Draft";
   const firstRoundAssignments = evening.rounds[0].tables.flatMap((t) => t.assignments);
   const droppedPlayers = firstRoundAssignments
     .filter((a) => a.droppedAt !== null)
@@ -192,11 +186,6 @@ export default async function LeaguePage() {
                     </h2>
                     <PublishRoundButton roundId={round.id} />
                   </div>
-                  <p className="text-base opacity-70">
-                    Diese Zuteilung ist noch nicht öffentlich sichtbar. Tippe
-                    zwei Spieler an, um sie zu tauschen. Passt alles: «Live
-                    schalten».
-                  </p>
                   <RoundBoard
                     tables={round.tables}
                     mode="draft"
@@ -223,14 +212,6 @@ export default async function LeaguePage() {
                 <h2 className="text-lg font-medium">
                   Runde {round.number} — {isLastRound ? "live" : "Ergebnis"}
                 </h2>
-                {isLastRound && (
-                  <p className="text-base opacity-70">
-                    Ist ein Tisch fertig: Spieler antippen und die Krone 👑,
-                    oder «Unentschieden» bei Zeitlimit. Nochmals dieselbe
-                    Auswahl antippen macht es rückgängig. Zwei Spieler
-                    antippen tauscht sie.
-                  </p>
-                )}
                 {isLastRound ? (
                   <RoundBoard
                     tables={round.tables}
@@ -283,15 +264,7 @@ export default async function LeaguePage() {
               <RegenerateButton roundId={lastRound.id} roundNumber={lastRound.number} />
             )}
             {lastRoundPublished && lastRound.number < MAX_ROUNDS && (
-              <>
-                <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
-                {!lastRoundComplete && (
-                  <p className="text-base opacity-70">
-                    Erst wenn für jeden Tisch Sieger oder Unentschieden
-                    feststeht.
-                  </p>
-                )}
-              </>
+              <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
             )}
             {/* Bewusst nie durch fehlende Ergebnisse gesperrt: der Abend
                 muss sich auch beenden lassen, wenn Runde 2 nicht (mehr)
@@ -305,7 +278,6 @@ export default async function LeaguePage() {
           {attendanceOpen && (
             <AttendancePanel
               eveningId={evening.id}
-              phase={attendancePhase}
               dropped={droppedPlayers}
               lateArrivals={evening.lateArrivals.map((l) => ({
                 id: l.playerId,

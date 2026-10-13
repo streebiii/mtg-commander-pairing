@@ -308,12 +308,7 @@ export default function EntrySheet({
   if (step === "deckbau") {
     content =
       perEvening.length > 0 ? (
-        <>
-          <p className="text-base opacity-70">
-            Was für dein Deck gilt — einmal für den ganzen Abend.
-          </p>
-          {groups(perEvening, 0)}
-        </>
+        groups(perEvening, 0)
       ) : (
         <p className="text-base opacity-70">An diesem Abend gibt es keine Deckbau-Achievements.</p>
       );

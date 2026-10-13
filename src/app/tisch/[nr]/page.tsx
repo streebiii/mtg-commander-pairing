@@ -95,8 +95,7 @@ export default async function TablePage({
     content = (
       <div className="flex flex-col gap-3">
         <p className="text-base opacity-70">
-          Runde {round.number}. Tippe auf deinen Namen, um deine Achievements
-          zu erfassen.
+          Runde {round.number} — tippe auf deinen Namen.
         </p>
         <ul className="flex flex-col gap-2">
           {table.assignments.map((a) => {
