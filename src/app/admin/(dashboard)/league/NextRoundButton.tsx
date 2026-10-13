@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { PrimaryButton } from "@/components/Button";
 import { startNextRound } from "./actions";
 
-/** "Nächste Runde starten" — mit Ladetext, Hover/Pressed via PrimaryButton. */
+/** "Nächstes Match starten" — mit Ladetext, Hover/Pressed via PrimaryButton. */
 export default function NextRoundButton({
   eveningId,
   disabled,
@@ -23,8 +23,8 @@ export default function NextRoundButton({
   }
 
   return (
-    <PrimaryButton onClick={submit} disabled={disabled} loading={isPending}>
-      {isPending ? "Starte…" : "Nächste Runde starten"}
+    <PrimaryButton className="w-full" onClick={submit} disabled={disabled} loading={isPending}>
+      {isPending ? "Starte…" : "Nächstes Match starten"}
     </PrimaryButton>
   );
 }

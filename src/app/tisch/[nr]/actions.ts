@@ -75,6 +75,6 @@ export async function claimPlayer(tableNumber: number, playerId: string) {
     `${entryId}.${token}`,
     ENTRY_COOKIE_OPTIONS,
   );
-  revalidatePath("/admin/erfassung");
+  revalidatePath("/admin/ligaverwaltung");
   redirect("/erfassen");
 }

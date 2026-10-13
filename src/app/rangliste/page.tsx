@@ -26,20 +26,20 @@ export default async function RankingPage() {
       <PublicHeader active="rangliste" />
 
       <div className="flex flex-col gap-1">
-        <h2 className="text-sm font-medium">
+        <h2 className="text-lg font-medium">
           Commander-Liga {SEASON_YEAR}
           {ranking.lastRound !== null && ` · Stand nach R${ranking.lastRound}`}
         </h2>
-        <p className="text-xs opacity-70">
+        <p className="text-base opacity-70">
           Unterstrichene Punkte stammen aus der Achievement-Erfassung — mit
-          der Maus darauf zeigen oder antippen, um die Achievements des Abends
-          zu sehen. Nach dem letzten Abend zählt das schlechteste Resultat
+          der Maus darauf zeigen oder antippen, um die Achievements der Runde
+          zu sehen. Nach der letzten Runde zählt das schlechteste Resultat
           nicht (durchgestrichen).
         </p>
       </div>
 
       {ranking.rows.length === 0 ? (
-        <p className="text-sm opacity-70">Noch keine Liga-Teilnehmenden.</p>
+        <p className="text-base opacity-70">Noch keine Liga-Teilnehmenden.</p>
       ) : (
         <RankingTable rows={ranking.rows} appDates={appDates} />
       )}

@@ -9,43 +9,7 @@ import { rankValues } from "@/lib/pairing/leagueRanking";
 import { loadEveningHistory } from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
 import { adoptAchievementsForEvening } from "@/lib/achievements";
-import { normalizeColorIdentity } from "@/lib/colorIdentity";
-
-/**
- * Auto-Save für die Liga-Verwaltung: Punktestand eines Spielers. Die
- * Liga-Teilnahme wird hier bewusst nicht angefasst — sie lebt im
- * Spieler-Tab (siehe SPEC.md Abschnitt 6.3).
- */
-export async function updateLeaguePlayer(formData: FormData) {
-  await requireAdmin();
-  const id = String(formData.get("id") ?? "");
-  const pointsRaw = String(formData.get("points") ?? "").trim();
-  const points = Number.parseInt(pointsRaw, 10);
-
-  if (!id || !Number.isFinite(points)) return;
-
-  await prisma.player.update({
-    where: { id },
-    data: { points },
-  });
-  revalidatePath("/admin/league");
-}
-
-/**
- * Auto-Save der Farbidentität (Spalte F der Rangliste, siehe SPEC.md
- * Abschnitt 13). Leer oder ohne erkennbare Farbe entfernt sie.
- */
-export async function updateColorIdentity(formData: FormData) {
-  await requireAdmin();
-  const id = String(formData.get("id") ?? "");
-  if (!id) return;
-  await prisma.player.update({
-    where: { id },
-    data: { colorIdentity: normalizeColorIdentity(String(formData.get("colorIdentity") ?? "")) },
-  });
-  revalidatePath("/admin/league");
-  revalidatePath("/rangliste");
-}
+import { loadPairingStandings } from "@/lib/rankingData";
 
 /**
  * @param db Übergibt entweder `prisma` direkt oder einen Transaktions-
@@ -120,10 +84,7 @@ async function pairRound(
   roundNumber: number,
   attendeeIds: string[],
 ): Promise<string[][]> {
-  const players = await prisma.player.findMany({
-    where: { id: { in: attendeeIds } },
-    select: { id: true, points: true, attendedEvenings: true },
-  });
+  const players = await loadPairingStandings(attendeeIds);
   if (roundNumber === 1) return assignLeagueRound(rankValues(players));
 
   const vorrunde = await prisma.tableAssignment.findMany({
@@ -200,14 +161,13 @@ export async function startEvening(formData: FormData) {
   // leagueActive: true zur Sicherheit auch hier geprüft (nicht nur in der
   // UI-Auswahlliste) — nur Liga-teilnehmende Spieler dürfen in einen
   // Liga-Abend aufgenommen werden (siehe SPEC.md Abschnitt 6).
-  const players = await prisma.player.findMany({
+  const eligible = await prisma.player.count({
     where: { id: { in: playerIds }, leagueActive: true, archivedAt: null },
-    select: { id: true, points: true, attendedEvenings: true },
   });
-  if (players.length !== playerIds.length) return;
+  if (eligible !== playerIds.length) return;
 
   // Runde 1: nach der Rangfolge, keine Historie, noch keine Sieger.
-  const tables = assignLeagueRound(rankValues(players));
+  const tables = assignLeagueRound(rankValues(await loadPairingStandings(playerIds)));
 
   // Abend + Runde 1 atomar anlegen (siehe createRoundInDb) — sonst bliebe
   // bei einem Fehler zwischen den beiden Schritten ein Abend ohne jede
@@ -232,8 +192,8 @@ export async function startEvening(formData: FormData) {
   await clearCasualPairing();
 
   revalidatePath("/admin/league");
-  revalidatePath("/admin/achievements");
-  revalidatePath("/admin/erfassung");
+  revalidatePath("/admin/ligaverwaltung/achievements");
+  revalidatePath("/admin/ligaverwaltung");
   revalidatePath("/");
 }
 
@@ -498,7 +458,7 @@ export async function finishEvening(formData: FormData) {
     data: { finishedAt: new Date() },
   });
   revalidatePath("/admin/league");
-  revalidatePath("/admin/achievements");
+  revalidatePath("/admin/ligaverwaltung/achievements");
 }
 
 /**

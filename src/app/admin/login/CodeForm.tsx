@@ -29,7 +29,7 @@ export default function CodeForm({ next }: { next: string }) {
   return (
     <form action={submitLoginCode} className="flex flex-col gap-3">
       <input type="hidden" name="next" value={next} />
-      <label className="flex flex-col gap-2 text-sm">
+      <label className="flex flex-col gap-2 text-base">
         Code aus der Email
         <input
           name="code"

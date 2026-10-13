@@ -214,7 +214,7 @@ export default function RoundBoard({
                       type="button"
                       onClick={() => handleTap(a.id)}
                       disabled={isPending}
-                      className={`flex min-h-11 flex-1 items-center gap-2 rounded border px-3 py-2 text-left text-sm transition-colors disabled:opacity-60 ${
+                      className={`flex min-h-11 flex-1 items-center gap-2 rounded border px-3 py-2 text-left text-base transition-colors disabled:opacity-60 ${
                         isArmed
                           ? "border-blue-500 bg-blue-500/10"
                           : a.isWinner
@@ -229,7 +229,7 @@ export default function RoundBoard({
                         {formatPlayerName(a.player)}
                       </span>
                       {isDropped && (
-                        <span className="ml-auto shrink-0 text-xs opacity-70">gedroppt</span>
+                        <span className="ml-auto shrink-0 text-base opacity-70">gedroppt</span>
                       )}
                     </button>
                     {mode === "live" && isArmed && (
@@ -254,10 +254,10 @@ export default function RoundBoard({
                           isDropped
                             ? "Drop zurücknehmen"
                             : mode === "live"
-                              ? "Spielt die nächste Runde nicht mehr"
-                              : "Spielt nicht mit — Runde wird neu gemischt"
+                              ? "Spielt das nächste Match nicht mehr"
+                              : "Spielt nicht mit — das Match wird neu gemischt"
                         }
-                        className="flex h-11 shrink-0 items-center justify-center rounded border border-red-500/60 px-3 text-sm transition-colors hover:bg-red-500/10 disabled:opacity-60"
+                        className="flex h-11 shrink-0 items-center justify-center rounded border border-red-500/60 px-3 text-base transition-colors hover:bg-red-500/10 disabled:opacity-60"
                       >
                         {isDropped ? "Zurück" : "Drop"}
                       </button>
@@ -271,7 +271,7 @@ export default function RoundBoard({
                 type="button"
                 onClick={() => handleTie(table.id)}
                 disabled={isPending}
-                className={`mt-2 min-h-11 w-full rounded border px-3 py-2 text-sm transition-colors disabled:opacity-60 ${
+                className={`mt-2 min-h-11 w-full rounded border px-3 py-2 text-base transition-colors disabled:opacity-60 ${
                   erfasst && !sieger
                     ? "border-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
                     : "border-dashed border-white/20 hover:bg-white/5"

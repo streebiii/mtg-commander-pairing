@@ -3,6 +3,7 @@ import { toSheetAchievement } from "@/lib/entries";
 import { computeBreakdown, marksToMap, type Breakdown } from "@/lib/entrySheet";
 import { formatPlayerName } from "@/lib/players";
 import { buildRanking, type AppEvening } from "@/lib/ranking";
+import type { LeaguePlayerStanding } from "@/lib/pairing/leagueRanking";
 import { isInSeason, isLastEvening } from "@/lib/season";
 
 /**
@@ -93,4 +94,31 @@ export async function loadRanking() {
     imported,
     appEvenings,
   );
+}
+
+/**
+ * Punkte und besuchte Abende je Spieler für die Paarung von Runde 1 (siehe
+ * SPEC.md Abschnitt 5.1) — aus derselben Rangliste wie `/rangliste`, also
+ * aus den nachgetragenen Abenden und den Abenden der App. Gezählt wird nur,
+ * was geschlossen ist; der laufende Abend selbst fliesst nicht ein («Stand
+ * vor diesem Abend»).
+ *
+ * Bewusst die Summe aller Abende, nicht das Total mit Streichresultat: der
+ * gedämpfte Schnitt (leagueRanking.ts) teilt durch die besuchten Abende.
+ * Wer nicht (mehr) an der Liga teilnimmt, steht nicht in der Rangliste und
+ * zählt mit 0 Punkten und 0 Abenden.
+ */
+export async function loadPairingStandings(
+  playerIds: readonly string[],
+): Promise<LeaguePlayerStanding[]> {
+  const { rows } = await loadRanking();
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return playerIds.map((id) => {
+    const played = byId.get(id)?.rounds.filter((c) => c.points !== null) ?? [];
+    return {
+      id,
+      points: played.reduce((sum, c) => sum + (c.points ?? 0), 0),
+      attendedEvenings: played.length,
+    };
+  });
 }

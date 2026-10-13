@@ -39,7 +39,7 @@ export default async function LoginPage({
 
       {awaitingCode ? (
         <>
-          <p className="text-sm opacity-70">
+          <p className="text-base opacity-70">
             Wir haben dir einen sechsstelligen Code geschickt. Er ist 10
             Minuten gültig.
           </p>
@@ -48,7 +48,7 @@ export default async function LoginPage({
             <input type="hidden" name="next" value={target} />
             <button
               type="submit"
-              className="flex min-h-11 items-center text-sm underline opacity-70"
+              className="flex min-h-11 items-center text-base underline opacity-70"
             >
               Neuen Code anfordern
             </button>
@@ -56,7 +56,7 @@ export default async function LoginPage({
         </>
       ) : (
         <>
-          <p className="text-sm opacity-70">
+          <p className="text-base opacity-70">
             Kein Passwort nötig — fordere einen Code per Email an und gib ihn
             hier ein.
           </p>
@@ -67,7 +67,7 @@ export default async function LoginPage({
         </>
       )}
 
-      {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
+      {errorMessage && <p className="text-base text-red-600">{errorMessage}</p>}
     </div>
   );
 }

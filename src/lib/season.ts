@@ -50,10 +50,24 @@ export function isLastEvening(date: Date): boolean {
   return eveningNumber(date) === EVENINGS_PER_SEASON;
 }
 
-/** "Liga-Abend 3" — oder ohne Nummer, wenn der Abend ausserhalb der Saison liegt. */
+/**
+ * "Runde 3" — oder ohne Nummer, wenn der Abend ausserhalb der Saison liegt.
+ * Ein Liga-Abend heisst in der App «Runde» (R1–R6), die zwei Paarungen
+ * darin «Match 1» und «Match 2» (SPEC.md Abschnitt 14).
+ */
 export function eveningLabel(date: Date): string {
   const number = eveningNumber(date);
-  return number === null ? "Liga-Abend (ausserhalb der Saison)" : `Liga-Abend ${number}`;
+  return number === null ? "Runde (ausserhalb der Saison)" : `Runde ${number}`;
+}
+
+/**
+ * Die nächste Runde laut Terminliste ab heute (inklusive), oder null nach
+ * dem letzten Termin der Saison.
+ */
+export function nextSeasonEvening(now: Date): { number: number; date: string } | null {
+  const today = zurichDay(now);
+  const index = SEASON_2026_DATES.findIndex((d) => d >= today);
+  return index === -1 ? null : { number: index + 1, date: SEASON_2026_DATES[index] };
 }
 
 /**

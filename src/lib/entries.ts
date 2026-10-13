@@ -75,14 +75,36 @@ export async function getDeviceEntry() {
  * Spiele (Runden-Nummern), in denen der Spieler an einem Tisch sass. Nur
  * veröffentlichte Runden — im Warteraum kann sich die Zuteilung noch
  * ändern, und der Spieler kennt seinen Tisch noch nicht.
+ *
+ * Nachgetragene Abende haben keine Tische; dort steht in der Erfassung,
+ * welche Spiele es waren (SPEC.md Abschnitt 13.3).
  */
 export async function gamesPlayed(eveningId: string, playerId: string) {
+  const [rounds, entry] = await Promise.all([
+    prisma.round.findMany({
+      where: {
+        eveningId,
+        publishedAt: { not: null },
+        tables: { some: { assignments: { some: { playerId } } } },
+      },
+      select: { number: true },
+      orderBy: { number: "asc" },
+    }),
+    prisma.playerEntry.findUnique({
+      where: { eveningId_playerId: { eveningId, playerId } },
+      select: { games: true },
+    }),
+  ]);
+  if (rounds.length === 0 && entry?.games.length) {
+    return [...entry.games].sort((a, b) => a - b);
+  }
+  return rounds.map((r) => r.number);
+}
+
+/** Runden des Abends, die schon live sind — ab dann lässt sich das Spiel erfassen. */
+export async function liveRounds(eveningId: string) {
   const rounds = await prisma.round.findMany({
-    where: {
-      eveningId,
-      publishedAt: { not: null },
-      tables: { some: { assignments: { some: { playerId } } } },
-    },
+    where: { eveningId, publishedAt: { not: null } },
     select: { number: true },
     orderBy: { number: "asc" },
   });
@@ -107,6 +129,8 @@ export interface SheetData {
   achievements: SheetAchievement[];
   marks: SheetMark[];
   gamesPlayed: number[];
+  /** Runden, die schon live sind (siehe `liveRounds`). */
+  liveRounds: number[];
   lastEvening: boolean;
 }
 
@@ -115,7 +139,7 @@ export async function loadSheet(
   eveningId: string,
   playerId: string,
 ): Promise<SheetData> {
-  const [evening, achievements, entry, games] = await Promise.all([
+  const [evening, achievements, entry, games, live] = await Promise.all([
     prisma.evening.findUniqueOrThrow({ where: { id: eveningId } }),
     prisma.eveningAchievement.findMany({
       where: { eveningId },
@@ -126,6 +150,7 @@ export async function loadSheet(
       include: { marks: true },
     }),
     gamesPlayed(eveningId, playerId),
+    liveRounds(eveningId),
   ]);
   const lastEvening = isLastEvening(evening.date);
   return {
@@ -140,6 +165,7 @@ export async function loadSheet(
         count: m.count,
       })) ?? [],
     gamesPlayed: games,
+    liveRounds: live,
     lastEvening,
   };
 }
@@ -206,6 +232,8 @@ export interface OverviewRow {
   entryId: string | null;
   status: EntryStatus;
   hasDevice: boolean;
+  /** Gespielte Matches (1, 2). */
+  games: number[];
   total: number;
 }
 
@@ -228,7 +256,10 @@ export async function loadEveningOverview(eveningId: string) {
     }),
     prisma.playerEntry.findMany({
       where: { eveningId },
-      include: { marks: true },
+      include: {
+        marks: true,
+        player: { select: { firstName: true, lastName: true } },
+      },
     }),
   ]);
   const lastEvening = isLastEvening(evening.date);
@@ -243,14 +274,22 @@ export async function loadEveningOverview(eveningId: string) {
     p.games.add(a.table.round.number);
     players.set(a.playerId, p);
   }
+  // Nachgetragene Runden haben keine Tische — dort steht in der Erfassung,
+  // welche Matches jemand gespielt hat (SPEC.md Abschnitt 13.3).
+  for (const e of entries) {
+    if (!players.has(e.playerId) && e.games.length > 0) {
+      players.set(e.playerId, { name: e.player, games: new Set(e.games) });
+    }
+  }
   const entryByPlayer = new Map(entries.map((e) => [e.playerId, e]));
 
   const rows: OverviewRow[] = [...players].map(([playerId, p]) => {
     const entry = entryByPlayer.get(playerId);
+    const games = [...p.games].sort((x, y) => x - y);
     const totals = computeTotals(
       sheetAchievements,
       marksToMap(entry?.marks ?? []),
-      [...p.games].sort((x, y) => x - y),
+      games,
       lastEvening,
     );
     return {
@@ -263,6 +302,7 @@ export async function loadEveningOverview(eveningId: string) {
           ? "angemeldet"
           : "offen",
       hasDevice: Boolean(entry?.deviceTokenHash),
+      games,
       total: totals.total,
     };
   });

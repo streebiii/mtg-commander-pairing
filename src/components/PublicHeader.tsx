@@ -33,7 +33,7 @@ export default function PublicHeader({
           {PAGES.find((p) => p.key === active)!.label}
         </h1>
       </div>
-      <nav className="flex rounded border border-white/20 p-0.5 text-sm font-medium">
+      <nav className="flex rounded border border-white/20 p-0.5 text-base font-medium">
         {PAGES.map((page) => (
           <Link
             key={page.key}

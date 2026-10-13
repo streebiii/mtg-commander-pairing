@@ -9,7 +9,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { createPortal } from "react-dom";
-import { colorsOf, COLOR_NAMES, type Color } from "@/lib/colorIdentity";
+import ColorDots from "@/components/ColorDots";
 import type { Breakdown } from "@/lib/entrySheet";
 import type { RankingRow, RoundCell } from "@/lib/ranking";
 
@@ -18,13 +18,6 @@ const GAP = 8;
 /** Dauer der Bottom-Sheet-Animation, passend zu `duration-250`. */
 const SHEET_MS = 250;
 
-const DOT_COLORS: Record<Color, string> = {
-  W: "bg-amber-100",
-  U: "bg-blue-500",
-  B: "bg-neutral-900 ring-1 ring-white/60",
-  R: "bg-red-500",
-  G: "bg-green-500",
-};
 
 interface Detail {
   round: number;
@@ -74,7 +67,7 @@ export default function RankingTable({
   return (
     <>
       <div className="-mx-4 overflow-x-auto px-4">
-        <table className="border-separate border-spacing-0 text-sm tabular-nums">
+        <table className="border-separate border-spacing-0 text-base tabular-nums">
           <thead>
             <tr className="text-left">
               <th className={`${STICKY.rank} ${HEAD}`}>#</th>
@@ -157,28 +150,15 @@ const HEAD = "border-b border-white/10 px-2 py-2.5 font-medium text-foreground/7
 const CELL = "border-b border-white/5 px-2 py-2";
 
 function Delta({ delta }: { delta: RankingRow["delta"] }) {
-  if (delta === "neu") return <span className="text-xs text-blue-400">neu</span>;
+  if (delta === "neu") return <span className="text-base text-blue-400">neu</span>;
   if (!delta) return null;
   return delta > 0 ? (
-    <span className="text-xs text-green-400" aria-label={`${delta} Ränge gewonnen`}>
+    <span className="text-base text-green-400" aria-label={`${delta} Ränge gewonnen`}>
       ▲{delta}
     </span>
   ) : (
-    <span className="text-xs text-red-400" aria-label={`${-delta} Ränge verloren`}>
+    <span className="text-base text-red-400" aria-label={`${-delta} Ränge verloren`}>
       ▼{-delta}
-    </span>
-  );
-}
-
-function ColorDots({ identity }: { identity: string | null }) {
-  const colors = colorsOf(identity);
-  if (colors.length === 0) return null;
-  const label = colors.map((c) => COLOR_NAMES[c]).join(", ");
-  return (
-    <span className="flex shrink-0 gap-0.5" title={label} aria-label={`Farben: ${label}`} role="img">
-      {colors.map((c) => (
-        <span key={c} className={`h-2 w-2 rounded-full ${DOT_COLORS[c]}`} />
-      ))}
     </span>
   );
 }
@@ -241,36 +221,36 @@ function DetailView({ detail, date }: { detail: Detail; date: string | undefined
     <div className="flex flex-col">
       <div className="flex items-start justify-between gap-4 pb-3">
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium">{detail.name}</div>
-          <div className="text-xs opacity-70">
+          <div className="truncate text-base font-medium">{detail.name}</div>
+          <div className="text-base opacity-70">
             R{detail.round}
             {date && ` · ${date}`}
           </div>
           {cell.struck && (
-            <div className="mt-1 text-xs text-amber-400">Streichresultat — zählt nicht</div>
+            <div className="mt-1 text-base text-amber-400">Streichresultat — zählt nicht</div>
           )}
         </div>
         <div className="shrink-0 text-right">
           <div className={`text-2xl leading-none font-semibold tabular-nums ${cell.struck ? "line-through opacity-50" : ""}`}>
             {cell.breakdown.total}
           </div>
-          <div className="mt-1 text-xs opacity-70">Punkte</div>
+          <div className="mt-1 text-base opacity-70">Punkte</div>
         </div>
       </div>
 
       {cell.breakdown.sections.map((section) => (
         <section key={section.label} className="border-t border-white/10 py-3 last:pb-0">
-          <h3 className="mb-1.5 flex justify-between gap-4 text-xs font-medium opacity-70">
+          <h3 className="mb-1.5 flex justify-between gap-4 text-base font-medium opacity-70">
             <span>{section.label}</span>
             <span className="tabular-nums">{section.total}</span>
           </h3>
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="flex flex-col gap-1 text-base">
             {section.items.map((item) => (
               <li key={item.title} className="flex items-baseline justify-between gap-4">
                 <span className="leading-snug">
                   {item.title}
                   {item.count > 1 && (
-                    <span className="ml-1.5 text-xs opacity-60">
+                    <span className="ml-1.5 text-base opacity-60">
                       {item.count} × {formatPoints(item.points)}
                     </span>
                   )}
@@ -411,7 +391,7 @@ function BottomSheet({
   const close = () => history.back();
 
   return createPortal(
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Achievements des Abends">
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Achievements der Runde">
       <div
         onClick={close}
         className={`absolute inset-0 bg-black/60 transition-opacity duration-250 motion-reduce:transition-none ${

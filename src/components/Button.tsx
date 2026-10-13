@@ -24,7 +24,7 @@ interface ButtonProps
 }
 
 const BASE =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded px-4 py-2 text-base font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none";
 
 function Spinner() {
   return (

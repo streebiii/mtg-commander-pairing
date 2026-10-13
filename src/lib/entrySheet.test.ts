@@ -103,9 +103,9 @@ describe("computeBreakdown", () => {
   it("gliedert nach Spiel und ganzem Abend, in der Reihenfolge des Blatts", () => {
     const b = computeBreakdown(all, marks, [2, 1], true);
     expect(b.sections.map((s) => [s.label, s.total])).toEqual([
-      ["Spiel 1", 5],
-      ["Spiel 2", 3],
-      ["Ganzer Abend", 11],
+      ["Match 1", 5],
+      ["Match 2", 3],
+      ["Ganze Runde", 11],
     ]);
     expect(b.sections[0].items).toEqual([
       { title: "participation", points: 1, count: 1 },
@@ -125,7 +125,7 @@ describe("computeBreakdown", () => {
 
   it("lässt leere Abschnitte und Evergreen ausser am letzten Abend weg", () => {
     const b = computeBreakdown([participation, evergreen], marks, [1], false);
-    expect(b.sections.map((s) => s.label)).toEqual(["Spiel 1"]);
+    expect(b.sections.map((s) => s.label)).toEqual(["Match 1"]);
   });
 });
 

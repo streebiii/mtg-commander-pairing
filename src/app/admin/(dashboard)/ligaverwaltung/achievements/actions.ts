@@ -11,7 +11,8 @@ import {
 
 /** Der Katalog erscheint im Achievements-Tab und (über Abende) öffentlich. */
 function revalidateAchievementViews() {
-  revalidatePath("/admin/achievements");
+  revalidatePath("/admin/ligaverwaltung", "layout");
+  revalidatePath("/admin");
   revalidatePath("/");
 }
 

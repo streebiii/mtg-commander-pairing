@@ -1,127 +1,36 @@
 import { prisma } from "@/lib/prisma";
-import { SKILL_LEVELS } from "@/lib/players";
-import { createPlayer } from "./actions";
-import CreatePlayerButton from "./CreatePlayerButton";
-import PlayerRow from "./PlayerRow";
+import { loadRanking } from "@/lib/rankingData";
+import PlayerTable from "./PlayerTable";
 
 // Admin-Seiten lesen immer den aktuellen DB-Stand, kein statisches Caching.
 export const dynamic = "force-dynamic";
 
-// Zentrale Vereins-Spielerverwaltung: Name, Stufe und Liga-Teilnahme. Die
-// Liga-Punkte werden bewusst nur im Liga-Tab gepflegt (siehe SPEC.md
-// Abschnitt 6). Archivierte Spieler erscheinen hier nicht mehr.
+// Zentrale Vereins-Spielerverwaltung (SPEC.md Abschnitt 6), gebaut wie der
+// Achievement-Katalog. Archivierte Spieler erscheinen hier nicht mehr.
 export default async function PlayersPage() {
-  const [players, runningAssignments] = await Promise.all([
+  const [players, ranking] = await Promise.all([
     prisma.player.findMany({
       where: { archivedAt: null },
       orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        skillLevel: true,
+        leagueActive: true,
+        colorIdentity: true,
+      },
     }),
-    // Spieler, die gerade an einem Tisch eines laufenden Liga-Abends sitzen —
-    // die dürfen nicht entfernt werden, sonst zerreisst es den Abend.
-    prisma.tableAssignment.findMany({
-      where: { table: { round: { evening: { finishedAt: null } } } },
-      select: { playerId: true },
-    }),
+    loadRanking(),
   ]);
-  const inRunningEvening = new Set(runningAssignments.map((a) => a.playerId));
+  const seasonPoints = new Map(ranking.rows.map((r) => [r.id, r.total]));
 
   return (
-    <div className="flex flex-col gap-8">
-      <h1 className="text-xl font-semibold">Spielerverwaltung</h1>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">Neuen Spieler anlegen</h2>
-        <form action={createPlayer} className="flex flex-wrap items-end gap-3">
-          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
-            Vorname
-            <input
-              type="text"
-              name="firstName"
-              required
-              className="min-h-9 w-full rounded border border-white/20 px-3 py-2 sm:w-auto"
-            />
-          </label>
-          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
-            Nachname (optional)
-            <input
-              type="text"
-              name="lastName"
-              className="min-h-9 w-full rounded border border-white/20 px-3 py-2 sm:w-auto"
-            />
-          </label>
-          <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
-            Stufe (0-3)
-            <select
-              name="skillLevel"
-              defaultValue={0}
-              className="min-h-9 w-full rounded border border-white/20 px-3 py-2 sm:w-20"
-            >
-              {SKILL_LEVELS.map((level) => (
-                <option key={level} value={level}>
-                  {level}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex min-h-11 w-full items-center gap-2 text-sm sm:w-auto">
-            <input type="checkbox" name="leagueActive" className="h-4 w-4" />
-            Nimmt an der Liga teil
-          </label>
-          <CreatePlayerButton />
-        </form>
-        <p className="text-xs opacity-70">
-          Die Stufe ist nur hier sichtbar und dient allein der ausgewogenen
-          Zuteilung im Casual-Modus. Neu angelegte Spieler nehmen noch nicht
-          an der Liga teil. Die Liga-Punkte pflegst du im Liga-Tab.
-        </p>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">
-          Bestehende Spieler ({players.length})
-        </h2>
-        <p className="text-xs opacity-70">
-          Änderungen werden automatisch gespeichert, sobald du ein Feld
-          verlässt bzw. eine Auswahl änderst.
-        </p>
-        {/* Auf schmalen Bildschirmen (Handy) horizontal scrollbar, statt
-            Spalten einfach abzuschneiden. */}
-        <div className="w-full max-w-4xl overflow-x-auto">
-          <table className="w-full min-w-[620px] text-sm">
-            <thead>
-              <tr className="border-b border-white/10 text-left">
-                <th className="py-2 pr-3">Vorname</th>
-                <th className="py-2 pr-3">Nachname</th>
-                <th className="py-2 pr-3">Stufe</th>
-                <th className="py-2 pr-3">Liga</th>
-                <th className="py-2 pr-3"></th>
-                <th className="py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {players.map((player) => (
-                <PlayerRow
-                  key={player.id}
-                  player={{
-                    id: player.id,
-                    firstName: player.firstName,
-                    lastName: player.lastName,
-                    skillLevel: player.skillLevel,
-                    leagueActive: player.leagueActive,
-                    inRunningEvening: inRunningEvening.has(player.id),
-                  }}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs opacity-70">
-          Löschen entfernt einen Spieler endgültig. Hat er bereits an Abenden
-          teilgenommen, wird er stattdessen archiviert — er verschwindet aus
-          allen Listen, die vergangenen Abende bleiben aber vollständig
-          erhalten.
-        </p>
-      </section>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-xl font-semibold">Spieler</h1>
+      <PlayerTable
+        players={players.map((p) => ({ ...p, seasonPoints: seasonPoints.get(p.id) ?? null }))}
+      />
     </div>
   );
 }

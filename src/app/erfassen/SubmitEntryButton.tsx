@@ -22,9 +22,9 @@ export default function SubmitEntryButton() {
 
   return (
     <div className="flex flex-col gap-3 rounded border border-white/20 p-4">
-      <p className="text-sm">
-        Danach kannst du nichts mehr ändern. Korrekturen macht dann der
-        Organisator.
+      <p className="text-base">
+        Damit meldest du, dass du fertig bist. Ändern kannst du, bis der
+        Organisator die Erfassung schliesst.
       </p>
       <div className="flex gap-2">
         <SecondaryButton

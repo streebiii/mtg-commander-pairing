@@ -459,14 +459,14 @@ export default function AchievementTable({
                   setTab(c);
                   setEditing(null);
                 }}
-                className={`flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 text-sm transition-colors ${
+                className={`flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 text-base transition-colors ${
                   selected
                     ? "border-foreground font-medium"
                     : "border-transparent opacity-60 hover:opacity-100"
                 }`}
               >
                 {TAB_LABELS[c]}
-                <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs tabular-nums">
+                <span className="rounded-full bg-white/10 px-2 py-0.5 text-base tabular-nums">
                   {counts[c]}
                 </span>
               </button>
@@ -475,7 +475,7 @@ export default function AchievementTable({
         </div>
       </div>
 
-      <div className="flex min-h-8 items-center justify-between gap-3 text-xs">
+      <div className="flex min-h-8 items-center justify-between gap-3 text-base">
         <span>
           <span className="font-medium tabular-nums">
             {activeInTab} von {totalInTab} aktiv
@@ -510,7 +510,7 @@ export default function AchievementTable({
         role="tabpanel"
         className="max-h-[70vh] overflow-auto rounded border border-white/10"
       >
-        <table className="w-full min-w-[820px] border-separate border-spacing-0 text-sm">
+        <table className="w-full min-w-[820px] border-separate border-spacing-0 text-base">
           <thead className="text-left">
             <tr>
               {header(null, "Aktiv", "sticky left-0 z-20 w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem]")}
@@ -588,7 +588,7 @@ export default function AchievementTable({
           </tbody>
         </table>
         {rows.length === 0 && (
-          <div className="flex flex-col items-center gap-3 px-4 py-12 text-center text-sm">
+          <div className="flex flex-col items-center gap-3 px-4 py-12 text-center text-base">
             <p className="opacity-70">Keine Achievements gefunden.</p>
             {filtersActive && (
               <SecondaryButton onClick={resetFilters}>
