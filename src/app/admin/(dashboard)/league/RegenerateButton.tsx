@@ -38,7 +38,7 @@ export default function RegenerateButton({
       <SecondaryButton
         onClick={() => setConfirming(true)}
         disabled={isPending}
-        className="w-fit"
+        className="w-full"
       >
         🎲 Neu mischen
       </SecondaryButton>
@@ -46,7 +46,7 @@ export default function RegenerateButton({
   }
 
   return (
-    <span className="flex flex-wrap items-center gap-2 text-sm">
+    <span className="flex flex-wrap items-center gap-2 text-base">
       <span className="opacity-70">
         Runde {roundNumber} neu auswürfeln? Die aktuelle Tischzuteilung geht
         dabei verloren.

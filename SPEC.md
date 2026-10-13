@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-10-13 (Liga: Drop und Nachzügler, Rückfrage bei «Abend beenden»)
+Stand: 2026-10-13 (Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
 
 ## 1. Zweck
 
@@ -67,6 +67,10 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   demselben cyon-Konto betroffen). Nur der **Email-Versand (SMTP)** läuft
   weiterhin über das bestehende cyon.ch-Hosting des Auftraggebers (siehe
   DEPLOYMENT.md).
+- **Schriftgrösse**: in der ganzen App kein Text unter 16px (`text-base`),
+  auch nicht für Hinweise und Tabellen. Seitentitel `text-xl`,
+  Abschnittstitel `text-lg`. Eingabefelder ohnehin mindestens 16px
+  (iOS-Zoom, siehe `globals.css`).
 - **Sicherheitshärtung**: Sicherheits-HTTP-Header (siehe `next.config.ts`),
   Rate-Limiting auf den Login-Code-Versand, Login-Prüfung in **jeder**
   Organisator-Server-Action (`requireAdmin`, `src/lib/adminGuard.ts`) —
@@ -343,8 +347,8 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
 - **Ablauf pro Abend:**
   1. Anwesende Spieler aus den Liga-teilnehmenden Vereinsspielern auswählen
      (siehe Abschnitt 6 — nicht jeder Vereinsspieler nimmt an der Liga teil).
-  2. **Runde 1**: Sortierung nach aktuellem Gesamt-Liga-Punktestand
-     (Stand vor diesem Abend). Tischverteilung gemäss Algorithmus aus
+  2. **Runde 1**: Sortierung nach der eigenen Rangliste der Saison
+     (Abschnitt 13, Stand vor diesem Abend). Tischverteilung gemäss Algorithmus aus
      Abschnitt 3, Spieler in Punktereihenfolge auf die Tische verteilt
      (übliche Pairing-Logik: nach Rang gruppieren/verteilen, siehe Abschnitt
      5.1 für Detailregel).
@@ -375,10 +379,19 @@ der Sortierschlüssel für jeden gleich und Runde 2 wird schlicht wieder
 zufällig.
 
 **Keine Punkteerfassung pro Runde.** Die App führt den Punktestand eines
-Abends nicht mehr fort; `Player.points` ist die über den Import gepflegte
-Kopie des Saisonstands von mtgbl.ch und dient allein der Paarung von
-Runde 1. Die Achievement-Punkte erfassen die Spieler (Abschnitt 12); von
-dort wandern sie nach mtgbl.ch.
+Abends nicht während des Abends fort. Die Achievement-Punkte erfassen die
+Spieler (Abschnitt 12); mit dem Schliessen der Erfassung zählen sie in der
+Rangliste (Abschnitt 13) und damit für die Paarung von Runde 1 am nächsten
+Abend. Nach mtgbl.ch werden sie von Hand übertragen.
+
+**Aufbau des Liga-Tabs — wie Casual.** Beide starten ein Spiel und sind
+deshalb gleich aufgebaut: Überschrift mit Info-Knopf, links der Inhalt
+(vor dem Start die Spielerauswahl, danach die Runden mit der aktuellen
+zuoberst und «Live schalten» neben ihrer Überschrift), rechts die
+Seitenleiste mit Einstellungen und Aktionen («Abend starten» bzw. «Neu
+mischen», «Nächste Runde starten», «Abend beenden», Anwesenheit und der
+Stand der Achievement-Erfassung). Gemeinsame Bausteine:
+`src/components/InfoHeading.tsx`, `src/components/Sidebar.tsx`.
 
 - **Kein separates "Abend verwerfen"**: "Abend beenden" verlangt keine
   vollständigen Ergebnisse (mehr) — ein versehentlich gestarteter Abend
@@ -418,9 +431,13 @@ unberührt — dort zählt weiterhin die Gesamtsumme.
 Der Schnitt wird **gedämpft**: jedem Spieler werden `DAEMPFUNG_ABENDE`
 (2) fiktive Abende zum Ligadurchschnitt gutgeschrieben. Ein einzelner
 guter Abend hebt damit niemanden weit nach oben — bei einer einzigen
-Messung ist der Schnitt schlicht nicht belastbar. Die Anzahl besuchter
-Abende stammt aus den Rundenspalten der importierten Rangliste
-(Abschnitt 7).
+Messung ist der Schnitt schlicht nicht belastbar. Punkte und besuchte
+Abende stammen aus der eigenen Rangliste (`loadPairingStandings` in
+`src/lib/rankingData.ts`): die Summe aller geschlossenen Abende der Saison
+— bewusst ohne Streichresultat — und die Zahl der Abende mit Punkten. Der
+laufende Abend zählt nicht mit. Bis zum 13.10.2026 kamen beide Werte aus
+einem Text-Import der Rangliste von mtgbl.ch (`Player.points`,
+`Player.attendedEvenings`); die Felder sind seither unbenutzt.
 
 In Runde 2 kommt ein **Sieg-Bonus `SIEG_BONUS_RAENGE` (4 Ränge)** dazu,
 für alle, die ihren Tisch in Runde 1 gewonnen haben. Er wirkt sich vor
@@ -544,33 +561,48 @@ etwas.
 
 ## 6. Spielerverwaltung
 
-Nicht jeder Vereinsspieler nimmt an der Liga teil — deshalb ist die
-Verwaltung auf zwei Tabs aufgeteilt:
+Der **Spieler-Tab** ist das zentrale Vereins-Roster, gebaut wie der
+Achievement-Katalog (Abschnitt 11.1):
 
-- **Spieler-Tab** (zentrales Vereins-Roster):
-  - Persistente Spielerdatenbank: Spieler anlegen (Vorname, optional
-    Nachname, Stufe, optional direkt als Liga-Teilnehmer).
-  - Enthält je Spieler eine optionale **Skill-Einstufung** auf der Skala
-    0-3, im Organisator-UI schlicht als "Stufe" bezeichnet (siehe
-    `src/lib/players.ts`). Die Stufen werden bewusst **ohne Beschriftung**
-    angeboten — die Dropdowns zeigen nur die nackte Zahl. 0 bedeutet "noch
-    nicht eingestuft" und wird bei der Zuteilung zufällig behandelt
-    (Abschnitt 4.2).
-
-    Komplett unabhängig vom Liga-Punktestand, wird ausschliesslich für die
-    ausgewogene Zuteilung im Casual-Modus verwendet (Abschnitt 4.2).
-  - Zeigt und ändert die **Liga-Teilnahme** (`leagueActive`) pro Spieler.
-    Das ist neben dem Import (Abschnitt 7) der einzige Ort, an dem jemand
-    in die Liga aufgenommen oder aus ihr herausgenommen wird.
-  - Zeigt **keine** Liga-Punkte — die werden im Liga-Tab gepflegt.
+- Eine Tabelle aller Spieler mit Werkzeugleiste: Suche nach Name, Filter
+  «Alle Spieler / Liga-Teilnehmende / Nicht in der Liga» und «+ Neuer
+  Spieler». Spalten: **Liga** (Schalter), **Vorname**, **Nachname**,
+  **Stufe**, **Farben** (Farbidentität, z. B. «WR», Abschnitt 13) und
+  **Saison** (Total aus der Rangliste, nur lesend). Sortierbar nach Vor-
+  und Nachname, Stufe und Saisonpunkten.
+- Bearbeitet wird direkt in der Tabelle: ein Klick auf eine Zelle macht
+  sie zum Eingabefeld, Enter oder Verlassen speichert, Esc verwirft. Die
+  Liga-Teilnahme ist ein Schalter. Angelegt wird in einem Seitenpanel
+  mit ausdrücklichem «Anlegen» (Vorname, optional Nachname, Stufe,
+  Liga-Teilnahme).
+- **«Achievements ›»** öffnet die Seite des Spielers: seine Abende als
+  Reiter (Spalte, Datum, Punkte), darunter das Erfassungsblatt des
+  gewählten Abends — bearbeitbar wie in der Erfassung (Abschnitt 12.3),
+  auch für geschlossene und nachgetragene Abende; Änderungen wirken sofort
+  auf die Rangliste. Dort steht auch «Spieler entfernen» (Abschnitt 6.2).
+- Die **Skill-Einstufung** («Stufe», Skala 0-3, siehe
+  `src/lib/players.ts`) wird bewusst **ohne Beschriftung** angeboten — nur
+  die nackte Zahl. 0 bedeutet "noch nicht eingestuft" und wird bei der
+  Zuteilung zufällig behandelt (Abschnitt 4.2). Sie ist komplett
+  unabhängig vom Liga-Punktestand und dient ausschliesslich der
+  ausgewogenen Zuteilung im Casual-Modus.
+- Die **Liga-Teilnahme** (`leagueActive`) wird nur hier geändert. Sie wirkt
+  rein zukunftsgerichtet: sie bestimmt, wer beim Start eines Liga-Abends
+  zur Auswahl steht und wer in der Rangliste erscheint — bestehende Abende
+  und Ergebnisse bleiben beim Deaktivieren unberührt, die Punkte sind beim
+  erneuten Aufnehmen wieder da. Neu angelegte Spieler starten ohne
+  Teilnahme, sofern beim Anlegen nichts anderes angehakt wurde.
+- Es gibt kein Saison-Konzept: zum Saisonwechsel werden Teilnahmen manuell
+  umgestellt.
 
 ### 6.1 Sichtbarkeit der Stufen-Einstufung
 
 Die Stufen sollen die Spieler nicht mitbekommen. Sie erscheinen deshalb
 nur dort, wo sie aktiv gepflegt werden:
 
-- **sichtbar**: in den beiden Anlege-Formularen (Spieler-Tab und die
-  Inline-Anlage im Casual-Tab) sowie als editierbare Spalte im Spieler-Tab.
+- **sichtbar**: in den beiden Anlege-Formularen (Seitenpanel im
+  Spieler-Tab und die Inline-Anlage im Casual-Tab) sowie als editierbare
+  Spalte im Spieler-Tab.
 - **nicht sichtbar**: in der Casual-Spielersuche, bei den ausgewählten
   Spielern und in den fertigen Tischzuteilungen — also überall dort, wo
   jemand beim Spielabend mitlesen könnte. Die öffentliche Lese-Ansicht
@@ -578,7 +610,8 @@ nur dort, wo sie aktiv gepflegt werden:
 
 ### 6.2 Spieler entfernen
 
-Über den Spieler-Tab lässt sich jeder Spieler entfernen. Was dabei
+Auf der Seite eines Spielers («Achievements ›» im Spieler-Tab) lässt sich
+jeder Spieler entfernen. Was dabei
 passiert, hängt von seiner Historie ab:
 
 - **ohne Abend-Historie**: der Spieler wird endgültig aus der Datenbank
@@ -597,61 +630,30 @@ Beide Fälle werden über denselben Bestätigungsdialog abgefragt.
 
 ### 6.3 Liga-Tab (siehe Abschnitt 5)
 
-- Die Liga-Verwaltung listet **nur die Liga-Teilnehmenden**
-  (`leagueActive`). Je Spieler steht dort der aktuelle
-  Gesamt-Liga-Punktestand (Kopie des Standes von mtgbl.ch, gepflegt über
-  den Import aus Abschnitt 7, hier aber auch manuell editierbar), die
-  Anzahl besuchter Abende, die aus denselben Importdaten stammt und in die
-  Paarung eingeht (Abschnitt 5.1), und die **Farbidentität** (z. B.
-  «WR»), ebenfalls aus dem Import und hier änderbar (Abschnitt 13).
-- Die Teilnahme selbst lässt sich hier **nicht** ändern — das geht nur im
-  Spieler-Tab. Wer dort den Haken entfernt, verschwindet aus der
-  Liga-Verwaltung; seine Punkte bleiben gespeichert und sind beim
-  erneuten Aufnehmen wieder da.
-- Die Teilnahme-Flag wirkt rein zukunftsgerichtet: sie filtert nur die
-  Auswahlliste beim Start eines neuen Liga-Abends — bestehende Abende und
-  Ergebnisse bleiben beim Deaktivieren unberührt.
-- Neu angelegte Spieler starten mit `leagueActive = false`, sofern beim
-  Anlegen nichts anderes angehakt wurde. Der Text-Import der
-  Saison-Rangliste (Abschnitt 7) markiert importierte Spieler automatisch
-  als Liga-teilnehmend.
-- Es gibt kein Saison-Konzept: zum Saisonwechsel werden Teilnahmen manuell
-  umgestellt.
+Der Liga-Tab führt nur noch durch den Abend. Die frühere Liga-Verwaltung
+(Punkte, Abendzahl, Farben je Teilnehmendem) und der Text-Import der
+Rangliste sind am 13.10.2026 entfallen: Punkte und Abende rechnet die App
+aus der eigenen Rangliste (Abschnitt 5.1), die Farben werden im
+Spieler-Tab gepflegt.
 
 ### 6.4 Auto-Save
 
-Alle Felder speichern automatisch — Auswahlfelder und Checkboxen sofort bei
-Änderung, Textfelder beim Verlassen des Feldes (Blur). Kein expliziter
-"Speichern"-Klick nötig, kurzes visuelles Feedback ("✓ Gespeichert")
-bestätigt den Vorgang. Gilt für beide Tabs.
+Alle Felder speichern automatisch — Auswahlfelder und Schalter sofort bei
+Änderung, Textfelder beim Verlassen des Feldes (Blur) bzw. mit Enter. Kein
+expliziter "Speichern"-Klick nötig, kurzes visuelles Feedback ("✓
+Gespeichert") bestätigt den Vorgang. Ausnahme ist das Anlegen eines
+Spielers: ein halb ausgefülltes Formular soll nicht schon im Roster
+landen.
 
-## 7. Datenimport zu Beginn
+## 7. Datenimport (entfallen)
 
-- Die aktuelle Saison-Rangliste liegt auf mtgbl.ch. Der Organisator
-  kopiert die Tabelle als Text in den Import-Dialog des Liga-Tabs — kein
-  automatisiertes Scraping. Erkannt werden die Spalten **Spieler** und
-  **Total** anhand des Tabellenkopfs (nicht anhand der Position) sowie
-  die **Rundenspalten** `R1`, `R2`, … :
-
-  ```
-  | # | Spieler | F | Total | R1 | R2 | R3 |
-  ```
-
-- Aus den Rundenspalten wird gezählt, an wie vielen Abenden ein Spieler
-  teilgenommen hat: jede Zelle mit einer Zahl ist ein besuchter Abend,
-  ein Strich oder eine leere Zelle nicht. Diese Zahl geht in die
-  Rangfolge für die Paarung ein (Abschnitt 5.1) — ohne sie würde die
-  App nach Gesamtpunkten sortieren und damit nach Anwesenheit statt nach
-  Stärke.
-- Der Import ist **kein Aufaddieren**: er setzt Punktestand und
-  Abendzahl auf die importierten Werte und markiert die Spieler als
-  liga-teilnehmend. Er kann vor jedem Abend wiederholt werden.
-- Zusätzlich übernimmt er für die Rangliste (Abschnitt 13) die **Punkte
-  pro Abend** und die **Farbidentität** aus der Spalte **F**. Die
-  Abendpunkte eines Spielers werden dabei komplett ersetzt — aber nur bei
-  Spielern, die der Import übernimmt; wer übersprungen wird oder nicht im
-  Text steht, behält seine Werte. Fehlt die Spalte F, bleiben die
-  gespeicherten Farben unangetastet.
+Bis zum 13.10.2026 kopierte der Organisator die Rangliste von mtgbl.ch
+als Text in einen Import-Dialog des Liga-Tabs. Seit die Abende R1–R4 aus
+den Punkteblättern nachgetragen sind (Abschnitt 13.3) und alle späteren
+in der App erfasst werden, ist die eigene Rangliste vollständig — der
+Import ist entfallen. Die damals importierten Punkte pro Abend
+(`ImportedEveningScore`) bleiben als Rückfall für Spalten ohne Abend aus
+der App erhalten.
 
 ## 8. Verlauf / Historie
 
@@ -670,7 +672,8 @@ bestätigt den Vorgang. Gilt für beide Tabs.
   mtgbl.ch, die App übernimmt sie nur (Abschnitt 11). Die erreichten
   Achievements erfassen die Spieler selbst (Abschnitt 12), die Rangliste
   zeigt sie (Abschnitt 13).
-- Kein automatischer Import/Sync mit mtgbl.ch.
+- Kein Import/Sync mit mtgbl.ch — die App rechnet ihre Rangliste selbst,
+  die offizielle Wertung wird von Hand übertragen.
 - Keine saisonübergreifende Rematch-Vermeidung.
 - Keine Sonderbehandlung für „zu wenige Spieler" (< 3 anwesend) — tritt
   laut Auftraggeber nicht auf.
@@ -783,9 +786,19 @@ und der Organisator erfasst für ihn.
 
 - Für jedes gespielte Spiel (Runde 1, Runde 2) gibt es die fixen und
   rotierenden Achievements mit Art «1x pro Match» oder «pro Spieler»,
-  darunter **Ganzer Abend** mit allem, was einmal pro Abend zählt
-  (Deckbau, «mehrmals pro Abend»). «1x am Ende der Liga» (Evergreen)
-  erscheint nur am letzten Abend der Saison.
+  dazu alles, was einmal pro Abend zählt (Deckbau, «mehrmals pro
+  Abend»). «1x am Ende der Liga» (Evergreen) erscheint nur am letzten
+  Abend der Saison.
+- **In Schritten** auf dem Handy des Spielers: **Deckbau** (alles für den
+  ganzen Abend) → **Spiel 1** → **Spiel 2** → **Abgeben**. Ein Spiel lässt
+  sich erfassen, sobald seine Runde live ist; vorher zeigt der Schritt
+  einen Hinweis, und wer ein Spiel nicht gespielt hat (Drop, Nachzügler),
+  sieht genau das. Die Schritte oben sind jederzeit antippbar, unten
+  führen «← / →» weiter. Der Browser merkt sich den zuletzt offenen
+  Schritt; ohne Speicher beginnt das Blatt bei Deckbau. «Abgeben» zeigt
+  eine Übersicht je Spiel und warnt, solange ein Spiel noch aussteht.
+- Der Organisator (Papierzettel, Korrekturen, Spielerseite) sieht das
+  ganze Blatt auf einer Seite.
 - Mehrfach zählende Achievements («pro Spieler», «mehrmals pro Abend»)
   haben ein Anzahl-Feld (− / +, höchstens 20), alle anderen ein Häkchen.
 - **Participation** setzt die App für jedes gespielte Spiel automatisch,
@@ -834,16 +847,16 @@ offizielle Wertung bleibt auf mtgbl.ch.
 - **Wer erscheint**: alle Liga-Teilnehmenden (`leagueActive`), auch ohne
   gespielten Abend (Total 0). Massgebend ist allein der Haken im
   Spieler-Tab.
-- **Abendpunkte**: für die Abende vor der App (bis R4) aus dem Import
-  (Abschnitt 7), danach aus der Achievement-Erfassung (Abschnitt 12).
+- **Abendpunkte**: aus der Achievement-Erfassung (Abschnitt 12), für R1–R4
+  aus den nachgetragenen Abenden (Abschnitt 13.3); wo eine Spalte keinen
+  Abend aus der App hat, aus dem früheren Import (Abschnitt 7).
   Ein Abend aus der App zählt erst, wenn seine Erfassung geschlossen und
   einer Spalte zugeordnet ist (Abschnitt 12.3). Gibt es für eine Spalte
   einen Abend aus der App, gilt er für alle — auch für wen der Import dort
   einen Wert hätte. Wer am Abend an einem Tisch sass, aber nichts erfasst
   hat, bekommt die automatische Participation.
-- **Total** rechnet die Rangliste selbst aus den Abendpunkten.
-  `Player.points` (Paarung von Runde 1) bleibt davon vorerst getrennt und
-  wird weiterhin über den Import gepflegt (BACKLOG.md).
+- **Total** rechnet die Rangliste selbst aus den Abendpunkten. Dieselben
+  Abendpunkte bestimmen die Paarung von Runde 1 (Abschnitt 5.1).
 - **Rang**: gleiches Total heisst gleicher Rang (1, 2, 2, 4), innerhalb
   eines Rangs alphabetisch.
 - **Streichresultat**: während der Saison zählt die Summe aller Abende.

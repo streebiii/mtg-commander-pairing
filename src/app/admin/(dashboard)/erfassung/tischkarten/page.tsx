@@ -37,7 +37,7 @@ export default async function TableCardsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3 print:hidden">
         <div>
           <h1 className="text-xl font-semibold">Tischkarten</h1>
-          <p className="text-sm opacity-70">
+          <p className="text-base opacity-70">
             Einmal drucken, sie bleiben gültig. Im Druckdialog «Als PDF
             sichern» wählen, um ein PDF zu erhalten.
           </p>
@@ -58,8 +58,8 @@ export default async function TableCardsPage() {
               // QR-Code als SVG vom Server erzeugt, enthält nur die URL.
               dangerouslySetInnerHTML={{ __html: c.svg }}
             />
-            <div className="text-sm font-medium">Achievements erfassen</div>
-            <div className="text-xs text-black/70">
+            <div className="text-base font-medium">Achievements erfassen</div>
+            <div className="text-base text-black/70">
               QR-Code scannen und deinen Namen antippen
             </div>
             <div className="text-[11px] text-black/50">{c.url}</div>

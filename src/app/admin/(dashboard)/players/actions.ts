@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/adminGuard";
 import { prisma } from "@/lib/prisma";
+import { normalizeColorIdentity } from "@/lib/colorIdentity";
 import {
   formatPlayerName,
   parseSkillLevel,
@@ -10,29 +11,40 @@ import {
   SKILL_LEVEL_MIN,
 } from "@/lib/players";
 
-/** Beide Tabs zeigen Spielerdaten — nach Änderungen immer beide auffrischen. */
+/** Mehrere Tabs zeigen Spielerdaten — nach Änderungen alle auffrischen. */
 function revalidatePlayerViews() {
-  revalidatePath("/admin/players");
+  revalidatePath("/admin/players", "layout");
   revalidatePath("/admin/league");
   revalidatePath("/admin/casual");
+  revalidatePath("/rangliste");
 }
 
-export async function createPlayer(formData: FormData) {
+/** Legt im Spieler-Tab einen Spieler an (SPEC.md Abschnitt 6). */
+export async function createPlayer(input: {
+  firstName: unknown;
+  lastName: unknown;
+  skillLevel: unknown;
+  leagueActive: unknown;
+}): Promise<{ player: { id: string; name: string } } | { error: string }> {
   await requireAdmin();
-  const firstName = String(formData.get("firstName") ?? "").trim();
-  const lastName = String(formData.get("lastName") ?? "").trim();
-  const skillLevel = parseSkillLevel(formData.get("skillLevel"));
-  const leagueActive = formData.get("leagueActive") === "on";
+  const firstName = typeof input.firstName === "string" ? input.firstName.trim() : "";
+  const lastName = typeof input.lastName === "string" ? input.lastName.trim() : "";
+  const skillLevel = parseSkillLevel(input.skillLevel ?? 0);
+  if (!firstName) return { error: "Vorname fehlt" };
+  if (skillLevel === null) {
+    return { error: `Stufe muss zwischen ${SKILL_LEVEL_MIN} und ${SKILL_LEVEL_MAX} liegen` };
+  }
 
-  if (!firstName) return;
-  if (skillLevel === null) return;
-
-  // points bewusst nicht gesetzt — neue Spieler starten gemäss Schema-Default
-  // bei 0 und werden im Liga-Tab gepflegt (siehe SPEC.md Abschnitt 6).
-  await prisma.player.create({
-    data: { firstName, lastName: lastName || null, skillLevel, leagueActive },
+  const player = await prisma.player.create({
+    data: {
+      firstName,
+      lastName: lastName || null,
+      skillLevel,
+      leagueActive: input.leagueActive === true,
+    },
   });
   revalidatePlayerViews();
+  return { player: { id: player.id, name: formatPlayerName(player) } };
 }
 
 /**
@@ -68,13 +80,16 @@ export async function updatePlayer(formData: FormData) {
   const lastName = String(formData.get("lastName") ?? "").trim();
   const skillLevel = parseSkillLevel(formData.get("skillLevel"));
   const leagueActive = formData.get("leagueActive") === "true";
+  // Farbidentität wie in Spalte F der Rangliste (SPEC.md Abschnitt 13),
+  // in WUBRG-Reihenfolge; leer oder ohne erkennbare Farbe entfernt sie.
+  const colorIdentity = normalizeColorIdentity(String(formData.get("colorIdentity") ?? ""));
 
   if (!id || !firstName) return;
   if (skillLevel === null) return;
 
   await prisma.player.update({
     where: { id },
-    data: { firstName, lastName: lastName || null, skillLevel, leagueActive },
+    data: { firstName, lastName: lastName || null, skillLevel, leagueActive, colorIdentity },
   });
   revalidatePlayerViews();
 }
@@ -89,7 +104,7 @@ export async function updatePlayer(formData: FormData) {
  * - während er an einem laufenden Liga-Abend zugeteilt ist: gar nicht,
  *   sonst zerreisst es die Tische des laufenden Abends.
  */
-export async function deletePlayer(formData: FormData) {
+export async function deletePlayer(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;

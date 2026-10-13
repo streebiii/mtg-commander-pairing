@@ -60,7 +60,7 @@ export function PlayerSearchField({
   inputRef?: Ref<HTMLInputElement>;
 }) {
   return (
-    <label className="flex flex-col gap-1.5 text-sm">
+    <label className="flex flex-col gap-1.5 text-base">
       Spieler suchen
       <input
         type="text"
@@ -150,7 +150,7 @@ export function PlayerTile({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={selected}
-      className={`flex min-h-11 w-full items-center gap-1.5 rounded border px-3 py-2 text-left text-sm transition-colors disabled:opacity-60 ${
+      className={`flex min-h-11 w-full items-center gap-1.5 rounded border px-3 py-2 text-left text-base transition-colors disabled:opacity-60 ${
         pending
           ? "border-amber-500 bg-amber-500/10 hover:bg-amber-500/20"
           : selected
@@ -166,7 +166,7 @@ export function PlayerTile({
       {enterTarget && (
         <span
           aria-hidden="true"
-          className="shrink-0 text-xs opacity-70"
+          className="shrink-0 text-base opacity-70"
           title="Enter wählt diesen Spieler aus"
         >
           ↵

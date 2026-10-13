@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import InfoHeading from "@/components/InfoHeading";
 import { MAX_GROUP_SIZE, MIN_GROUP_SIZE } from "@/lib/pairing/groups";
 
 /** Inhalt der Erklärung, in der Reihenfolge des Arbeitsablaufs. */
@@ -35,60 +35,7 @@ const TOPICS: { title: string; text: string }[] = [
   },
 ];
 
-/**
- * Überschrift des Casual-Tabs mit aufklappbarer Erklärung.
- *
- * Der frühere Dauertext unter der Überschrift ist bewusst weg — im Alltag
- * weiss der Organisator, was der Modus tut, und der Platz auf dem Handy
- * ist knapp. Wer die Erklärung braucht, holt sie sich über den Info-Knopf.
- *
- * Bewusst ein aufklappbarer Abschnitt statt `window.alert`: Letzteres
- * liefert in eingebetteten Browser-Ansichten gar keinen Dialog (siehe
- * Bugfix beim Löschen von Spielern).
- */
+/** Überschrift des Casual-Tabs mit aufklappbarer Erklärung. */
 export default function CasualInfo() {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-1">
-        <h1 className="text-xl font-semibold">Casual</h1>
-        <button
-          type="button"
-          onClick={() => setOpen((prev) => !prev)}
-          aria-expanded={open}
-          aria-controls="casual-info"
-          aria-label={
-            open ? "Erklärung ausblenden" : "Erklärung zum Casual-Modus anzeigen"
-          }
-          className="flex h-11 w-11 shrink-0 items-center justify-center"
-        >
-          <span
-            aria-hidden="true"
-            className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold ${
-              open
-                ? "border-foreground"
-                : "border-white/40 opacity-70"
-            }`}
-          >
-            i
-          </span>
-        </button>
-      </div>
-
-      {open && (
-        <div
-          id="casual-info"
-          className="flex flex-col gap-3 rounded border border-white/20 p-4"
-        >
-          {TOPICS.map((topic) => (
-            <div key={topic.title} className="flex flex-col gap-0.5">
-              <h2 className="text-sm font-medium">{topic.title}</h2>
-              <p className="text-sm opacity-70">{topic.text}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return <InfoHeading title="Casual" topics={TOPICS} />;
 }

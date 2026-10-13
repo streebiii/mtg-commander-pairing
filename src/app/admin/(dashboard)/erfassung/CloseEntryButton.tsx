@@ -51,13 +51,13 @@ export default function CloseEntryButton({
 
   return (
     <div className="flex max-w-md flex-col gap-3 rounded border border-white/20 p-4">
-      <p className="text-sm">
+      <p className="text-base">
         {openCount > 0
           ? `${openCount} Spieler haben noch nicht abgegeben. `
           : ""}
         Danach können die Spieler nichts mehr ändern.
       </p>
-      <label className="flex flex-col gap-1.5 text-sm">
+      <label className="flex flex-col gap-1.5 text-base">
         Zählt in der Rangliste als
         <select
           value={round}
@@ -73,7 +73,7 @@ export default function CloseEntryButton({
           <option value={TEST_EVENING}>Testabend — zählt nicht</option>
         </select>
       </label>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-base text-red-400">{error}</p>}
       <div className="flex gap-2">
         <SecondaryButton onClick={() => setConfirming(false)} disabled={isPending}>
           Abbrechen

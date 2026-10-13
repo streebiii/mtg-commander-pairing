@@ -30,11 +30,11 @@ export default async function OrganizerEntryPage({
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <Link href="/admin/erfassung" className="text-xs opacity-70 hover:underline">
+        <Link href="/admin/erfassung" className="text-base opacity-70 hover:underline">
           ← Zur Übersicht
         </Link>
         <h1 className="text-xl font-semibold">{formatPlayerName(player)}</h1>
-        <p className="text-sm opacity-70">
+        <p className="text-base opacity-70">
           {entry?.submittedAt
             ? "Abgegeben — du kannst trotzdem korrigieren."
             : entry?.deviceTokenHash
@@ -53,7 +53,7 @@ export default async function OrganizerEntryPage({
         <form action={reopenEntry.bind(null, entry.id)}>
           <button
             type="submit"
-            className="inline-flex min-h-11 w-full items-center justify-center rounded border border-white/20 px-4 py-2 text-sm font-medium hover:bg-white/5"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded border border-white/20 px-4 py-2 text-base font-medium hover:bg-white/5"
           >
             Abgabe wieder öffnen
           </button>
@@ -62,7 +62,7 @@ export default async function OrganizerEntryPage({
         <form action={confirmEntry.bind(null, evening.id, playerId)}>
           <button
             type="submit"
-            className="inline-flex min-h-11 w-full items-center justify-center rounded bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded bg-foreground px-4 py-2 text-base font-medium text-background hover:opacity-90"
           >
             Als abgegeben markieren
           </button>

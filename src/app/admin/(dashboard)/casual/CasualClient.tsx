@@ -8,6 +8,7 @@ import {
   PlayerTileGrid,
   usePlayerSearch,
 } from "@/components/PlayerPicker";
+import Sidebar from "@/components/Sidebar";
 import TableCard from "@/components/TableCard";
 import { SKILL_LEVELS } from "@/lib/players";
 import { computeTableSizes } from "@/lib/pairing/tableSizes";
@@ -72,7 +73,7 @@ function groupLabel(index: number): string {
 function GroupBadge({ index }: { index: number }) {
   return (
     <span
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${groupBadgeColor(index)}`}
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-base font-bold text-white ${groupBadgeColor(index)}`}
     >
       {groupLabel(index)}
     </span>
@@ -632,7 +633,7 @@ export default function CasualClient({
       {tables && (
         <section className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-sm font-medium">
+            <h2 className="text-lg font-medium">
               Tischzuteilung — {published ? "live" : "Warteraum"}
             </h2>
             {!published && (
@@ -641,7 +642,7 @@ export default function CasualClient({
               </PrimaryButton>
             )}
           </div>
-          <p className="text-xs opacity-70">
+          <p className="text-base opacity-70">
             {published
               ? "Diese Zuteilung ist auf der öffentlichen Pairing-Seite sichtbar. Änderungen erscheinen dort sofort."
               : "Diese Zuteilung ist noch nicht öffentlich sichtbar. Prüfe sie und passe sie an, dann „Live schalten“."}{" "}
@@ -676,7 +677,7 @@ export default function CasualClient({
                           <button
                             type="button"
                             onClick={() => handlePlayerClick(table.tableNumber, p.id)}
-                            className={`flex min-h-11 w-full items-center gap-2 rounded border px-3 py-2 text-left text-sm transition-colors ${
+                            className={`flex min-h-11 w-full items-center gap-2 rounded border px-3 py-2 text-left text-base transition-colors ${
                               isPicked
                                 ? "border-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
                                 : "border-white/10 hover:bg-white/5"
@@ -697,7 +698,7 @@ export default function CasualClient({
           {selectedForReshuffle.size > 0 && (
             <div className="flex flex-col gap-2">
               {selectedForReshuffle.size === 1 && (
-                <p className="text-xs opacity-70">
+                <p className="text-base opacity-70">
                   Noch einen zweiten Tisch auswählen, um sie untereinander
                   neu zu mischen.
                 </p>
@@ -734,7 +735,7 @@ export default function CasualClient({
                 </div>
               )}
               {reshuffleGroupConflict && (
-                <p className="text-xs text-red-600">
+                <p className="text-base text-red-600">
                   {reshuffleGroupConflict.message}
                 </p>
               )}
@@ -744,7 +745,7 @@ export default function CasualClient({
       )}
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium">
+          <h2 className="text-lg font-medium">
             Anwesende Spieler auswählen ({selectedCount})
           </h2>
 
@@ -762,7 +763,7 @@ export default function CasualClient({
             <button
               type="button"
               onClick={openAddForm}
-              className={`flex min-h-11 w-fit items-center gap-2 rounded border border-dashed border-white/20 px-3 py-2 text-left text-sm ${
+              className={`flex min-h-11 w-fit items-center gap-2 rounded border border-dashed border-white/20 px-3 py-2 text-left text-base ${
                 noMatch ? "ring-2 ring-foreground/60" : ""
               }`}
             >
@@ -774,7 +775,7 @@ export default function CasualClient({
               {noMatch && (
                 <span
                   aria-hidden="true"
-                  className="shrink-0 text-xs opacity-70"
+                  className="shrink-0 text-base opacity-70"
                   title="Enter öffnet das Anlege-Formular"
                 >
                   ↵
@@ -785,7 +786,7 @@ export default function CasualClient({
 
           {showAddForm && (
             <div className="flex flex-wrap items-end gap-3 rounded border border-dashed border-white/20 p-3">
-              <label className="flex flex-col gap-1.5 text-xs">
+              <label className="flex flex-col gap-1.5 text-base">
                 Vorname
                 <input
                   ref={firstNameRef}
@@ -796,7 +797,7 @@ export default function CasualClient({
                   className="min-h-9 w-28 rounded border border-white/20 px-3 py-2"
                 />
               </label>
-              <label className="flex flex-col gap-1.5 text-xs">
+              <label className="flex flex-col gap-1.5 text-base">
                 Nachname (optional)
                 <input
                   type="text"
@@ -806,7 +807,7 @@ export default function CasualClient({
                   className="min-h-9 w-28 rounded border border-white/20 px-3 py-2"
                 />
               </label>
-              <label className="flex flex-col gap-1.5 text-xs">
+              <label className="flex flex-col gap-1.5 text-base">
                 Stufe (0-3)
                 <select
                   value={newSkill}
@@ -832,7 +833,7 @@ export default function CasualClient({
               </SecondaryButton>
             </div>
           )}
-          {addError && <p className="text-sm text-red-600">{addError}</p>}
+          {addError && <p className="text-base text-red-600">{addError}</p>}
 
           {/* Eine einzige Liste: Antippen ändert nur den Zustand des
               Eintrags an seiner Position, nichts springt (siehe
@@ -868,15 +869,15 @@ export default function CasualClient({
           Auswahl links. Bewusst erst ab lg: darunter stapeln die Spalten
           untereinander, dort gibt es keine zwei Bereiche nebeneinander,
           die auseinandergehalten werden müssten. */}
-      <aside className="flex flex-col gap-4 lg:col-span-1 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start lg:justify-center lg:rounded-lg lg:bg-surface lg:px-4 lg:py-6">
-          <h2 className="text-sm font-medium">Einstellungen</h2>
+      <Sidebar>
+          <h2 className="text-lg font-medium">Einstellungen</h2>
 
           <div className="flex flex-col gap-2">
             {!groupModeActive && (
               <button
                 type="button"
                 onClick={startGroupMode}
-                className="flex min-h-11 w-full items-center rounded border border-dashed border-white/20 px-3 py-2 text-left text-sm"
+                className="flex min-h-11 w-full items-center rounded border border-dashed border-white/20 px-3 py-2 text-left text-base"
               >
                 + Gruppe bilden
               </button>
@@ -884,12 +885,12 @@ export default function CasualClient({
 
             {groupModeActive && (
               <div className="flex flex-col gap-2 rounded border border-amber-500 bg-amber-500/10 p-3">
-                <p className="text-sm">
+                <p className="text-base">
                   Gruppe bilden: tippe die Spieler an, die zusammen sitzen sollen
                   ({pendingGroupMembers.length}/{MAX_GROUP_SIZE}).
                 </p>
                 {groupModeHint && (
-                  <p className="text-xs text-red-600">{groupModeHint}</p>
+                  <p className="text-base text-red-600">{groupModeHint}</p>
                 )}
                 <div className="flex flex-wrap gap-2">
                   <PrimaryButton
@@ -908,11 +909,11 @@ export default function CasualClient({
             {groups.length > 0 && (
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium opacity-70">Gruppen</span>
+                  <span className="text-base font-medium opacity-70">Gruppen</span>
                   <button
                     type="button"
                     onClick={dissolveAllGroups}
-                    className="flex min-h-9 items-center text-xs underline opacity-70"
+                    className="flex min-h-9 items-center text-base underline opacity-70"
                   >
                     alle auflösen
                   </button>
@@ -924,7 +925,7 @@ export default function CasualClient({
                       className="flex min-h-11 items-center gap-2 rounded border border-white/10 px-3 py-2"
                     >
                       <GroupBadge index={i} />
-                      <span className="truncate flex-1 text-sm">
+                      <span className="truncate flex-1 text-base">
                         {g.playerIds.map((id) => nameById.get(id) ?? "?").join(", ")}
                       </span>
                       <button
@@ -942,12 +943,12 @@ export default function CasualClient({
             )}
 
             {groupConflict && (
-              <p className="text-sm text-red-600">{groupConflict.message}</p>
+              <p className="text-base text-red-600">{groupConflict.message}</p>
             )}
           </div>
 
-          <fieldset className="flex flex-col gap-1 text-sm">
-            <legend className="mb-1 text-xs font-medium opacity-70">
+          <fieldset className="flex flex-col gap-1 text-base">
+            <legend className="mb-1 text-base font-medium opacity-70">
               Zuteilungsart
             </legend>
             <label className="flex min-h-9 items-center gap-1.5">
@@ -977,7 +978,7 @@ export default function CasualClient({
               Radio-Option. Wirkt erst bei der nächsten Berechnung, genau
               wie die Zuteilungsart. */}
           <div className="flex flex-col gap-1">
-            <label className="flex min-h-11 items-center gap-2 text-sm">
+            <label className="flex min-h-11 items-center gap-2 text-base">
               <input
                 type="checkbox"
                 checked={allowFiveTable}
@@ -987,7 +988,7 @@ export default function CasualClient({
               5er-Tisch erlauben
             </label>
             {fiveTableHint && (
-              <p className="text-xs opacity-70">{fiveTableHint}</p>
+              <p className="text-base opacity-70">{fiveTableHint}</p>
             )}
           </div>
 
@@ -1006,11 +1007,11 @@ export default function CasualClient({
               </DangerButton>
             )}
             {selectedCount > 0 && selectedCount < 3 && (
-              <p className="text-xs opacity-70">Mindestens 3 Spieler nötig.</p>
+              <p className="text-base opacity-70">Mindestens 3 Spieler nötig.</p>
             )}
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-base text-red-600">{error}</p>}
           </div>
-        </aside>
+        </Sidebar>
     </div>
   );
 }

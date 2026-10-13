@@ -245,10 +245,16 @@ prüft und schliesst die Erfassung.
 
 ## Liga-Punkte aus der Erfassung übernehmen
 
-**Status:** Offen, bewusst zurückgestellt (Bereinigung vom 10.10.2026).
+**Status:** Umgesetzt (13.10.2026), anders als hier skizziert: statt
+Punkte nachzuführen, liest die Paarung direkt die eigene Rangliste
+(`loadPairingStandings` in `src/lib/rankingData.ts`). Import und
+Liga-Verwaltung sind entfallen (SPEC.md Abschnitt 5.1, 6.3, 7).
+`Player.points`, `Player.attendedEvenings` und
+`TableAssignment.pointsAwarded` sind damit alle unbenutzt; entfernt
+werden sie in einem eigenen Schritt mit Migration.
 
-**Worum es geht:** Die App erfasst die Achievement-Punkte inzwischen
-selbst, gepaart wird Runde 1 aber weiterhin nach `Player.points` und
+**Worum es ging:** Die App erfasst die Achievement-Punkte inzwischen
+selbst, gepaart wurde Runde 1 aber weiterhin nach `Player.points` und
 `attendedEvenings` — beides kommt nur über den Import von mtgbl.ch, wohin
 die Punkte wiederum aus der App gelangen. Nach dem Schliessen einer
 Erfassung könnten Punkte und Abendzahl direkt aus den Einträgen

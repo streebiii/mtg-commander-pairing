@@ -71,30 +71,30 @@ export default async function TablePage({
 
   let content: React.ReactNode;
   if (!Number.isInteger(tableNumber) || tableNumber < 1) {
-    content = <p className="text-sm opacity-70">Diese Tischkarte ist ungültig.</p>;
+    content = <p className="text-base opacity-70">Diese Tischkarte ist ungültig.</p>;
   } else if (!evening) {
     content = (
-      <p className="text-sm opacity-70">
+      <p className="text-base opacity-70">
         Gerade läuft kein Liga-Abend. Sobald einer läuft, kannst du dich hier
         anmelden.
       </p>
     );
   } else if (!round) {
     content = (
-      <p className="text-sm opacity-70">
+      <p className="text-base opacity-70">
         Die Tische sind noch nicht freigegeben. Versuche es gleich nochmals.
       </p>
     );
   } else if (!table) {
     content = (
-      <p className="text-sm opacity-70">
+      <p className="text-base opacity-70">
         Tisch {tableNumber} ist in Runde {round.number} nicht besetzt.
       </p>
     );
   } else {
     content = (
       <div className="flex flex-col gap-3">
-        <p className="text-sm opacity-70">
+        <p className="text-base opacity-70">
           Runde {round.number}. Tippe auf deinen Namen, um deine Achievements
           zu erfassen.
         </p>
@@ -111,7 +111,7 @@ export default async function TablePage({
                     className="flex min-h-14 w-full items-center justify-between gap-3 rounded border border-white/20 px-4 py-3 text-left text-base transition-colors hover:bg-white/5 active:bg-white/10 disabled:opacity-40"
                   >
                     <span className="font-medium">{formatPlayerName(a.player)}</span>
-                    <span className="text-xs opacity-70">
+                    <span className="text-base opacity-70">
                       {mine ? "du" : taken ? "angemeldet" : ""}
                     </span>
                   </button>
@@ -128,20 +128,20 @@ export default async function TablePage({
     <div className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8">
       <div>
         <h1 className="text-xl font-semibold">Tisch {nr}</h1>
-        <p className="text-sm opacity-70">Achievements erfassen</p>
+        <p className="text-base opacity-70">Achievements erfassen</p>
       </div>
 
       {deviceHere && (
         <Link
           href="/erfassen"
-          className="flex min-h-11 items-center justify-center rounded bg-foreground px-4 py-2 text-sm font-medium text-background"
+          className="flex min-h-11 items-center justify-center rounded bg-foreground px-4 py-2 text-base font-medium text-background"
         >
           Weiter als {formatPlayerName(device.player)}
         </Link>
       )}
 
       {error && (
-        <p role="alert" className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+        <p role="alert" className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-base text-red-300">
           {error}
         </p>
       )}

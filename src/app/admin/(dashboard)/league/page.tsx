@@ -3,12 +3,13 @@ import { formatPlayerName } from "@/lib/players";
 import TableCard from "@/components/TableCard";
 import { MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
 import { rankValues } from "@/lib/pairing/leagueRanking";
+import { loadPairingStandings } from "@/lib/rankingData";
 import { startEvening } from "./actions";
 import AttendancePanel from "./AttendancePanel";
+import Sidebar from "@/components/Sidebar";
 import EntryBanner from "./EntryBanner";
+import LeagueInfo from "./LeagueInfo";
 import FinishEveningButton from "./FinishEveningButton";
-import ImportClient from "./ImportClient";
-import LeaguePlayerRow from "./LeaguePlayerRow";
 import NextRoundButton from "./NextRoundButton";
 import PlayerSelectionList from "./PlayerSelectionList";
 import PublishRoundButton from "./PublishRoundButton";
@@ -46,22 +47,12 @@ export default async function LeaguePage() {
         },
       },
     }),
-    // Alle Vereinsspieler, nicht nur die teilnehmenden: der Import gleicht
-    // Namen gegen das ganze Roster ab, und die Rangliste eines laufenden
-    // Abends muss auch Anwesende kennen, die inzwischen nicht mehr
-    // teilnehmen. Die Liga-Verwaltung filtert selbst (siehe unten).
+    // Die Liga-Teilnehmenden — Auswahl beim Start und Nachzügler. Wer
+    // teilnimmt, legst du im Spieler-Tab fest (SPEC.md Abschnitt 6).
     prisma.player.findMany({
-      where: { archivedAt: null },
-      orderBy: [{ points: "desc" }, { firstName: "asc" }],
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        points: true,
-        attendedEvenings: true,
-        leagueActive: true,
-        colorIdentity: true,
-      },
+      where: { archivedAt: null, leagueActive: true },
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+      select: { id: true, firstName: true, lastName: true },
     }),
   ]);
   let evening = eveningResult;
@@ -78,84 +69,43 @@ export default async function LeaguePage() {
     evening = null;
   }
 
-  // Die Verwaltung pflegt nur die Teilnehmenden. Aufgenommen und
-  // herausgenommen wird im Spieler-Tab oder über den Import (siehe SPEC.md
-  // Abschnitt 6.3).
-  const activePlayers = allPlayers.filter((p) => p.leagueActive);
+  const activePlayers = allPlayers;
 
-  const managementSection = (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-medium">
-        Liga-Verwaltung ({activePlayers.length} Spieler)
-      </h2>
-      <p className="text-xs opacity-70">
-        Punktestand und Farbidentität (z.B. «WR») der Liga-Teilnehmenden. Wer
-        an der Liga teilnimmt, legst du im Spieler-Tab fest — der Import unten
-        nimmt importierte Spieler automatisch auf. Änderungen werden
-        automatisch gespeichert.
-      </p>
-      {activePlayers.length > 0 && (
-        <div className="w-full max-w-2xl overflow-x-auto">
-          <table className="w-full min-w-[440px] text-sm">
-            <thead>
-              <tr className="border-b border-white/10 text-left">
-                <th className="py-2 pr-3">Spieler</th>
-                <th className="py-2 pr-3">Abende</th>
-                <th className="py-2 pr-3">Punkte</th>
-                <th className="py-2 pr-3">Farben</th>
-                <th className="py-2 pr-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {activePlayers.map((player) => (
-                <LeaguePlayerRow key={player.id} player={player} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <ImportClient
-        existingPlayers={allPlayers.map((p) => ({
-          id: p.id,
-          firstName: p.firstName,
-          lastName: p.lastName,
-        }))}
-      />
-    </section>
-  );
+  // Rangfolge für die Paarung (SPEC.md Abschnitt 5.1) — für die Punkte in
+  // der Auswahl vor dem Start bzw. die Rang-Vorschau im Warteraum.
+  const attendeeIdsOfEvening = evening
+    ? [
+        ...new Set(
+          evening.rounds.flatMap((r) =>
+            r.tables.flatMap((t) => t.assignments.map((a) => a.playerId)),
+          ),
+        ),
+      ]
+    : activePlayers.map((p) => p.id);
+  const preview = await loadPairingStandings(attendeeIdsOfEvening);
+  const standingById = new Map(preview.map((p) => [p.id, p]));
 
   if (!evening) {
     return (
-      <div className="flex flex-col gap-8">
-        <div>
-          <h1 className="text-xl font-semibold">Liga</h1>
-          <p className="text-sm opacity-70">
-            Zwei Runden pro Abend. Runde 1 wird nach dem Saisonstand
-            gepaart, Runde 2 nach den Siegern der ersten Runde.
+      <div className="flex flex-col gap-4">
+        <LeagueInfo />
+        {activePlayers.length === 0 ? (
+          <p className="text-base opacity-70">
+            Noch keine Spieler als Liga-teilnehmend markiert — nimm im
+            Spieler-Tab welche auf.
           </p>
-        </div>
-        <EntryBanner />
-        <form action={startEvening} className="flex flex-col gap-4">
-          <h2 className="text-sm font-medium">
-            Anwesende Spieler auswählen
-          </h2>
-          {activePlayers.length === 0 ? (
-            <p className="text-xs opacity-70">
-              Noch keine Spieler als Liga-teilnehmend markiert — nimm im
-              Spieler-Tab welche auf oder importiere unten die Rangliste.
-            </p>
-          ) : (
+        ) : (
+          <form action={startEvening}>
             <PlayerSelectionList
               players={activePlayers.map((p) => ({
                 id: p.id,
                 name: formatPlayerName(p),
-                points: p.points,
+                points: standingById.get(p.id)?.points ?? 0,
               }))}
+              sidebarExtra={<EntryBanner />}
             />
-          )}
-        </form>
-
-        {managementSection}
+          </form>
+        )}
       </div>
     );
   }
@@ -192,177 +142,182 @@ export default async function LeaguePage() {
     .map((p) => ({ id: p.id, name: formatPlayerName(p) }))
     .sort((a, b) => a.name.localeCompare(b.name, "de-CH"));
 
+  const startedAt = evening.date.toLocaleTimeString("de-CH", {
+    timeZone: "Europe/Zurich",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  // Die aktuelle Runde zuoberst — wie die Tischzuteilung im Casual-Tab:
+  // beim Spielabend schaut man darauf, nicht auf die Vorrunde.
+  const roundsNewestFirst = [...evening.rounds].reverse();
+
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-xl font-semibold">Liga (laufend)</h1>
-        <p className="text-sm opacity-70">
-          Gestartet am {evening.date.toLocaleString("de-CH")}
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <LeagueInfo subtitle={`Abend läuft · gestartet ${startedAt}`} />
 
-      <EntryBanner />
+      <div className="grid gap-8 lg:grid-cols-4">
+        <div className="flex flex-col gap-8 lg:col-span-3">
+          {roundsNewestFirst.map((round) => {
+            const isLastRound = round.id === lastRound.id;
+            const isPublished = round.publishedAt !== null;
 
-      {evening.rounds.map((round) => {
-        const isLastRound = round.number === evening.rounds.length;
-        const isPublished = round.publishedAt !== null;
+            // Warteraum: die jeweils letzte Runde, solange noch nicht live
+            // geschaltet — der Organisator prüft/tauscht in Ruhe, bevor die
+            // Spieler die Zuteilung sehen.
+            if (isLastRound && !isPublished) {
+              const attendeeIds = new Set(
+                round.tables.flatMap((t) => t.assignments.map((a) => a.playerId)),
+              );
+              const standings = preview.filter((p) => attendeeIds.has(p.id));
+              const nameById = new Map(
+                round.tables.flatMap((t) =>
+                  t.assignments.map((a) => [a.playerId, formatPlayerName(a.player)] as const),
+                ),
+              );
+              // Sieger der Vorrunde für eine realistische Rang-Vorschau bei
+              // Runde 2 — bereits geladen, keine zusätzliche Abfrage nötig.
+              const vorrunde = round.number > 1 ? evening.rounds[round.number - 2] : null;
+              const sieger = new Set(
+                vorrunde?.tables.flatMap((t) =>
+                  t.assignments.filter((a) => a.isWinner).map((a) => a.playerId),
+                ) ?? [],
+              );
+              const ranked = rankValues(standings, sieger);
 
-        // Warteraum: die jeweils letzte Runde, solange noch nicht live
-        // geschaltet — der Organisator prüft/tauscht in Ruhe, bevor die
-        // Spieler die Zuteilung sehen (siehe Grill-Notizen).
-        if (isLastRound && !isPublished) {
-          const attendeeIds = new Set(
-            round.tables.flatMap((t) => t.assignments.map((a) => a.playerId)),
-          );
-          const standings = allPlayers.filter((p) => attendeeIds.has(p.id));
-          const nameById = new Map(standings.map((p) => [p.id, formatPlayerName(p)]));
-          // Sieger der Vorrunde für eine realistische Rang-Vorschau bei
-          // Runde 2 — bereits geladen, keine zusätzliche Abfrage nötig.
-          const vorrunde = round.number > 1 ? evening.rounds[round.number - 2] : null;
-          const sieger = new Set(
-            vorrunde?.tables.flatMap((t) =>
-              t.assignments.filter((a) => a.isWinner).map((a) => a.playerId),
-            ) ?? [],
-          );
-          const ranked = rankValues(standings, sieger);
-
-          return (
-            <section key={round.id} className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-sm font-medium">
-                  Runde {round.number} — Warteraum
-                </h2>
-                <RegenerateButton roundId={round.id} roundNumber={round.number} />
-              </div>
-              <p className="text-xs opacity-70">
-                Diese Zuteilung ist noch nicht auf der öffentlichen Seite
-                sichtbar. Tippe zwei Spieler an, um sie zu tauschen. Passt
-                alles: „Live schalten“.
-              </p>
-              <RoundBoard
-                tables={round.tables}
-                mode="draft"
-                eveningId={attendanceOpen ? evening.id : undefined}
-              />
-
-              <details className="text-xs opacity-70">
-                <summary className="cursor-pointer">
-                  Rangfolge zur Kontrolle (Basis der Teilung in eine obere und eine untere Hälfte)
-                </summary>
-                <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
-                  {ranked.map((r, i) => (
-                    <li key={r.id}>
-                      {i + 1}. {nameById.get(r.id) ?? "?"}
-                    </li>
-                  ))}
-                </ol>
-              </details>
-            </section>
-          );
-        }
-
-        return (
-          <section key={round.id} className="flex flex-col gap-3">
-            <h2 className="text-sm font-medium">
-              Runde {round.number} —{" "}
-              {isLastRound
-                ? "Sieger antippen, sobald ein Tisch fertig ist"
-                : "Ergebnis"}
-            </h2>
-            {isLastRound && (
-              <p className="text-xs opacity-70">
-                Tippe zwei Spieler an, um sie zu tauschen. Tippe einen Spieler
-                an und dann die Krone 👑, um ihn als Sieger zu markieren.
-                Erreicht ein Tisch das Zeitlimit, endet die Partie ohne Sieger
-                — dann „Unentschieden“ wählen. Nochmals dieselbe Auswahl
-                antippen macht die Erfassung rückgängig.
-              </p>
-            )}
-            {isLastRound ? (
-              <RoundBoard
-                tables={round.tables}
-                mode="live"
-                eveningId={attendanceOpen ? evening.id : undefined}
-              />
-            ) : (
-              <div className="flex flex-wrap gap-4">
-                {round.tables.map((table) => (
-                  <TableCard
-                    key={table.id}
-                    tableNumber={table.tableNumber}
-                    size={table.size}
-                  >
-                    <ul className="flex flex-col gap-2">
-                      {table.assignments.map((a) => (
-                        <li
-                          key={a.id}
-                          className="flex min-h-9 items-center gap-2 text-sm"
-                        >
-                          <span className="w-4 shrink-0" aria-hidden="true">
-                            {a.isWinner ? "🏆" : ""}
-                          </span>
-                          <span
-                            className={`truncate ${a.droppedAt ? "line-through opacity-60" : ""}`}
-                          >
-                            {formatPlayerName(a.player)}
-                          </span>
-                          {a.droppedAt && (
-                            <span className="shrink-0 text-xs opacity-70">gedroppt</span>
-                          )}
+              return (
+                <section key={round.id} className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h2 className="text-lg font-medium">
+                      Runde {round.number} — Warteraum
+                    </h2>
+                    <PublishRoundButton roundId={round.id} />
+                  </div>
+                  <p className="text-base opacity-70">
+                    Diese Zuteilung ist noch nicht öffentlich sichtbar. Tippe
+                    zwei Spieler an, um sie zu tauschen. Passt alles: «Live
+                    schalten».
+                  </p>
+                  <RoundBoard
+                    tables={round.tables}
+                    mode="draft"
+                    eveningId={attendanceOpen ? evening.id : undefined}
+                  />
+                  <details className="text-base opacity-70">
+                    <summary className="cursor-pointer">
+                      Rangfolge zur Kontrolle (Basis der Teilung in eine obere und eine untere Hälfte)
+                    </summary>
+                    <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+                      {ranked.map((r, i) => (
+                        <li key={r.id}>
+                          {i + 1}. {nameById.get(r.id) ?? "?"}
                         </li>
                       ))}
-                    </ul>
-                  </TableCard>
-                ))}
-              </div>
+                    </ol>
+                  </details>
+                </section>
+              );
+            }
+
+            return (
+              <section key={round.id} className="flex flex-col gap-3">
+                <h2 className="text-lg font-medium">
+                  Runde {round.number} — {isLastRound ? "live" : "Ergebnis"}
+                </h2>
+                {isLastRound && (
+                  <p className="text-base opacity-70">
+                    Ist ein Tisch fertig: Spieler antippen und die Krone 👑,
+                    oder «Unentschieden» bei Zeitlimit. Nochmals dieselbe
+                    Auswahl antippen macht es rückgängig. Zwei Spieler
+                    antippen tauscht sie.
+                  </p>
+                )}
+                {isLastRound ? (
+                  <RoundBoard
+                    tables={round.tables}
+                    mode="live"
+                    eveningId={attendanceOpen ? evening.id : undefined}
+                  />
+                ) : (
+                  <div className="flex flex-wrap gap-4">
+                    {round.tables.map((table) => (
+                      <TableCard key={table.id} tableNumber={table.tableNumber} size={table.size}>
+                        <ul className="flex flex-col gap-2">
+                          {table.assignments.map((a) => (
+                            <li key={a.id} className="flex min-h-9 items-center gap-2 text-base">
+                              <span className="w-4 shrink-0" aria-hidden="true">
+                                {a.isWinner ? "🏆" : ""}
+                              </span>
+                              <span
+                                className={`truncate ${a.droppedAt ? "line-through opacity-60" : ""}`}
+                              >
+                                {formatPlayerName(a.player)}
+                              </span>
+                              {a.droppedAt && (
+                                <span className="shrink-0 text-base opacity-70">gedroppt</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </TableCard>
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </div>
+
+        <Sidebar>
+          <h2 className="text-lg font-medium">Abend</h2>
+          <p className="text-base">
+            Runde {lastRound.number} von {MAX_ROUNDS} ·{" "}
+            {!lastRoundPublished
+              ? "im Warteraum"
+              : lastRoundComplete
+                ? "alle Tische erfasst"
+                : `${lastRound.tables.filter((t) => t.resultEnteredAt === null).length} Tische offen`}
+          </p>
+
+          <div className="flex flex-col gap-2">
+            {!lastRoundPublished && (
+              <RegenerateButton roundId={lastRound.id} roundNumber={lastRound.number} />
             )}
-          </section>
-        );
-      })}
+            {lastRoundPublished && lastRound.number < MAX_ROUNDS && (
+              <>
+                <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
+                {!lastRoundComplete && (
+                  <p className="text-base opacity-70">
+                    Erst wenn für jeden Tisch Sieger oder Unentschieden
+                    feststeht.
+                  </p>
+                )}
+              </>
+            )}
+            {/* Bewusst nie durch fehlende Ergebnisse gesperrt: der Abend
+                muss sich auch beenden lassen, wenn Runde 2 nicht (mehr)
+                gespielt wird. Die Rückfrage warnt dann. */}
+            <FinishEveningButton
+              eveningId={evening.id}
+              roundsMissing={MAX_ROUNDS - lastRound.number + (lastRoundPublished ? 0 : 1)}
+            />
+          </div>
 
-      {attendanceOpen && (
-        <AttendancePanel
-          eveningId={evening.id}
-          phase={attendancePhase}
-          dropped={droppedPlayers}
-          lateArrivals={evening.lateArrivals.map((l) => ({
-            id: l.playerId,
-            name: formatPlayerName(l.player),
-          }))}
-          candidates={lateArrivalCandidates}
-        />
-      )}
+          {attendanceOpen && (
+            <AttendancePanel
+              eveningId={evening.id}
+              phase={attendancePhase}
+              dropped={droppedPlayers}
+              lateArrivals={evening.lateArrivals.map((l) => ({
+                id: l.playerId,
+                name: formatPlayerName(l.player),
+              }))}
+              candidates={lateArrivalCandidates}
+            />
+          )}
 
-      <div className="flex flex-wrap items-start gap-3">
-        {/* Solange die letzte Runde noch im Warteraum ist, steht hier
-            statt "Nächste Runde starten" der Live-schalten-Knopf — beide
-            sind exklusiv (vor dem Publizieren gibt es noch keine
-            Ergebnisse, "Nächste Runde" wäre also ohnehin gesperrt) und
-            teilen sich deshalb denselben Platz in der Reihe. */}
-        {!lastRoundPublished ? (
-          <PublishRoundButton roundId={lastRound.id} />
-        ) : (
-          lastRound.number < MAX_ROUNDS && (
-            <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
-          )
-        )}
-        {/* Bewusst nie durch fehlende Ergebnisse gesperrt: der Abend muss
-            sich auch beenden lassen, wenn Runde 2 nicht (mehr) ausgewertet
-            wird — z.B. weil an dem Abend keine Achievement-Punkte für
-            Runde 2 vergeben werden. */}
-        <FinishEveningButton
-          eveningId={evening.id}
-          roundsMissing={MAX_ROUNDS - lastRound.number + (lastRoundPublished ? 0 : 1)}
-        />
+          <EntryBanner />
+        </Sidebar>
       </div>
-      {lastRoundPublished && !lastRoundComplete && lastRound.number < MAX_ROUNDS && (
-        <p className="text-xs opacity-70">
-          Halte zuerst für jeden Tisch fest, wie er ausgegangen ist — Sieger
-          oder unentschieden —, bevor du die nächste Runde startest.
-        </p>
-      )}
-
-      {managementSection}
     </div>
   );
 }

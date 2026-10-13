@@ -23,7 +23,7 @@ export default function NextRoundButton({
   }
 
   return (
-    <PrimaryButton onClick={submit} disabled={disabled} loading={isPending}>
+    <PrimaryButton className="w-full" onClick={submit} disabled={disabled} loading={isPending}>
       {isPending ? "Starte…" : "Nächste Runde starten"}
     </PrimaryButton>
   );

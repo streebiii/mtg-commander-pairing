@@ -17,7 +17,7 @@ export default async function MyEntryPage() {
     return (
       <div className="mx-auto flex w-full max-w-md flex-col gap-3 px-4 py-8">
         <h1 className="text-xl font-semibold">Achievements erfassen</h1>
-        <p className="text-sm opacity-70">
+        <p className="text-base opacity-70">
           Scanne die Tischkarte an deinem Tisch und tippe auf deinen Namen.
         </p>
       </div>
@@ -33,7 +33,7 @@ export default async function MyEntryPage() {
     <div className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
       <div>
         <h1 className="text-xl font-semibold">{formatPlayerName(entry.player)}</h1>
-        <p className="text-sm opacity-70">
+        <p className="text-base opacity-70">
           {eveningLabel(entry.evening.date)} ·{" "}
           {entry.evening.date.toLocaleDateString("de-CH", {
             timeZone: "Europe/Zurich",
@@ -42,23 +42,28 @@ export default async function MyEntryPage() {
       </div>
 
       {closed ? (
-        <p className="rounded border border-white/20 px-3 py-2 text-sm">
+        <p className="rounded border border-white/20 px-3 py-2 text-base">
           Die Erfassung für diesen Abend ist geschlossen.
         </p>
       ) : submitted ? (
-        <p className="rounded border border-green-600/40 bg-green-600/10 px-3 py-2 text-sm">
+        <p className="rounded border border-green-600/40 bg-green-600/10 px-3 py-2 text-base">
           Abgegeben. Für Korrekturen melde dich beim Organisator.
         </p>
       ) : (
-        <p className="text-sm opacity-70">
-          Hake ab, was du erreicht hast — jetzt oder am Ende des Abends. Alles
-          wird sofort gespeichert. Zum Schluss «Abgeben».
+        <p className="text-base opacity-70">
+          Zuerst dein Deckbau, dann Spiel für Spiel, sobald die Runde live ist.
+          Alles wird sofort gespeichert. Zum Schluss «Abgeben».
         </p>
       )}
 
-      <EntrySheet sheet={sheet} locked={locked} onSetMark={setMyMark} />
-
-      {!locked && <SubmitEntryButton />}
+      <EntrySheet
+        sheet={sheet}
+        locked={locked}
+        onSetMark={setMyMark}
+        stepped
+        storageKey={entry.id}
+        submitSlot={!locked && <SubmitEntryButton />}
+      />
     </div>
   );
 }

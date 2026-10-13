@@ -102,7 +102,7 @@ export default function NewAchievementPanel({
         className="relative flex h-full w-full flex-col border-l border-white/10 bg-surface shadow-2xl sm:max-w-md"
       >
         <header className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
-          <h2 id={titleId} className="text-sm font-medium">
+          <h2 id={titleId} className="text-lg font-medium">
             Neues Achievement
           </h2>
           <button
@@ -115,7 +115,7 @@ export default function NewAchievementPanel({
           </button>
         </header>
 
-        <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 text-sm">
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 text-base">
           <label className="flex flex-col gap-1.5">
             Titel
             <input
@@ -135,7 +135,7 @@ export default function NewAchievementPanel({
               <span
                 id="new-achievement-error"
                 role="alert"
-                className="text-xs text-red-400"
+                className="text-base text-red-400"
               >
                 {error}
               </span>
@@ -199,7 +199,7 @@ export default function NewAchievementPanel({
                 </option>
               ))}
             </select>
-            <span className="text-xs opacity-60">
+            <span className="text-base opacity-60">
               {isRepeatable(scope)
                 ? "Zählt mehrfach — bei der Erfassung gibt es ein Anzahl-Feld."
                 : "Zählt einmal — bei der Erfassung gibt es ein Häkchen."}

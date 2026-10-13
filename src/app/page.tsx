@@ -111,7 +111,7 @@ export default async function Home() {
       <PublicHeader active="pairings" />
 
       {tables.length === 0 ? (
-        <p className="text-sm opacity-70">
+        <p className="text-base opacity-70">
           Gerade sind keine Tische zugeteilt. Sobald der Organisator die
           Zuteilung freigibt, erscheinen hier die aktuellen Tische.
         </p>
@@ -125,7 +125,7 @@ export default async function Home() {
               <div className="mb-3 text-lg font-semibold">
                 Tisch {table.tableNumber}
               </div>
-              <ul className="flex flex-col gap-1.5 text-sm">
+              <ul className="flex flex-col gap-1.5 text-base">
                 {table.players.map((p) => (
                   <li key={p.key}>{p.name}</li>
                 ))}
@@ -143,10 +143,10 @@ export default async function Home() {
             if (items.length === 0) return null;
             return (
               <div key={category} className="flex flex-col gap-2">
-                <h3 className="text-sm font-medium opacity-70">
+                <h3 className="text-base font-medium opacity-70">
                   {CATEGORY_LABELS[category]}
                 </h3>
-                <ul className="flex flex-col gap-2 text-sm">
+                <ul className="flex flex-col gap-2 text-base">
                   {items.map((a) => (
                     <li key={a.id} className="flex gap-3">
                       <span className="w-8 shrink-0 tabular-nums opacity-70">

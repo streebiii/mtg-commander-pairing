@@ -37,7 +37,7 @@ export default function TableCard({
       <span>
         Tisch {tableNumber} ({size} Spieler)
       </span>
-      {aside && <span className="shrink-0 text-xs font-normal">{aside}</span>}
+      {aside && <span className="shrink-0 text-base font-normal">{aside}</span>}
     </>
   );
 
@@ -47,12 +47,12 @@ export default function TableCard({
         <button
           type="button"
           onClick={onTitleClick}
-          className="mb-2 flex min-h-11 w-full items-center justify-between gap-2 rounded text-left text-sm font-semibold"
+          className="mb-2 flex min-h-11 w-full items-center justify-between gap-2 rounded text-left text-base font-semibold"
         >
           {header}
         </button>
       ) : (
-        <div className="mb-2 flex min-h-11 items-center justify-between gap-2 text-sm font-semibold">
+        <div className="mb-2 flex min-h-11 items-center justify-between gap-2 text-base font-semibold">
           {header}
         </div>
       )}

@@ -14,7 +14,7 @@ const STATUS: Record<EntryStatus, { label: string; dot: string }> = {
 };
 
 const ACTION =
-  "inline-flex min-h-9 items-center rounded px-2 text-xs underline-offset-2 hover:underline";
+  "inline-flex min-h-9 items-center rounded px-2 text-base underline-offset-2 hover:underline";
 
 // Übersicht der Achievement-Erfassung des aktuellen Liga-Abends (siehe
 // SPEC.md Abschnitt 12): wer hat abgegeben, Totals, Korrekturen und das
@@ -27,7 +27,7 @@ export default async function EntryOverviewPage() {
     return (
       <div className="flex flex-col gap-6">
         <Header />
-        <p className="text-sm opacity-70">
+        <p className="text-base opacity-70">
           Gerade ist keine Erfassung offen. Sie beginnt automatisch mit dem
           nächsten Liga-Abend.
         </p>
@@ -41,7 +41,7 @@ export default async function EntryOverviewPage() {
   return (
     <div className="flex flex-col gap-6">
       <Header />
-      <p className="text-sm opacity-70">
+      <p className="text-base opacity-70">
         {eveningLabel(evening.date)} ·{" "}
         {evening.date.toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" })}
         {evening.finishedAt ? " · Abend beendet" : " · Abend läuft"} ·{" "}
@@ -51,7 +51,7 @@ export default async function EntryOverviewPage() {
       </p>
 
       <div className="w-full max-w-3xl overflow-x-auto rounded border border-white/10">
-        <table className="w-full min-w-[560px] border-separate border-spacing-0 text-sm">
+        <table className="w-full min-w-[560px] border-separate border-spacing-0 text-base">
           <thead className="text-left">
             <tr>
               <th className="border-b border-white/10 px-3 py-2.5">Spieler</th>
@@ -101,7 +101,7 @@ export default async function EntryOverviewPage() {
           </tbody>
         </table>
       </div>
-      <p className="text-xs opacity-70">
+      <p className="text-base opacity-70">
         «Handy freigeben» löst die Bindung an ein Gerät, z.B. nach einem
         Handywechsel — danach meldet man sich über die Tischkarte neu an, die
         Einträge bleiben erhalten. Papierzettel erfasst du über
@@ -122,13 +122,13 @@ function Header() {
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 className="text-xl font-semibold">Erfassung</h1>
-        <p className="text-sm opacity-70">
+        <p className="text-base opacity-70">
           Die Spieler erfassen ihre Achievements selbst über die Tischkarten.
         </p>
       </div>
       <Link
         href="/admin/erfassung/tischkarten"
-        className="inline-flex min-h-11 items-center rounded border border-white/20 px-4 py-2 text-sm font-medium hover:bg-white/5"
+        className="inline-flex min-h-11 items-center rounded border border-white/20 px-4 py-2 text-base font-medium hover:bg-white/5"
       >
         Tischkarten drucken
       </Link>

@@ -24,7 +24,7 @@ export default function FinishEveningButton({
 
   if (!confirming) {
     return (
-      <SecondaryButton onClick={() => setConfirming(true)}>
+      <SecondaryButton className="w-full" onClick={() => setConfirming(true)}>
         Abend beenden
       </SecondaryButton>
     );
@@ -43,11 +43,11 @@ export default function FinishEveningButton({
   return (
     <div className="flex w-full max-w-md flex-col gap-3 rounded border border-white/20 p-4">
       {roundsMissing > 0 && (
-        <p className="text-sm font-medium text-red-300">
+        <p className="text-base font-medium text-red-300">
           Runde 2 wurde noch nicht gespielt.
         </p>
       )}
-      <p className="text-sm">
+      <p className="text-base">
         Abend wirklich beenden? Danach lässt sich keine Runde mehr starten —
         das kann nicht rückgängig gemacht werden. Die Achievement-Erfassung
         bleibt offen.

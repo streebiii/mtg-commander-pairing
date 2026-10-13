@@ -46,9 +46,8 @@ body {
  * NICHT über user-scalable=no im Viewport gelöst — das würde auch das
  * absichtliche Pinch-Zoom sperren.
  *
- * Felder, die direkt eine Tailwind-Textgrössenklasse (text-xs/text-sm)
- * tragen, wurden zusätzlich von Hand auf mindestens 16px angehoben, da
- * eine Klasse Vorrang vor dieser Element-Regel hätte.
+ * Seit dem 13.10.2026 gilt in der ganzen App: kein Text unter 16px
+ * (text-base). text-xs und text-sm werden nicht mehr verwendet.
  */
 input,
 select,

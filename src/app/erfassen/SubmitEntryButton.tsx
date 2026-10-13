@@ -22,7 +22,7 @@ export default function SubmitEntryButton() {
 
   return (
     <div className="flex flex-col gap-3 rounded border border-white/20 p-4">
-      <p className="text-sm">
+      <p className="text-base">
         Danach kannst du nichts mehr ändern. Korrekturen macht dann der
         Organisator.
       </p>

@@ -12,8 +12,11 @@ import { EVENINGS_PER_SEASON, isInSeason } from "@/lib/season";
 
 function revalidateEntryViews() {
   revalidatePath("/admin/erfassung", "layout");
+  revalidatePath("/admin/players", "layout");
   revalidatePath("/admin/league");
   revalidatePath("/erfassen");
+  // Korrekturen an geschlossenen Abenden wirken sofort auf die Rangliste.
+  revalidatePath("/rangliste");
 }
 
 /**

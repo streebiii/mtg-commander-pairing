@@ -16,7 +16,7 @@ export default async function AchievementsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl font-semibold">Achievements</h1>
-        <p className="text-sm opacity-70">
+        <p className="text-base opacity-70">
           Alle aktiven Achievements gelten am nächsten Liga-Abend. Bei den
           rotierenden stellst du nach jeder Ziehung auf mtgbl.ch die neuen 10
           aktiv und die bisherigen inaktiv. Ein gestarteter Abend behält
