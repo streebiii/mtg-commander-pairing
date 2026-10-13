@@ -11,12 +11,13 @@ import { EVENINGS_PER_SEASON, isInSeason } from "@/lib/season";
 // der Proxy allein schützt Server Actions nicht.
 
 function revalidateEntryViews() {
-  revalidatePath("/admin/erfassung", "layout");
+  revalidatePath("/admin/ligaverwaltung", "layout");
   revalidatePath("/admin/players", "layout");
   revalidatePath("/admin/league");
   revalidatePath("/erfassen");
   // Korrekturen an geschlossenen Abenden wirken sofort auf die Rangliste.
   revalidatePath("/rangliste");
+  revalidatePath("/admin");
 }
 
 /**
@@ -48,16 +49,6 @@ export async function releaseDevice(entryId: string) {
   await prisma.playerEntry.update({
     where: { id: entryId },
     data: { deviceTokenHash: null, claimedAt: null },
-  });
-  revalidateEntryViews();
-}
-
-/** Macht eine Abgabe rückgängig, damit der Spieler wieder ändern kann. */
-export async function reopenEntry(entryId: string) {
-  await requireAdmin();
-  await prisma.playerEntry.update({
-    where: { id: entryId },
-    data: { submittedAt: null },
   });
   revalidateEntryViews();
 }
@@ -101,7 +92,7 @@ export async function closeEntry(
     const conflict = taken.find((e) => isInSeason(e.date));
     if (conflict) {
       const day = conflict.date.toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" });
-      return { error: `R${seasonRound} ist schon dem Abend vom ${day} zugeordnet.` };
+      return { error: `R${seasonRound} ist schon der Runde vom ${day} zugeordnet.` };
     }
   }
 

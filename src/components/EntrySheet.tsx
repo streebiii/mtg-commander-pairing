@@ -40,7 +40,7 @@ const STEPS: Step[] = ["deckbau", ...GAMES, "abgeben"];
 function stepLabel(step: Step): string {
   if (step === "deckbau") return "Deckbau";
   if (step === "abgeben") return "Abgeben";
-  return `Spiel ${step}`;
+  return `Match ${step}`;
 }
 
 function parseStep(raw: string | null): Step | null {
@@ -273,20 +273,20 @@ export default function EntrySheet({
 
         {sheet.gamesPlayed.length === 0 && (
           <p className="text-base opacity-70">
-            An diesem Abend noch an keinem Tisch.
+            In dieser Runde noch an keinem Tisch.
           </p>
         )}
 
         {sheet.gamesPlayed.map((game) => (
           <section key={game} className="flex flex-col gap-3">
-            <h2 className="text-lg font-medium">Spiel {game}</h2>
+            <h2 className="text-lg font-medium">Match {game}</h2>
             {groups(perGame, game)}
           </section>
         ))}
 
         {perEvening.length > 0 && (
           <section className="flex flex-col gap-3">
-            <h2 className="text-lg font-medium">Ganzer Abend</h2>
+            <h2 className="text-lg font-medium">Ganze Runde</h2>
             {groups(perEvening, 0)}
           </section>
         )}
@@ -310,7 +310,7 @@ export default function EntrySheet({
       perEvening.length > 0 ? (
         groups(perEvening, 0)
       ) : (
-        <p className="text-base opacity-70">An diesem Abend gibt es keine Deckbau-Achievements.</p>
+        <p className="text-base opacity-70">In dieser Runde gibt es keine Deckbau-Achievements.</p>
       );
   } else if (step === "abgeben") {
     const breakdown = computeBreakdown(
@@ -343,7 +343,7 @@ export default function EntrySheet({
         ))}
         {outstanding.length > 0 && !locked && (
           <p className="rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-base">
-            {outstanding.map((g) => `Spiel ${g}`).join(" und ")} steht noch aus. Gib
+            {outstanding.map((g) => `Match ${g}`).join(" und ")} steht noch aus. Gib
             erst ab, wenn du alles erfasst hast.
           </p>
         )}
@@ -356,10 +356,10 @@ export default function EntrySheet({
       state === "offen" ? (
         groups(perGame, step)
       ) : state === "nicht-gespielt" ? (
-        <p className="text-base opacity-70">Du hast Spiel {step} nicht gespielt.</p>
+        <p className="text-base opacity-70">Du hast Match {step} nicht gespielt.</p>
       ) : (
         <p className="text-base opacity-70">
-          Spiel {step} lässt sich erfassen, sobald Runde {step} live ist.
+          Match {step} lässt sich erfassen, sobald es live ist.
         </p>
       );
   }

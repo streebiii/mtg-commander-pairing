@@ -5,10 +5,14 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { applyMark, getDeviceEntry } from "@/lib/entries";
 
-/** Die Erfassung dieses Geräts, solange der Spieler noch ändern darf. */
+/**
+ * Die Erfassung dieses Geräts, solange der Spieler noch ändern darf: bis
+ * der Organisator die Erfassung schliesst — auch nach «Abgeben», das nur
+ * noch «ich bin fertig» heisst (SPEC.md Abschnitt 12.2).
+ */
 async function editableEntry() {
   const entry = await getDeviceEntry();
-  if (!entry || entry.submittedAt || entry.evening.entryClosedAt) return null;
+  if (!entry || entry.evening.entryClosedAt) return null;
   return entry;
 }
 
@@ -20,19 +24,19 @@ export async function setMyMark(
   const entry = await editableEntry();
   if (!entry) return false;
   const ok = await applyMark(entry, eveningAchievementId, game, count);
-  if (ok) revalidatePath("/admin/erfassung");
+  if (ok) revalidatePath("/admin/ligaverwaltung");
   return ok;
 }
 
-/** «Abgeben»: danach kann nur noch der Organisator ändern. */
+/** «Abgeben»: der Spieler ist fertig. Ändern kann er bis zum Schliessen weiterhin. */
 export async function submitMine() {
   const entry = await editableEntry();
-  if (entry) {
+  if (entry && !entry.submittedAt) {
     await prisma.playerEntry.update({
       where: { id: entry.id },
       data: { submittedAt: new Date() },
     });
-    revalidatePath("/admin/erfassung");
+    revalidatePath("/admin/ligaverwaltung");
   }
   redirect("/erfassen");
 }

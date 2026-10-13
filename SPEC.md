@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-10-13 (Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
+Stand: 2026-10-13 (Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
 
 ## 1. Zweck
 
@@ -12,11 +12,18 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
 
 - **Single-User (Organisator)**: eine Person verwaltet Spieler, Abende,
   Pairings und Ergebnisse. Kein Multi-User, keine Rollen/Rechte.
-- **Organisator-Navigation**: nach dem Login landet der Organisator auf
-  einem Dashboard (`/admin`) mit Links zu allen Bereichen. Die Nav zeigt
-  Dashboard, Casual, Liga, Spieler und Achievements; die
-  Achievement-Erfassung erreicht man über das Dashboard und den Hinweis im
-  Liga-Tab (Abschnitt 12.3).
+- **Begriffe**: ein Liga-Abend heisst **Runde** (R1–R6, in der Saison
+  sechs), die zwei Paarungen darin **Match 1** und **Match 2**. Im Code
+  heisst die Runde weiterhin `Evening`, das Match `Round`.
+- **Organisator-Navigation**: Dashboard · Casual · Liga · Ligaverwaltung ·
+  Spieler. Nach dem Login landet der Organisator auf dem **Dashboard**
+  (`/admin`), einer Übersicht dessen, was gerade los ist: laufende Runde
+  mit Match-Stand (sonst die Zahl aktiver rotierender Achievements, mit
+  Warnung, wenn es nicht 10 sind), Stand der Achievement-Erfassung,
+  Casual-Zuteilung und Links zur öffentlichen Ansicht und Rangliste —
+  jeweils mit Link dorthin, wo man es bearbeitet. «Liga» ist der
+  Spielabend (Abschnitt 5), die **Ligaverwaltung** alles darum herum
+  (Abschnitt 14).
 - **Zugriffsschutz — passwortloser Email-Login mit Zahlencode**: kein
   Passwort. Der Organisator klickt "Login-Code anfordern" und bekommt einen
   **sechsstelligen Zahlencode** an eine fest konfigurierte Adresse
@@ -347,7 +354,7 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
 - **Ablauf pro Abend:**
   1. Anwesende Spieler aus den Liga-teilnehmenden Vereinsspielern auswählen
      (siehe Abschnitt 6 — nicht jeder Vereinsspieler nimmt an der Liga teil).
-  2. **Runde 1**: Sortierung nach der eigenen Rangliste der Saison
+  2. **Match 1**: Sortierung nach der eigenen Rangliste der Saison
      (Abschnitt 13, Stand vor diesem Abend). Tischverteilung gemäss Algorithmus aus
      Abschnitt 3, Spieler in Punktereihenfolge auf die Tische verteilt
      (übliche Pairing-Logik: nach Rang gruppieren/verteilen, siehe Abschnitt
@@ -357,14 +364,14 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
      Zeitlimit von 120 Minuten erreicht wurde (Liga-Regeln auf mtgbl.ch).
      Nochmals dieselbe Auswahl antippen macht die Erfassung rückgängig.
      Erst wenn für **jeden** Tisch eines von beidem feststeht, lässt sich
-     Runde 2 starten oder der Abend beenden.
-  4. **Runde 2**: dieselbe Rangfolge und Hälften-Teilung wie in Runde 1
-     (Abschnitt 5.1), wobei die Sieger aus Runde 1 um 4 Ränge nach oben
+     Match 2 starten oder der Abend beenden.
+  4. **Match 2**: dieselbe Rangfolge und Hälften-Teilung wie in Match 1
+     (Abschnitt 5.1), wobei die Sieger aus Match 1 um 4 Ränge nach oben
      rücken. Innerhalb jeder Hälfte spielen die **Gewinner garantiert
      gegeneinander** (Abschnitt 5.2), die übrigen Plätze werden zufällig
      besetzt, mit weicher Rematch-Vermeidung.
-  5. **Genau zwei Runden pro Abend** ("Pro Liga-Abend werden zwei Spiele
-     gespielt", mtgbl.ch). Danach wird der Abend beendet.
+  5. **Genau zwei Matches pro Runde** ("Pro Liga-Abend werden zwei Spiele
+     gespielt", mtgbl.ch). Danach wird die Runde beendet.
 
 **Warum der Sieg und nicht die Punktsumme?** Zwei Gründe. Die Punktsumme
 existiert zum Zeitpunkt der Paarung nicht — die Achievement-Zettel werden
@@ -377,13 +384,13 @@ Spieler nach ihrer Deckwahl an die Tische statt nach dem Verlauf der Runde.
 **Unentschieden**: Alle an einem solchen Tisch zählen als ohne Sieg — das
 deckt sich mit der Wertung, denn "Winner winner – chicken dinner" gibt es
 nur für einen gewonnenen Match. Gehen *alle* Tische unentschieden aus, ist
-der Sortierschlüssel für jeden gleich und Runde 2 wird schlicht wieder
+der Sortierschlüssel für jeden gleich und Match 2 wird schlicht wieder
 zufällig.
 
 **Keine Punkteerfassung pro Runde.** Die App führt den Punktestand eines
 Abends nicht während des Abends fort. Die Achievement-Punkte erfassen die
 Spieler (Abschnitt 12); mit dem Schliessen der Erfassung zählen sie in der
-Rangliste (Abschnitt 13) und damit für die Paarung von Runde 1 am nächsten
+Rangliste (Abschnitt 13) und damit für die Paarung von Match 1 am nächsten
 Abend. Nach mtgbl.ch werden sie von Hand übertragen.
 
 **Aufbau des Liga-Tabs — wie Casual.** Beide starten ein Spiel und sind
@@ -402,9 +409,9 @@ Stand der Achievement-Erfassung). Gemeinsame Bausteine:
   "Keine Punkteerfassung pro Runde" oben — sie wird ohnehin nicht
   ausgewertet).
 - **"Abend beenden" fragt nach.** Es lässt sich nicht rückgängig machen,
-  und der Knopf steht direkt neben "Nächste Runde starten". Ist Runde 2
+  und der Knopf steht direkt neben "Nächste Runde starten". Ist Match 2
   noch nicht live, warnt die Rückfrage ausdrücklich davor. Ein Fehltipp
-  nach Runde 1 hätte sonst den Abend gekostet: ein neu gestarteter Abend
+  nach Match 1 hätte sonst den Abend gekostet: ein neu gestarteter Abend
   schliesst die offene Achievement-Erfassung des alten (Abschnitt 12.3).
 - **Tie-Break bei Punktegleichstand**: zufällige Reihenfolge.
 - **Rematch-Vermeidung**: weiches Kriterium, gilt nur **innerhalb desselben
@@ -441,8 +448,8 @@ laufende Abend zählt nicht mit. Bis zum 13.10.2026 kamen beide Werte aus
 einem Text-Import der Rangliste von mtgbl.ch (`Player.points`,
 `Player.attendedEvenings`); die Felder sind seither unbenutzt.
 
-In Runde 2 kommt ein **Sieg-Bonus `SIEG_BONUS_RAENGE` (4 Ränge)** dazu,
-für alle, die ihren Tisch in Runde 1 gewonnen haben. Er wirkt sich vor
+In Match 2 kommt ein **Sieg-Bonus `SIEG_BONUS_RAENGE` (4 Ränge)** dazu,
+für alle, die ihren Tisch in Match 1 gewonnen haben. Er wirkt sich vor
 allem an der Grenze zwischen oberer und unterer Hälfte aus (siehe
 unten) — er entscheidet, ob ein Sieg knapp an der Grenze liegende
 Spieler in die stärkere Hälfte hebt. Weiter innerhalb einer Hälfte
@@ -498,8 +505,8 @@ mischen"-Button), falls ihm der erste Vorschlag nicht zusagt.
 ### 5.2 Sieger zusammen, dann lokale Verbesserung
 
 **Sieger spielen gegeneinander — innerhalb ihrer Hälfte, als feste
-Regel** (Entscheid des Organisators vom 13.10.2026). In Runde 2 werden in
-jeder Hälfte zuerst die Sieger aus Runde 1 gemeinsam an die grössten
+Regel** (Entscheid des Organisators vom 13.10.2026). In Match 2 werden in
+jeder Hälfte zuerst die Sieger aus Match 1 gemeinsam an die grössten
 Tische gesetzt (4er vor 3er), danach die übrigen zufällig auf die
 restlichen Plätze. Sind es mehr Sieger, als an einen Tisch passen (z. B.
 5 in einer Hälfte, weil der Sieg-Bonus zwei von unten hochgehoben hat),
@@ -509,7 +516,7 @@ spielt mit den Siegern der oberen Hälfte. Bis dahin war das Zusammensetzen
 nur ein schwach gewichtetes Kriterium des Tausch-Optimierers (in der
 Simulation trotzdem in 97–100 % der Fälle erfüllt).
 
-Unter den Siegern gibt es nie ein Rematch — sie sassen in Runde 1 alle an
+Unter den Siegern gibt es nie ein Rematch — sie sassen in Match 1 alle an
 verschiedenen Tischen. Die feste Regel kostet deshalb keine
 Rematch-Vermeidung; gemessen bleiben die Rematches gleich.
 
@@ -532,13 +539,13 @@ spätere das frühere wieder zunichtemachen.
 
 **Ausnahme an der Grenze.** Besteht eine Hälfte aus einem einzigen Tisch
 (z.B. bei 13 Anwesenden: oben ein 4er, unten drei 3er), kann sie
-innerhalb ihrer selbst nichts tauschen, und in Runde 2 sässen oben meist
+innerhalb ihrer selbst nichts tauschen, und in Match 2 sässen oben meist
 wieder dieselben zusammen. Dann dürfen der unterste Tisch der oberen und
 der oberste Tisch der unteren Hälfte untereinander tauschen — nur
 Nicht-Sieger, nur um Rematches aufzulösen, unter gleich guten Tauschen der mit dem kleinsten
 Rangabstand (es rutscht eher die Nummer 4 als die Nummer 1). Alle übrigen
 Tische und die Tischgrössen bleiben unberührt; oben bleibt der 4er-Tisch.
-In Runde 1 gibt es noch keine Rematches, dort ändert sich nichts.
+In Match 1 gibt es noch keine Rematches, dort ändert sich nichts.
 Entscheid des Organisators vom 13.10.2026: 4er-Tische oben sind wichtiger
 als eine strikte Grenze.
 
@@ -546,27 +553,27 @@ als eine strikte Grenze.
 
 Die Anwesenden stehen beim Start fest, aber nicht unverrückbar: wer früher
 geht, «droppt», und wer später kommt, wird nachgetragen. Beides ist
-möglich, bis Runde 2 live ist — danach ändert es an keiner Paarung mehr
+möglich, bis Match 2 live ist — danach ändert es an keiner Paarung mehr
 etwas.
 
 - **Drop**: Spieler an der Tischkachel antippen, neben der Krone erscheint
   «Drop».
-  - Runde 1 im Warteraum: er hat noch nicht gespielt, fliegt aus der Runde,
+  - Match 1 im Warteraum: er hat noch nicht gespielt, fliegt aus der Runde,
     und sie wird neu gemischt.
-  - Runde 1 live: er spielt sie zu Ende (seine Partie, sein Sieg und Spiel 1
-    seiner Erfassung bleiben) und wird in Runde 2 nicht eingeteilt. Seine
+  - Match 1 live: er spielt sie zu Ende (seine Partie, sein Sieg und Spiel 1
+    seiner Erfassung bleiben) und wird in Match 2 nicht eingeteilt. Seine
     Kachel zeigt ihn durchgestrichen.
-  - Runde 2 im Warteraum: wie eben, und Runde 2 wird ohne ihn neu gemischt.
+  - Match 2 im Warteraum: wie eben, und Match 2 wird ohne ihn neu gemischt.
   Gespeichert wird der Drop an seiner Zuordnung der zuletzt gespielten
   Runde (`TableAssignment.droppedAt`).
 - **Nachzügler** werden im Abschnitt «Anwesenheit» unter den Tischen aus
-  den Liga-Teilnehmenden gewählt. Ist Runde 1 noch im Warteraum, kommt er
-  direkt dorthin (sie wird neu gemischt). Sonst spielt er ab Runde 2 mit
-  (`LateArrival`); steht Runde 2 schon im Warteraum, wird sie mit ihm neu
+  den Liga-Teilnehmenden gewählt. Ist Match 1 noch im Warteraum, kommt er
+  direkt dorthin (sie wird neu gemischt). Sonst spielt er ab Match 2 mit
+  (`LateArrival`); steht Match 2 schon im Warteraum, wird sie mit ihm neu
   gemischt. Für Spiel 1 bekommt er nichts — auch keine Participation.
 - **Rücknahme**: Gedroppte lassen sich zurückholen, Nachzügler entfernen,
   beides im Abschnitt «Anwesenheit» (ein Drop auch über die Tischkachel).
-  Wer im Warteraum von Runde 1 gedroppt wurde, ist schlicht nicht mehr
+  Wer im Warteraum von Match 1 gedroppt wurde, ist schlicht nicht mehr
   dabei und wird bei Bedarf wieder als Nachzügler hinzugefügt.
 - Neu gemischt wird immer nach denselben Regeln wie beim ersten Berechnen
   (Hälften, Sieg-Bonus, Rematch-Vermeidung). Manuelle Tausche in der
@@ -710,7 +717,7 @@ der App erhalten.
 
 Die Liga vergibt Punkte über Achievements; massgeblich ist die Liste auf
 https://mtgbl.ch/liga/commander/2026/achievements. Die App führt sie als
-Katalog im Tab **«Achievements»**.
+Katalog in der Ligaverwaltung, Reiter **«Achievements»** (Abschnitt 14).
 
 ### 11.1 Katalog
 
@@ -719,12 +726,12 @@ Katalog im Tab **«Achievements»**.
   bei den rotierenden die 10 der aktuellen Ziehung — zusammen
   üblicherweise 25.
 - Je Achievement: Titel, Beschreibung, Punkte, Kategorie, **Art** und
-  **aktiv**. Die Art ist eine von: 1x pro Match, 1x pro Abend, 1x am Ende
+  **aktiv**. Die Art ist eine von: 1x pro Match, 1x pro Runde, 1x am Ende
   der Liga, **pro Spieler** (z.B. «+1/Spieler») oder **mehrmals pro
   Abend**. Die letzten beiden zählen mehrfach; die Erfassung zeigt dort
   ein Anzahl-Feld statt eines Häkchens.
 - Die Art wird beim Anlegen aus der Kategorie vorbelegt (fix und
-  rotierend pro Match, Deckbau pro Abend) und ist danach änderbar —
+  rotierend pro Match, Deckbau pro Runde) und ist danach änderbar —
   Evergreen ist Deckbau, zählt aber einmal am Ende der Liga.
 - Variable Punktwerte der Website («+2/+1») werden mit dem höheren Wert
   geführt und bei der Erfassung korrigiert.
@@ -750,13 +757,13 @@ Katalog im Tab **«Achievements»**.
    bei ihm gespeichert.
 2. **mtgbl.ch zieht** die 10 rotierenden für den nächsten Abend und
    veröffentlicht sie (ausserhalb der App).
-3. Im Achievements-Tab, Reiter **Rotierend**, werden die 10 neuen
+3. In der Ligaverwaltung unter «Achievements», Reiter **Rotierend**, werden die 10 neuen
    **aktiv** und die bisherigen **inaktiv** gestellt. Jeder Klick
    speichert sofort. Ohne Sperre auf 10, weil die Ziehung übernommen und
    nicht hier entschieden wird; die Anzeige «10 von 76 aktiv» dient zur
    Kontrolle.
 4. Beim **Start des nächsten Liga-Abends** übernimmt der Abend, in
-   derselben Transaktion wie Abend und Runde 1, alle aktiven
+   derselben Transaktion wie Runde und Match 1, alle aktiven
    Achievements als **eingefrorene Kopie** (Titel, Beschreibung, Punkte,
    Kategorie, Art). Der Katalog bleibt unverändert — die rotierenden
    bleiben aktiv, bis nach der nächsten Ziehung umgestellt wird.
@@ -777,7 +784,7 @@ und der Organisator erfasst für ihn.
 
 ### 12.1 Anmeldung über Tischkarten
 
-- Im Organisator-Bereich unter **Erfassung → Tischkarten drucken** gibt
+- In der Ligaverwaltung unter **Tischkarten** gibt
   es eine Druckvorlage mit QR-Codes für **Tisch 1–6** (Drucken → «Als PDF
   sichern» ergibt das PDF). Die Karten werden einmal gedruckt und bleiben
   gültig: der QR-Code enthält nur `/tisch/<nr>`, nicht den Abend.
@@ -797,22 +804,22 @@ und der Organisator erfasst für ihn.
 
 ### 12.2 Erfassungsblatt
 
-- Für jedes gespielte Spiel (Runde 1, Runde 2) gibt es die fixen und
+- Für jedes gespielte Match (Match 1, Match 2) gibt es die fixen und
   rotierenden Achievements mit Art «1x pro Match» oder «pro Spieler»,
-  dazu alles, was einmal pro Abend zählt (Deckbau, «mehrmals pro
-  Abend»). «1x am Ende der Liga» (Evergreen) erscheint nur am letzten
-  Abend der Saison.
-- **In Schritten** auf dem Handy des Spielers: **Deckbau** (alles für den
-  ganzen Abend) → **Spiel 1** → **Spiel 2** → **Abgeben**. Ein Spiel lässt
-  sich erfassen, sobald seine Runde live ist; vorher zeigt der Schritt
-  einen Hinweis, und wer ein Spiel nicht gespielt hat (Drop, Nachzügler),
-  sieht genau das. Die Schritte oben sind jederzeit antippbar, unten
+  dazu alles, was einmal pro Runde zählt (Deckbau, «mehrmals pro
+  Runde»). «1x am Ende der Liga» (Evergreen) erscheint nur in der letzten
+  Runde der Saison.
+- **In Schritten** auf dem Handy des Spielers: **Deckbau** (alles für die
+  ganze Runde) → **Match 1** → **Match 2** → **Abgeben**. Ein Match lässt
+  sich erfassen, sobald es live ist; vorher zeigt der Schritt einen
+  Hinweis, und wer ein Match nicht gespielt hat (Drop, Nachzügler), sieht
+  genau das. Die Schritte oben sind jederzeit antippbar, unten
   führen «← / →» weiter. Der Browser merkt sich den zuletzt offenen
   Schritt; ohne Speicher beginnt das Blatt bei Deckbau. «Abgeben» zeigt
-  eine Übersicht je Spiel und warnt, solange ein Spiel noch aussteht.
-- Der Organisator (Papierzettel, Korrekturen, Spielerseite) sieht das
-  ganze Blatt auf einer Seite.
-- Mehrfach zählende Achievements («pro Spieler», «mehrmals pro Abend»)
+  eine Übersicht je Match und warnt, solange ein Match noch aussteht.
+- Der Organisator (Papierzettel, Korrekturen in der Ligaverwaltung) sieht
+  das ganze Blatt auf einer Seite.
+- Mehrfach zählende Achievements («pro Spieler», «mehrmals pro Runde»)
   haben ein Anzahl-Feld (− / +, höchstens 20), alle anderen ein Häkchen.
 - **Participation** setzt die App für jedes gespielte Spiel automatisch,
   es ist nicht änderbar. «Winner winner» trägt der Spieler selbst ein.
@@ -821,22 +828,30 @@ und der Organisator erfasst für ihn.
 - Grundlage sind die eingefrorenen Achievements des Abends (Abschnitt
   11.2). Der Server prüft jede Änderung: Das Achievement muss zum Abend
   gehören, das Spiel muss gespielt sein, und die Anzahl muss erlaubt sein.
-- **Abgeben** (mit Rückfrage) sperrt das Blatt für den Spieler.
+- **Die Spieler ändern ihr Blatt selbst, bis die Erfassung geschlossen
+  wird** — auch nach **Abgeben** (mit Rückfrage), das nur noch «ich bin
+  fertig» meldet und in der Übersicht als «Abgegeben» erscheint. Danach
+  korrigiert nur noch der Organisator (Abschnitt 12.3).
 
 ### 12.3 Organisator
 
 - Der Liga-Tab zeigt, solange eine Erfassung offen ist, den Hinweis
   «Achievement-Erfassung offen» mit Anzahl der Abgaben. Er bleibt auch
-  nach «Abend beenden» stehen.
-- Unter **Erfassung** stehen alle Anwesenden mit Status (nicht
-  angemeldet / erfasst gerade / abgegeben) und Total. Pro Spieler gibt
-  es «Bearbeiten» (dasselbe Blatt, für Korrekturen und Papierzettel, mit
-  «Als abgegeben markieren»), «Wieder öffnen» und «Handy freigeben».
+  nach «Runde beenden» stehen.
+- In der Ligaverwaltung unter **Aktuelle Runde** stehen alle Anwesenden
+  mit Status (nicht angemeldet / erfasst gerade / abgegeben) und Total.
+  Pro Spieler gibt es «Korrigieren» (dasselbe Blatt, für Korrekturen und
+  Papierzettel, mit «Als abgegeben markieren») und «Handy freigeben».
+  «Wieder öffnen» ist entfallen — Spieler können bis zum Schliessen
+  ohnehin ändern.
+- **Nur der Organisator korrigiert nach dem Schliessen**: unter «Runden»
+  lässt sich jedes Blatt jeder Runde korrigieren, auch geschlossener und
+  nachgetragener. Die Rangliste folgt sofort.
 - **Erfassung schliessen** (mit Rückfrage) beendet die Erfassung des
   Abends. Danach können die Spieler nichts mehr ändern, und der Abend
   zählt in der Rangliste. Die Rückfrage bestätigt zugleich die **Spalte**
   (R1–R6), in der er zählt — aus dem Datum vorbelegt und änderbar —, oder
-  «Testabend — zählt nicht». Jede Spalte gehört höchstens einem Abend der
+  «Testrunde — zählt nicht». Jede Spalte gehört höchstens einem Abend der
   Saison; ist sie schon vergeben, lehnt die App ab und nennt den Abend. Startet ein neuer Liga-Abend, wird eine noch
   offene Erfassung automatisch geschlossen. Es gibt immer nur eine
   offene Erfassung.
@@ -869,7 +884,7 @@ offizielle Wertung bleibt auf mtgbl.ch.
   einen Wert hätte. Wer am Abend an einem Tisch sass, aber nichts erfasst
   hat, bekommt die automatische Participation.
 - **Total** rechnet die Rangliste selbst aus den Abendpunkten. Dieselben
-  Abendpunkte bestimmen die Paarung von Runde 1 (Abschnitt 5.1).
+  Abendpunkte bestimmen die Paarung von Match 1 (Abschnitt 5.1).
 - **Rang**: gleiches Total heisst gleicher Rang (1, 2, 2, 4), innerhalb
   eines Rangs alphabetisch.
 - **Streichresultat**: während der Saison zählt die Summe aller Abende.
@@ -929,3 +944,29 @@ gespielt hat, steht stattdessen in der Erfassung (`PlayerEntry.games`).
 Rang mit Δ, Spieler (mit den Farbpunkten) und Total bleiben links
 fixiert, die Spalten R1–R6 scrollen horizontal. Die Seite selbst scrollt
 nie seitlich.
+
+## 14. Ligaverwaltung
+
+Alles, was die Liga ausserhalb des Spielabends braucht, unter
+`/admin/ligaverwaltung` mit vier Reitern (gestaltet wie die Reiter im
+Achievement-Katalog):
+
+- **Aktuelle Runde** — die Achievement-Erfassung der offenen Runde
+  (Abschnitt 12.3): Status und Total je Spieler, «Korrigieren», «Handy
+  freigeben», «Erfassung schliessen». Ist keine Erfassung offen, steht
+  hier die Vorbereitung der nächsten Runde: Nummer und Datum laut
+  Terminliste, ob genau 10 rotierende Achievements aktiv sind (mit Link
+  zum Katalog), und der Hinweis, dass im Liga-Tab gestartet wird.
+- **Runden** — alle Runden, die neueste zuoberst, mit Spalte (R1–R6,
+  «Testrunde»), Datum, Zahl der Teilnehmenden und Status (läuft /
+  Erfassung offen / geschlossen / nachgetragen). Pro Runde: die
+  Teilnehmenden mit ihren Matches und Punkten (je «Korrigieren ›»), die
+  Tische und Sieger von Match 1 und 2 (mit Drop und Unentschieden) und
+  die Achievements, die in dieser Runde galten.
+- **Achievements** — der Katalog (Abschnitt 11).
+- **Tischkarten** — die Druckvorlage (Abschnitt 12.1).
+
+Die früheren Adressen `/admin/erfassung` und `/admin/achievements` leiten
+hierher um (`next.config.ts`). Im Spieler-Tab zeigt die Seite eines
+Spielers seine Achievements pro Runde nur noch an, mit einem Link zum
+Korrigieren hier.

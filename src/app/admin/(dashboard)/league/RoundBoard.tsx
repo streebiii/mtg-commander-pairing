@@ -254,8 +254,8 @@ export default function RoundBoard({
                           isDropped
                             ? "Drop zurücknehmen"
                             : mode === "live"
-                              ? "Spielt die nächste Runde nicht mehr"
-                              : "Spielt nicht mit — Runde wird neu gemischt"
+                              ? "Spielt das nächste Match nicht mehr"
+                              : "Spielt nicht mit — das Match wird neu gemischt"
                         }
                         className="flex h-11 shrink-0 items-center justify-center rounded border border-red-500/60 px-3 text-base transition-colors hover:bg-red-500/10 disabled:opacity-60"
                       >

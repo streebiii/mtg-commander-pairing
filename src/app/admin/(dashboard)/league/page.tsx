@@ -4,6 +4,7 @@ import TableCard from "@/components/TableCard";
 import { MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
 import { rankValues } from "@/lib/pairing/leagueRanking";
 import { loadPairingStandings } from "@/lib/rankingData";
+import { eveningLabel } from "@/lib/season";
 import { startEvening } from "./actions";
 import AttendancePanel from "./AttendancePanel";
 import Sidebar from "@/components/Sidebar";
@@ -147,7 +148,7 @@ export default async function LeaguePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <LeagueInfo subtitle={`Abend läuft · gestartet ${startedAt}`} />
+      <LeagueInfo subtitle={`${eveningLabel(evening.date)} läuft · gestartet ${startedAt}`} />
 
       <div className="grid gap-8 lg:grid-cols-4">
         <div className="flex flex-col gap-8 lg:col-span-3">
@@ -182,7 +183,7 @@ export default async function LeaguePage() {
                 <section key={round.id} className="flex flex-col gap-3">
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 className="text-lg font-medium">
-                      Runde {round.number} — Warteraum
+                      Match {round.number} — Warteraum
                     </h2>
                     <PublishRoundButton roundId={round.id} />
                   </div>
@@ -210,7 +211,7 @@ export default async function LeaguePage() {
             return (
               <section key={round.id} className="flex flex-col gap-3">
                 <h2 className="text-lg font-medium">
-                  Runde {round.number} — {isLastRound ? "live" : "Ergebnis"}
+                  Match {round.number} — {isLastRound ? "live" : "Ergebnis"}
                 </h2>
                 {isLastRound ? (
                   <RoundBoard
@@ -249,9 +250,9 @@ export default async function LeaguePage() {
         </div>
 
         <Sidebar>
-          <h2 className="text-lg font-medium">Abend</h2>
+          <h2 className="text-lg font-medium">{eveningLabel(evening.date)}</h2>
           <p className="text-base">
-            Runde {lastRound.number} von {MAX_ROUNDS} ·{" "}
+            Match {lastRound.number} von {MAX_ROUNDS} ·{" "}
             {!lastRoundPublished
               ? "im Warteraum"
               : lastRoundComplete

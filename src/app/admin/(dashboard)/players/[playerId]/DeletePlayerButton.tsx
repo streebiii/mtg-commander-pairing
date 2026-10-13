@@ -24,7 +24,7 @@ export default function DeletePlayerButton({
   if (inRunningEvening) {
     return (
       <p className="text-base opacity-70">
-        Sitzt im laufenden Liga-Abend an einem Tisch — Entfernen erst danach.
+        Sitzt in der laufenden Runde an einem Tisch — Entfernen erst danach.
       </p>
     );
   }
@@ -49,7 +49,7 @@ export default function DeletePlayerButton({
   return (
     <div className="flex max-w-md flex-col gap-3 rounded border border-white/20 p-4">
       <p className="text-base">
-        Spieler entfernen? Hat er schon an Abenden teilgenommen, wird er
+        Spieler entfernen? Hat er schon an Runden teilgenommen, wird er
         archiviert — seine Punkte bleiben in der Rangliste.
       </p>
       <div className="flex gap-2">

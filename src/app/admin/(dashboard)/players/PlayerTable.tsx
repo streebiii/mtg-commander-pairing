@@ -166,7 +166,7 @@ function CellEditor({
  * Achievement-Katalog: Werkzeugleiste mit Suche und Filter, sortierbare
  * Spalten, Inline-Bearbeitung und «Neuer Spieler» im Seitenpanel. Die
  * Liga-Teilnahme ist ein Schalter. Ein Klick auf «Achievements» öffnet die
- * Seite des Spielers mit seinen Achievements pro Abend.
+ * Seite des Spielers mit seinen Achievements pro Runde.
  */
 export default function PlayerTable({ players }: { players: TablePlayer[] }) {
   const [query, setQuery] = useState("");

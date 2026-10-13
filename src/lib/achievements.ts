@@ -32,10 +32,10 @@ export const SCOPES: AchievementScope[] = [
 /** Beschriftung wie in der Spalte «Art» des Punkteblatts. */
 export const SCOPE_LABELS: Record<AchievementScope, string> = {
   MATCH: "1x pro Match",
-  EVENING: "1x pro Abend",
+  EVENING: "1x pro Runde",
   SEASON: "1x am Ende der Liga",
   PER_PLAYER: "pro Spieler",
-  MULTIPLE: "mehrmals pro Abend",
+  MULTIPLE: "mehrmals pro Runde",
 };
 
 /**

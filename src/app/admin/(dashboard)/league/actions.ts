@@ -192,8 +192,8 @@ export async function startEvening(formData: FormData) {
   await clearCasualPairing();
 
   revalidatePath("/admin/league");
-  revalidatePath("/admin/achievements");
-  revalidatePath("/admin/erfassung");
+  revalidatePath("/admin/ligaverwaltung/achievements");
+  revalidatePath("/admin/ligaverwaltung");
   revalidatePath("/");
 }
 
@@ -458,7 +458,7 @@ export async function finishEvening(formData: FormData) {
     data: { finishedAt: new Date() },
   });
   revalidatePath("/admin/league");
-  revalidatePath("/admin/achievements");
+  revalidatePath("/admin/ligaverwaltung/achievements");
 }
 
 /**

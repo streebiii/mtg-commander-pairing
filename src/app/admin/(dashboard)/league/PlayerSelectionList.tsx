@@ -91,7 +91,7 @@ export default function PlayerSelectionList({
       </section>
 
       <Sidebar>
-        <h2 className="text-lg font-medium">Abend</h2>
+        <h2 className="text-lg font-medium">Runde</h2>
         <SecondaryButton onClick={toggleAll} className="w-full" disabled={pending}>
           {allSelected ? "Auswahl aufheben" : "Alle auswählen"}
         </SecondaryButton>
@@ -102,7 +102,7 @@ export default function PlayerSelectionList({
             disabled={selected.size < 3}
             loading={pending}
           >
-            {pending ? "Starte…" : "Abend starten"}
+            {pending ? "Starte…" : "Runde starten"}
           </PrimaryButton>
           {selected.size > 0 && selected.size < 3 && (
             <p className="text-base opacity-70">Mindestens 3 Spieler nötig.</p>

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Commander",
-  description: "Tischzuteilung für die Commander-Abende des MTG Baselland.",
+  description: "Tischzuteilung für die Commander-Liga und Casual-Abende des MTG Baselland.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

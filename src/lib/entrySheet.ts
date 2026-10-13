@@ -122,7 +122,7 @@ export interface BreakdownItem {
 }
 
 export interface BreakdownSection {
-  /** «Spiel 1», «Spiel 2» oder «Ganzer Abend». */
+  /** «Match 1», «Match 2» oder «Ganze Runde». */
   label: string;
   total: number;
   items: BreakdownItem[];
@@ -154,7 +154,7 @@ export function computeBreakdown(
 
   const games = [...gamesPlayed].sort((x, y) => x - y);
   const sections: BreakdownSection[] = [...games, 0].map((game) => ({
-    label: game === 0 ? "Ganzer Abend" : `Spiel ${game}`,
+    label: game === 0 ? "Ganze Runde" : `Match ${game}`,
     total: 0,
     items: [],
   }));

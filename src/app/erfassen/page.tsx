@@ -27,7 +27,7 @@ export default async function MyEntryPage() {
   const sheet = await loadSheet(entry.eveningId, entry.playerId);
   const closed = entry.evening.entryClosedAt !== null;
   const submitted = entry.submittedAt !== null;
-  const locked = closed || submitted;
+  const locked = closed;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
@@ -43,11 +43,11 @@ export default async function MyEntryPage() {
 
       {closed ? (
         <p className="rounded border border-white/20 px-3 py-2 text-base">
-          Die Erfassung für diesen Abend ist geschlossen.
+          Die Erfassung für diese Runde ist geschlossen.
         </p>
       ) : submitted ? (
         <p className="rounded border border-green-600/40 bg-green-600/10 px-3 py-2 text-base">
-          Abgegeben. Für Korrekturen melde dich beim Organisator.
+          Abgegeben. Bis die Erfassung geschlossen wird, kannst du noch ändern.
         </p>
       ) : null}
 
@@ -57,7 +57,7 @@ export default async function MyEntryPage() {
         onSetMark={setMyMark}
         stepped
         storageKey={entry.id}
-        submitSlot={!locked && <SubmitEntryButton />}
+        submitSlot={!locked && !submitted && <SubmitEntryButton />}
       />
     </div>
   );

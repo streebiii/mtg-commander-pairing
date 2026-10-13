@@ -32,17 +32,17 @@ export default async function EntryBanner() {
           {submitted} von {attendees.length}
         </span>{" "}
         haben abgegeben.
-        {evening.finishedAt && " Der Abend ist beendet — schliesse die Erfassung, wenn alle abgegeben haben."}
+        {evening.finishedAt && " Die Runde ist beendet — schliesse die Erfassung, wenn alle abgegeben haben."}
       </p>
       <div className="flex flex-wrap gap-2">
         <Link
-          href="/admin/erfassung"
+          href="/admin/ligaverwaltung"
           className="inline-flex min-h-11 items-center rounded bg-foreground px-4 py-2 text-base font-medium text-background hover:opacity-90"
         >
           Zur Erfassung
         </Link>
         <Link
-          href="/admin/erfassung/tischkarten"
+          href="/admin/ligaverwaltung/tischkarten"
           className="inline-flex min-h-11 items-center rounded border border-white/20 px-4 py-2 text-base font-medium hover:bg-white/5"
         >
           Tischkarten drucken

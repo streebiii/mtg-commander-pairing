@@ -48,7 +48,7 @@ export default function RegenerateButton({
   return (
     <span className="flex flex-wrap items-center gap-2 text-base">
       <span className="opacity-70">
-        Runde {roundNumber} neu auswürfeln? Die aktuelle Tischzuteilung geht
+        Match {roundNumber} neu auswürfeln? Die aktuelle Tischzuteilung geht
         dabei verloren.
       </span>
       <PrimaryButton onClick={regenerate} loading={isPending}>

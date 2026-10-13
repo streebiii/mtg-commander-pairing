@@ -75,7 +75,7 @@ export default function AttendancePanel({
           {lateArrivals.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-3">
               <span>
-                {p.name} <span className="text-base opacity-70">Nachzügler, ab Runde 2</span>
+                {p.name} <span className="text-base opacity-70">Nachzügler, ab Match 2</span>
               </span>
               <button
                 type="button"

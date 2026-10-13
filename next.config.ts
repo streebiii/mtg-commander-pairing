@@ -21,6 +21,23 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Erfassung und Achievement-Katalog sind in die Ligaverwaltung gezogen
+  // (SPEC.md Abschnitt 14) — alte Lesezeichen sollen weiter funktionieren.
+  async redirects() {
+    return [
+      {
+        source: "/admin/erfassung/tischkarten",
+        destination: "/admin/ligaverwaltung/tischkarten",
+        permanent: false,
+      },
+      { source: "/admin/erfassung/:path*", destination: "/admin/ligaverwaltung", permanent: false },
+      {
+        source: "/admin/achievements",
+        destination: "/admin/ligaverwaltung/achievements",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

@@ -35,13 +35,10 @@ export default async function TableCardsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3 print:hidden">
-        <div>
-          <h1 className="text-xl font-semibold">Tischkarten</h1>
-          <p className="text-base opacity-70">
-            Einmal drucken, sie bleiben gültig. Im Druckdialog «Als PDF
-            sichern» wählen, um ein PDF zu erhalten.
-          </p>
-        </div>
+        <p className="text-base opacity-70">
+          Einmal drucken, sie bleiben gültig. Im Druckdialog «Als PDF
+          sichern» wählen, um ein PDF zu erhalten.
+        </p>
         <PrintButton />
       </div>
 

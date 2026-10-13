@@ -7,10 +7,10 @@ import { claimPlayer } from "./actions";
 export const dynamic = "force-dynamic";
 
 const ERRORS: Record<string, string> = {
-  "kein-abend": "Gerade läuft kein Liga-Abend.",
-  "nicht-am-tisch": "Dieser Name sitzt in der aktuellen Runde nicht an diesem Tisch.",
+  "kein-abend": "Gerade läuft keine Liga-Runde.",
+  "nicht-am-tisch": "Dieser Name sitzt im aktuellen Match nicht an diesem Tisch.",
   "geraet-belegt":
-    "Dieses Handy ist an diesem Abend schon für einen anderen Namen angemeldet.",
+    "Dieses Handy ist in dieser Runde schon für einen anderen Namen angemeldet.",
   "name-belegt":
     "Dieser Name ist schon auf einem anderen Handy angemeldet. Melde dich beim Organisator, er kann ihn freigeben.",
 };
@@ -75,7 +75,7 @@ export default async function TablePage({
   } else if (!evening) {
     content = (
       <p className="text-base opacity-70">
-        Gerade läuft kein Liga-Abend. Sobald einer läuft, kannst du dich hier
+        Gerade läuft keine Liga-Runde. Sobald eine läuft, kannst du dich hier
         anmelden.
       </p>
     );
@@ -88,14 +88,14 @@ export default async function TablePage({
   } else if (!table) {
     content = (
       <p className="text-base opacity-70">
-        Tisch {tableNumber} ist in Runde {round.number} nicht besetzt.
+        Tisch {tableNumber} ist in Match {round.number} nicht besetzt.
       </p>
     );
   } else {
     content = (
       <div className="flex flex-col gap-3">
         <p className="text-base opacity-70">
-          Runde {round.number} — tippe auf deinen Namen.
+          Match {round.number} — tippe auf deinen Namen.
         </p>
         <ul className="flex flex-col gap-2">
           {table.assignments.map((a) => {

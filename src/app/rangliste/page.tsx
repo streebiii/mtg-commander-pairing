@@ -32,8 +32,8 @@ export default async function RankingPage() {
         </h2>
         <p className="text-base opacity-70">
           Unterstrichene Punkte stammen aus der Achievement-Erfassung — mit
-          der Maus darauf zeigen oder antippen, um die Achievements des Abends
-          zu sehen. Nach dem letzten Abend zählt das schlechteste Resultat
+          der Maus darauf zeigen oder antippen, um die Achievements der Runde
+          zu sehen. Nach der letzten Runde zählt das schlechteste Resultat
           nicht (durchgestrichen).
         </p>
       </div>

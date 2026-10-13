@@ -391,7 +391,7 @@ function BottomSheet({
   const close = () => history.back();
 
   return createPortal(
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Achievements des Abends">
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Achievements der Runde">
       <div
         onClick={close}
         className={`absolute inset-0 bg-black/60 transition-opacity duration-250 motion-reduce:transition-none ${

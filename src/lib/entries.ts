@@ -232,6 +232,8 @@ export interface OverviewRow {
   entryId: string | null;
   status: EntryStatus;
   hasDevice: boolean;
+  /** Gespielte Matches (1, 2). */
+  games: number[];
   total: number;
 }
 
@@ -254,7 +256,10 @@ export async function loadEveningOverview(eveningId: string) {
     }),
     prisma.playerEntry.findMany({
       where: { eveningId },
-      include: { marks: true },
+      include: {
+        marks: true,
+        player: { select: { firstName: true, lastName: true } },
+      },
     }),
   ]);
   const lastEvening = isLastEvening(evening.date);
@@ -269,14 +274,22 @@ export async function loadEveningOverview(eveningId: string) {
     p.games.add(a.table.round.number);
     players.set(a.playerId, p);
   }
+  // Nachgetragene Runden haben keine Tische — dort steht in der Erfassung,
+  // welche Matches jemand gespielt hat (SPEC.md Abschnitt 13.3).
+  for (const e of entries) {
+    if (!players.has(e.playerId) && e.games.length > 0) {
+      players.set(e.playerId, { name: e.player, games: new Set(e.games) });
+    }
+  }
   const entryByPlayer = new Map(entries.map((e) => [e.playerId, e]));
 
   const rows: OverviewRow[] = [...players].map(([playerId, p]) => {
     const entry = entryByPlayer.get(playerId);
+    const games = [...p.games].sort((x, y) => x - y);
     const totals = computeTotals(
       sheetAchievements,
       marksToMap(entry?.marks ?? []),
-      [...p.games].sort((x, y) => x - y),
+      games,
       lastEvening,
     );
     return {
@@ -289,6 +302,7 @@ export async function loadEveningOverview(eveningId: string) {
           ? "angemeldet"
           : "offen",
       hasDevice: Boolean(entry?.deviceTokenHash),
+      games,
       total: totals.total,
     };
   });
