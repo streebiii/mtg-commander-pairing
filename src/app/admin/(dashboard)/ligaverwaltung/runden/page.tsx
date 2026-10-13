@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { eveningNumber } from "@/lib/season";
-import DeleteTestRoundButton from "./DeleteTestRoundButton";
+import DeleteRoundButton from "./DeleteRoundButton";
 
 export const dynamic = "force-dynamic";
 
@@ -91,10 +91,18 @@ export default async function RoundsPage() {
                   </span>
                 </td>
                 <td className="border-b border-white/5 px-3 py-0.5 text-right">
-                  {/* Nur Testrunden: zählen nicht und sind abgeschlossen. */}
-                  {!e.seasonRound && e.finishedAt && e.entryClosedAt && (
-                    <DeleteTestRoundButton eveningId={e.id} />
-                  )}
+                  <DeleteRoundButton
+                    eveningId={e.id}
+                    warning={
+                      !e.finishedAt
+                        ? "Die Runde läuft gerade — Tische und alle Erfassungen gehen verloren."
+                        : !e.entryClosedAt
+                          ? "Die Erfassung ist noch offen — alle Einträge der Spieler gehen verloren."
+                          : e.seasonRound
+                            ? `Sie zählt als R${e.seasonRound} — ihre erfassten Punkte verschwinden aus Rangliste und Paarung.`
+                            : null
+                    }
+                  />
                   <Link
                     href={`/admin/ligaverwaltung/runden/${e.id}`}
                     className="inline-flex min-h-11 items-center rounded px-2 hover:bg-white/10"

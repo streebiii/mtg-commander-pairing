@@ -963,10 +963,13 @@ Achievement-Katalog):
   Teilnehmenden mit ihren Matches und Punkten (je «Korrigieren ›»), die
   Tische und Sieger von Match 1 und 2 (mit Drop und Unentschieden) und
   die Achievements, die in dieser Runde galten.
-  **Testrunden** (abgeschlossen, keiner Spalte zugeordnet) lassen sich
-  mit Rückfrage endgültig **löschen**, samt Matches und Erfassungen.
-  Gezählte, laufende oder noch offene Runden haben keinen Löschen-Knopf;
-  der Server prüft das zusätzlich.
+  **Jede Runde lässt sich löschen** — endgültig, mit Rückfrage, samt
+  Matches, Tischen und Erfassungen (Entscheid des Organisators vom
+  13.10.2026). Die Rückfrage nennt, was verloren geht: bei einer laufenden
+  Runde Tische und Erfassungen, bei offener Erfassung die Einträge der
+  Spieler, bei einer gezählten die Punkte in Rangliste und Paarung (für
+  R1–R4 gelten dann wieder die früher importierten Werte, falls vorhanden,
+  Abschnitt 7).
 - **Achievements** — der Katalog (Abschnitt 11).
 - **Tischkarten** — die Druckvorlage (Abschnitt 12.1).
 

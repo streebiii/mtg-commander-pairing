@@ -105,21 +105,14 @@ export async function closeEntry(
 }
 
 /**
- * Löscht eine Testrunde endgültig, mit allem, was daran hängt (Matches,
- * Tische, Erfassungen; per Cascade). Nur Runden, die nicht in der
- * Rangliste zählen (keine Spalte) und abgeschlossen sind — eine laufende
- * oder noch offene Runde und jede gezählte bleiben unantastbar (SPEC.md
- * Abschnitt 14).
+ * Löscht eine Runde endgültig, mit allem, was daran hängt (Matches,
+ * Tische, Erfassungen, Nachzügler; per Cascade) — auch eine gezählte oder
+ * laufende (SPEC.md Abschnitt 14). Die Rückfrage im Browser nennt, was
+ * dabei verloren geht.
  */
-export async function deleteTestRound(eveningId: string) {
+export async function deleteRound(eveningId: string) {
   await requireAdmin();
-  const evening = await prisma.evening.findUnique({
-    where: { id: eveningId },
-    select: { seasonRound: true, finishedAt: true, entryClosedAt: true },
-  });
-  if (!evening) return;
-  if (evening.seasonRound !== null || !evening.finishedAt || !evening.entryClosedAt) return;
-
-  await prisma.evening.delete({ where: { id: eveningId } });
+  await prisma.evening.deleteMany({ where: { id: eveningId } });
   revalidateEntryViews();
+  revalidatePath("/");
 }
