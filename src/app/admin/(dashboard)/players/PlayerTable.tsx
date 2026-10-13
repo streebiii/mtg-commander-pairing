@@ -5,6 +5,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { PrimaryButton, SecondaryButton } from "@/components/Button";
 import ColorDots from "@/components/ColorDots";
 import { colorsOf } from "@/lib/colorIdentity";
+import { decklistHost, normalizeDecklistUrl } from "@/lib/decklist";
 import { SKILL_LEVELS } from "@/lib/players";
 import { updatePlayer } from "./actions";
 import NewPlayerPanel from "./NewPlayerPanel";
@@ -16,15 +17,16 @@ export interface TablePlayer {
   skillLevel: number;
   leagueActive: boolean;
   colorIdentity: string | null;
+  decklistUrl: string | null;
   /** Saisonpunkte laut Rangliste — null, wer nicht in der Liga ist. */
   seasonPoints: number | null;
 }
 
 type Editable = Pick<
   TablePlayer,
-  "firstName" | "lastName" | "skillLevel" | "leagueActive" | "colorIdentity"
+  "firstName" | "lastName" | "skillLevel" | "leagueActive" | "colorIdentity" | "decklistUrl"
 >;
-type Column = "firstName" | "lastName" | "skillLevel" | "colorIdentity";
+type Column = "firstName" | "lastName" | "skillLevel" | "colorIdentity" | "decklistUrl";
 type SortKey = "firstName" | "lastName" | "skillLevel" | "seasonPoints";
 type LeagueFilter = "all" | "league" | "other";
 
@@ -82,11 +84,25 @@ function CellEditor({
   onCancel: () => void;
 }) {
   const [text, setText] = useState(() => String(initial[column] ?? ""));
+  const [invalid, setInvalid] = useState(false);
   // Verhindert ein zweites Speichern durch das Blur nach Enter bzw. Esc.
   const done = useRef(false);
 
   function commit(value: string) {
     if (done.current) return;
+    if (column === "decklistUrl") {
+      const decklistUrl = normalizeDecklistUrl(value);
+      // Ungültige Adresse: Feld offen lassen und markieren, statt sie still
+      // zu verwerfen.
+      if (decklistUrl === undefined) {
+        setInvalid(true);
+        return;
+      }
+      done.current = true;
+      if (decklistUrl !== initial.decklistUrl) onCommit({ decklistUrl });
+      else onCancel();
+      return;
+    }
     done.current = true;
     if (column === "firstName") {
       const firstName = value.trim();
@@ -148,15 +164,30 @@ function CellEditor({
       autoFocus
       type="text"
       value={text}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={() => commit(text)}
+      onChange={(e) => {
+        setText(e.target.value);
+        setInvalid(false);
+      }}
+      onBlur={() => (invalid ? cancel() : commit(text))}
       onKeyDown={onKeyDown}
       onFocus={(e) => e.currentTarget.select()}
-      placeholder={column === "colorIdentity" ? "z.B. WR" : undefined}
-      aria-label={
-        column === "firstName" ? "Vorname" : column === "lastName" ? "Nachname" : "Farben"
+      placeholder={
+        column === "colorIdentity" ? "z.B. WR" : column === "decklistUrl" ? "https://…" : undefined
       }
-      className={`${CELL_INPUT} ${column === "colorIdentity" ? "uppercase" : ""}`}
+      aria-label={
+        column === "firstName"
+          ? "Vorname"
+          : column === "lastName"
+            ? "Nachname"
+            : column === "decklistUrl"
+              ? "Link zur Deckliste"
+              : "Farben"
+      }
+      aria-invalid={invalid || undefined}
+      title={invalid ? "Keine gültige Adresse (http oder https)" : undefined}
+      className={`${CELL_INPUT} ${column === "colorIdentity" ? "uppercase" : ""} ${
+        invalid ? "ring-red-500" : ""
+      }`}
     />
   );
 }
@@ -239,6 +270,7 @@ export default function PlayerTable({ players }: { players: TablePlayer[] }) {
     fd.set("skillLevel", String(next.skillLevel));
     fd.set("leagueActive", String(next.leagueActive));
     fd.set("colorIdentity", next.colorIdentity ?? "");
+    fd.set("decklistUrl", next.decklistUrl ?? "");
     startTransition(async () => {
       await updatePlayer(fd);
       setJustSaved(true);
@@ -360,7 +392,7 @@ export default function PlayerTable({ players }: { players: TablePlayer[] }) {
           schmalen Bildschirmen seitlich scrollbar mit fixierter
           Namensspalte. */}
       <div className="max-h-[70vh] overflow-auto rounded border border-white/10">
-        <table className="w-full min-w-[760px] border-separate border-spacing-0 text-base">
+        <table className="w-full min-w-[920px] border-separate border-spacing-0 text-base">
           <thead className="text-left">
             <tr>
               {header(null, "Liga", "sticky left-0 z-20 w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem]")}
@@ -368,6 +400,7 @@ export default function PlayerTable({ players }: { players: TablePlayer[] }) {
               {header("lastName", "Nachname", "w-40")}
               {header("skillLevel", "Stufe", "w-24")}
               {header(null, "Farben", "w-32")}
+              {header(null, "Deckliste", "w-44")}
               {header("seasonPoints", "Saison", "w-28 text-right")}
               {header(null, "", "w-40")}
             </tr>
@@ -419,6 +452,18 @@ export default function PlayerTable({ players }: { players: TablePlayer[] }) {
                     ) : (
                       <span className="opacity-40">—</span>
                     ),
+                  )}
+                  {cell(
+                    p,
+                    "decklistUrl",
+                    p.decklistUrl ? (
+                      <span className="block truncate" title={p.decklistUrl}>
+                        {decklistHost(p.decklistUrl)}
+                      </span>
+                    ) : (
+                      <span className="opacity-40">—</span>
+                    ),
+                    "max-w-44",
                   )}
                   <td className="border-b border-white/5 px-3 py-2.5 text-right align-middle font-medium tabular-nums">
                     {p.seasonPoints ?? <span className="font-normal opacity-40">—</span>}

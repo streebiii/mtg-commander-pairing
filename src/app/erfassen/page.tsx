@@ -1,5 +1,5 @@
 import EntrySheet from "@/components/EntrySheet";
-import { formatPlayerName } from "@/lib/players";
+import { loadPublicNames } from "@/lib/publicRoster";
 import { getDeviceEntry, loadSheet } from "@/lib/entries";
 import { eveningLabel } from "@/lib/season";
 import { setMyMark } from "./actions";
@@ -24,7 +24,10 @@ export default async function MyEntryPage() {
     );
   }
 
-  const sheet = await loadSheet(entry.eveningId, entry.playerId);
+  const [sheet, names] = await Promise.all([
+    loadSheet(entry.eveningId, entry.playerId),
+    loadPublicNames(),
+  ]);
   const closed = entry.evening.entryClosedAt !== null;
   const submitted = entry.submittedAt !== null;
   const locked = closed;
@@ -32,7 +35,9 @@ export default async function MyEntryPage() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
       <div>
-        <h1 className="text-xl font-semibold">{formatPlayerName(entry.player)}</h1>
+        <h1 className="text-xl font-semibold">
+          {names.get(entry.playerId) ?? entry.player.firstName}
+        </h1>
         <p className="text-base opacity-70">
           {eveningLabel(entry.evening.date)} ·{" "}
           {entry.evening.date.toLocaleDateString("de-CH", {

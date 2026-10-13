@@ -9,6 +9,8 @@ export interface RankingPlayer {
   id: string;
   name: string;
   colorIdentity: string | null;
+  /** Link zur Deckliste (nur http/https, siehe normalizeDecklistUrl). */
+  decklistUrl?: string | null;
 }
 
 /** Ein Abend aus der App mit den Ergebnissen aller, die dort gespielt haben. */
@@ -32,6 +34,7 @@ export interface RankingRow {
   id: string;
   name: string;
   colorIdentity: string | null;
+  decklistUrl: string | null;
   rank: number;
   /** Ränge gewonnen (positiv) oder verloren; "neu" beim ersten Abend; null = keine Angabe. */
   delta: number | "neu" | null;
@@ -163,6 +166,7 @@ export function buildRanking(
       id: s.id,
       name: s.name,
       colorIdentity: playerById.get(s.id)!.colorIdentity,
+      decklistUrl: playerById.get(s.id)!.decklistUrl ?? null,
       rank: s.rank,
       delta,
       total: s.total,

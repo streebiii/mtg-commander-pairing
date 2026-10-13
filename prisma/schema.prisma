@@ -43,9 +43,13 @@ model Player {
   /// Liste mehr auf; ihre Tischzuteilungen und Ergebnisse bleiben intakt.
   archivedAt   DateTime?
   /// Ausgeloste Farbidentität der Saison als Buchstaben in WUBRG-Reihenfolge
-  /// (z.B. «WR»), wie in der Spalte F auf mtgbl.ch. Kommt über den Import,
-  /// änderbar in der Liga-Verwaltung; die Rangliste zeigt sie als Punkte.
+  /// (z.B. «WR»), wie in der Spalte F auf mtgbl.ch. Gepflegt im Spieler-Tab;
+  /// die Rangliste zeigt sie als Punkte.
   colorIdentity String?
+  /// Link zur Deckliste des Spielers (z.B. Moxfield, Archidekt), nur
+  /// http(s). Erscheint in der Rangliste als Icon neben den Farben und
+  /// öffnet in einem neuen Tab (SPEC.md Abschnitt 13.1).
+  decklistUrl  String?
   createdAt    DateTime  @default(now())
 
   assignments    TableAssignment[]

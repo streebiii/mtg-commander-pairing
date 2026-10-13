@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/adminGuard";
 import { prisma } from "@/lib/prisma";
 import { normalizeColorIdentity } from "@/lib/colorIdentity";
+import { normalizeDecklistUrl } from "@/lib/decklist";
 import {
   formatPlayerName,
   parseSkillLevel,
@@ -83,13 +84,23 @@ export async function updatePlayer(formData: FormData) {
   // Farbidentität wie in Spalte F der Rangliste (SPEC.md Abschnitt 13),
   // in WUBRG-Reihenfolge; leer oder ohne erkennbare Farbe entfernt sie.
   const colorIdentity = normalizeColorIdentity(String(formData.get("colorIdentity") ?? ""));
+  // Ungültige Adressen (z.B. javascript:) werden nicht gespeichert — die
+  // bisherige bleibt dann stehen (siehe normalizeDecklistUrl).
+  const decklistUrl = normalizeDecklistUrl(String(formData.get("decklistUrl") ?? ""));
 
   if (!id || !firstName) return;
   if (skillLevel === null) return;
 
   await prisma.player.update({
     where: { id },
-    data: { firstName, lastName: lastName || null, skillLevel, leagueActive, colorIdentity },
+    data: {
+      firstName,
+      lastName: lastName || null,
+      skillLevel,
+      leagueActive,
+      colorIdentity,
+      ...(decklistUrl === undefined ? {} : { decklistUrl }),
+    },
   });
   revalidatePlayerViews();
 }

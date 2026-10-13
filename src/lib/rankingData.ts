@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { toSheetAchievement } from "@/lib/entries";
 import { computeBreakdown, marksToMap, type Breakdown } from "@/lib/entrySheet";
-import { formatPlayerName } from "@/lib/players";
+import { loadPublicNames } from "@/lib/publicRoster";
 import { buildRanking, type AppEvening } from "@/lib/ranking";
 import type { LeaguePlayerStanding } from "@/lib/pairing/leagueRanking";
 import { isInSeason, isLastEvening } from "@/lib/season";
@@ -15,10 +15,16 @@ import { isInSeason, isLastEvening } from "@/lib/season";
  * weil Neon von Vercel aus jede Abfrage einzeln kostet.
  */
 export async function loadRanking() {
-  const [players, imported, evenings] = await Promise.all([
+  const [players, imported, evenings, names] = await Promise.all([
     prisma.player.findMany({
       where: { leagueActive: true },
-      select: { id: true, firstName: true, lastName: true, colorIdentity: true },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        colorIdentity: true,
+        decklistUrl: true,
+      },
     }),
     prisma.importedEveningScore.findMany({
       where: { player: { leagueActive: true } },
@@ -29,6 +35,7 @@ export async function loadRanking() {
       select: { id: true, date: true, seasonRound: true },
       orderBy: { date: "asc" },
     }),
+    loadPublicNames(),
   ]);
 
   // Pro Spalte zählt höchstens ein Abend (beim Schliessen geprüft); falls
@@ -88,8 +95,10 @@ export async function loadRanking() {
   return buildRanking(
     players.map((p) => ({
       id: p.id,
-      name: formatPlayerName(p),
+      // Öffentlich nur Vorname und Initial (siehe publicNames).
+      name: names.get(p.id) ?? p.firstName,
       colorIdentity: p.colorIdentity,
+      decklistUrl: p.decklistUrl,
     })),
     imported,
     appEvenings,
