@@ -2,13 +2,21 @@
 
 import { useState, useTransition } from "react";
 import { DangerButton, SecondaryButton } from "@/components/Button";
-import { deleteTestRound } from "../actions";
+import { deleteRound } from "../actions";
 
 /**
- * «Löschen» für eine Testrunde, mit Rückfrage inline (window.confirm
- * liefert in eingebetteten Browser-Ansichten stumm `false`).
+ * «Löschen» für eine Runde, mit Rückfrage inline (window.confirm liefert
+ * in eingebetteten Browser-Ansichten stumm `false`). Die Rückfrage nennt,
+ * was verloren geht — bei einer gezählten oder laufenden Runde deutlich.
  */
-export default function DeleteTestRoundButton({ eveningId }: { eveningId: string }) {
+export default function DeleteRoundButton({
+  eveningId,
+  warning,
+}: {
+  eveningId: string;
+  /** Was beim Löschen ausser der Runde selbst verloren geht, oder null. */
+  warning: string | null;
+}) {
   const [confirming, setConfirming] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -25,14 +33,17 @@ export default function DeleteTestRoundButton({ eveningId }: { eveningId: string
   }
 
   return (
-    <span className="inline-flex flex-wrap items-center justify-end gap-2">
-      <span>Endgültig löschen?</span>
+    <span className="inline-flex max-w-md flex-wrap items-center justify-end gap-2 py-2 text-left">
+      <span>
+        Endgültig löschen?
+        {warning && <span className="block text-red-300">{warning}</span>}
+      </span>
       <SecondaryButton onClick={() => setConfirming(false)} disabled={isPending}>
         Nein
       </SecondaryButton>
       <DangerButton
         loading={isPending}
-        onClick={() => startTransition(() => deleteTestRound(eveningId))}
+        onClick={() => startTransition(() => deleteRound(eveningId))}
       >
         {isPending ? "Lösche…" : "Ja"}
       </DangerButton>
