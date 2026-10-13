@@ -93,6 +93,9 @@ export default function RankingTable({
                   <span className="flex items-center gap-2">
                     <span className="min-w-0 truncate">{row.name}</span>
                     <ColorDots identity={row.colorIdentity} />
+                    {row.decklistUrl && (
+                      <DecklistLink url={row.decklistUrl} name={row.name} />
+                    )}
                   </span>
                 </td>
                 <td className={`${STICKY.total} ${CELL} text-right font-semibold`}>
@@ -160,6 +163,39 @@ function Delta({ delta }: { delta: RankingRow["delta"] }) {
     <span className="text-base text-red-400" aria-label={`${-delta} Ränge verloren`}>
       ▼{-delta}
     </span>
+  );
+}
+
+/**
+ * Icon-Link zur Deckliste eines Spielers, öffnet in einem neuen Tab. Die
+ * Adresse ist beim Speichern auf http(s) geprüft (normalizeDecklistUrl);
+ * `noopener noreferrer`, damit die fremde Seite nicht auf die Rangliste
+ * zugreifen kann.
+ */
+function DecklistLink({ url, name }: { url: string; name: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Deckliste (neuer Tab)"
+      aria-label={`Deckliste von ${name} (öffnet in neuem Tab)`}
+      className="-my-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded opacity-70 hover:bg-white/10 hover:opacity-100"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="5" y="3" width="14" height="18" rx="2" />
+        <path d="M9 8h6M9 12h6M9 16h4" />
+      </svg>
+    </a>
   );
 }
 

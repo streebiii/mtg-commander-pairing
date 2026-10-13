@@ -13,7 +13,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate",
-    "import:evening": "node scripts/import-evening.mjs"
+    "import:evening": "node scripts/import-evening.mjs",
+    "set:colors": "node scripts/set-colors.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

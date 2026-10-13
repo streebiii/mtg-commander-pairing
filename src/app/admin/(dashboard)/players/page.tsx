@@ -19,6 +19,7 @@ export default async function PlayersPage() {
         skillLevel: true,
         leagueActive: true,
         colorIdentity: true,
+        decklistUrl: true,
       },
     }),
     loadRanking(),

@@ -18,7 +18,13 @@ export async function loadRanking() {
   const [players, imported, evenings] = await Promise.all([
     prisma.player.findMany({
       where: { leagueActive: true },
-      select: { id: true, firstName: true, lastName: true, colorIdentity: true },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        colorIdentity: true,
+        decklistUrl: true,
+      },
     }),
     prisma.importedEveningScore.findMany({
       where: { player: { leagueActive: true } },
@@ -90,6 +96,7 @@ export async function loadRanking() {
       id: p.id,
       name: formatPlayerName(p),
       colorIdentity: p.colorIdentity,
+      decklistUrl: p.decklistUrl,
     })),
     imported,
     appEvenings,

@@ -587,8 +587,9 @@ Achievement-Katalog (Abschnitt 11.1):
 - Eine Tabelle aller Spieler mit Werkzeugleiste: Suche nach Name, Filter
   «Alle Spieler / Liga-Teilnehmende / Nicht in der Liga» und «+ Neuer
   Spieler». Spalten: **Liga** (Schalter), **Vorname**, **Nachname**,
-  **Stufe**, **Farben** (Farbidentität, z. B. «WR», Abschnitt 13) und
-  **Saison** (Total aus der Rangliste, nur lesend). Sortierbar nach Vor-
+  **Stufe**, **Farben** (Farbidentität, z. B. «WR», Abschnitt 13),
+  **Deckliste** (Link, Abschnitt 13.1) und **Saison** (Total aus der
+  Rangliste, nur lesend). Sortierbar nach Vor-
   und Nachname, Stufe und Saisonpunkten.
 - Bearbeitet wird direkt in der Tabelle: ein Klick auf eine Zelle macht
   sie zum Eingabefeld, Enter oder Verlassen speichert, Esc verwirft. Die
@@ -872,6 +873,18 @@ offizielle Wertung bleibt auf mtgbl.ch.
 
 - **Spalten** wie auf mtgbl.ch: #, Δ, Spieler, F (Farbidentität als
   farbige Punkte in den Magic-Farben W, U, B, R, G), Total, R1–R6.
+- **Deckliste**: hat ein Spieler einen Link zu seiner Deckliste
+  (Spieler-Tab, Spalte «Deckliste»), steht neben seinen Farben ein Icon,
+  das sie in einem neuen Tab öffnet (`rel="noopener noreferrer"`).
+  Gespeichert werden nur http(s)-Adressen; ohne Schema eingegebene
+  bekommen https:// (`src/lib/decklist.ts`).
+- **Farben setzen**: die Farbidentität wird im Spieler-Tab gepflegt. Für
+  die ganze Saison auf einmal liest `npm run set:colors -- <datei.json>`
+  eine Liste im Format `[{ "name": "Marc S.", "colors": "WR" }, …]` mit
+  den Namen, wie mtgbl.ch sie führt (Probelauf, mit `--apply` schreiben).
+  Jeder Name muss genau einem Spieler zuzuordnen sein
+  (`src/lib/nameMatch.ts`), sonst schreibt das Skript nichts. Die Datei
+  enthält Namen und liegt deshalb in `information-files/`.
 - **Wer erscheint**: alle Liga-Teilnehmenden (`leagueActive`), auch ohne
   gespielten Abend (Total 0). Massgebend ist allein der Haken im
   Spieler-Tab.
