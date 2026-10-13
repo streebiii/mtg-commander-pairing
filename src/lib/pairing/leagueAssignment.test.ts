@@ -340,30 +340,59 @@ describe("wiederholte Nicht-4er-Zuteilung vermeiden", () => {
   });
 });
 
-describe("Sieger bevorzugt zusammen sitzen lassen", () => {
-  it("erhöht die Chance, dass zwei Sieger am selben Tisch landen", () => {
-    // N=16, Grenze=8: obere Haelfte auf 2 Tischen zu 4.
-    const players = makePlayers(Array.from({ length: 16 }, (_, i) => 100 - i));
-    const sieger = new Set(["p0", "p2", "p4", "p6"]); // 4 Sieger, alle oben
+describe("Sieger spielen in Runde 2 innerhalb ihrer Hälfte gegeneinander (SPEC.md Abschnitt 5.2)", () => {
+  // 24 Spieler: Grenze bei 12, je Hälfte drei 4er-Tische.
+  const players = makePlayers(Array.from({ length: 24 }, (_, i) => 100 - i));
+  const obenIds = new Set(players.slice(0, 12).map((p) => p.id));
 
-    function siegerPaareAmTisch(tables: string[][]): number {
-      let paare = 0;
-      for (const table of tables) {
-        const s = table.filter((id) => sieger.has(id)).length;
-        paare += (s * (s - 1)) / 2;
-      }
-      return paare;
-    }
+  /** An wie vielen Tischen die gegebenen Spieler sitzen. */
+  function tischeMit(tables: string[][], ids: string[]): number {
+    return tables.filter((t) => t.some((id) => ids.includes(id))).length;
+  }
 
-    let mitBonus = 0;
-    let ohneBonus = 0;
-    const trials = 500;
-    for (let i = 0; i < trials; i++) {
-      const mit = assignLeagueRound(players, new Set(), new Set(), sieger);
-      mitBonus += siegerPaareAmTisch(mit);
-      const ohne = assignLeagueRound(players);
-      ohneBonus += siegerPaareAmTisch(ohne);
+  it("setzt die Sieger einer Hälfte immer an denselben Tisch", () => {
+    const siegerOben = ["p1", "p5", "p9"];
+    const siegerUnten = ["p13", "p17", "p21"];
+    const sieger = new Set([...siegerOben, ...siegerUnten]);
+    for (let i = 0; i < 300; i++) {
+      const tables = assignLeagueRound(players, new Set(), new Set(), sieger);
+      expect(tischeMit(tables, siegerOben)).toBe(1);
+      expect(tischeMit(tables, siegerUnten)).toBe(1);
+      // ... und zwar jeweils in der eigenen Hälfte.
+      const obenTisch = tables.find((t) => t.includes("p1"))!;
+      expect(obenTisch.every((id) => obenIds.has(id))).toBe(true);
     }
-    expect(mitBonus).toBeGreaterThan(ohneBonus);
+  });
+
+  it("lässt Sieger nicht wegtauschen, auch wenn Rematches dagegen sprechen", () => {
+    // p0-p3 sassen schon zusammen; p0 und p1 haben gewonnen. Der Tausch
+    // gegen Rematches darf die beiden trotzdem nicht trennen.
+    const vorher = new Set(tablePairKeys(["p0", "p1", "p2", "p3"]));
+    const sieger = new Set(["p0", "p1"]);
+    for (let i = 0; i < 300; i++) {
+      const tables = assignLeagueRound(players, vorher, new Set(), sieger);
+      expect(tischeMit(tables, ["p0", "p1"])).toBe(1);
+    }
+  });
+
+  it("füllt bei mehr Siegern, als an einen Tisch passen, zuerst einen reinen Siegertisch", () => {
+    const sieger = new Set(["p0", "p2", "p4", "p6", "p8"]); // 5 Sieger oben
+    for (let i = 0; i < 300; i++) {
+      const tables = assignLeagueRound(players, new Set(), new Set(), sieger);
+      const proTisch = tables.map((t) => t.filter((id) => sieger.has(id)).length);
+      expect(proTisch.filter((n) => n > 0).sort()).toEqual([1, 4]);
+    }
+  });
+
+  it("setzt die Sieger an einen 4er-Tisch, wenn die Hälfte auch 3er-Tische hat", () => {
+    // 22 Spieler: oben 12 (4+4+4), unten 10 (4+3+3).
+    const spieler22 = makePlayers(Array.from({ length: 22 }, (_, i) => 100 - i));
+    const sieger = new Set(["p13", "p16", "p19"]);
+    for (let i = 0; i < 300; i++) {
+      const tables = assignLeagueRound(spieler22, new Set(), new Set(), sieger);
+      const siegerTisch = tables.find((t) => t.includes("p13"))!;
+      expect(siegerTisch).toHaveLength(4);
+      expect(tischeMit(tables, [...sieger])).toBe(1);
+    }
   });
 });

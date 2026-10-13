@@ -39,9 +39,22 @@ function countRematches(table: readonly string[], previousPairings: ReadonlySet<
 /** Tische brauchen mindestens 3 Spieler — siehe `computeTableSizes`. */
 const MIN_HAELFTE = 3;
 
-/** Verteilt Spieler komplett zufällig auf so viele Tische wie nötig. */
-function assignRandomly(ids: readonly string[]): string[][] {
-  return dealIntoTables(shuffle(ids), computeTableSizes(ids.length));
+/**
+ * Verteilt eine Gruppe (eine Hälfte) auf so viele Tische wie nötig: die
+ * Sieger der Vorrunde zuerst, zusammen an die grössten Tische (4er vor
+ * 3er), danach die übrigen zufällig. So spielen die Sieger einer Hälfte
+ * in Runde 2 garantiert gegeneinander (SPEC.md Abschnitt 5.2); gibt es
+ * mehr Sieger, als an einen Tisch passen, füllen sie den nächsten. Ohne
+ * Sieger (Runde 1) ist das eine rein zufällige Verteilung.
+ */
+function assignHalf(ids: readonly string[], sieger: ReadonlySet<string>): string[][] {
+  // dealIntoTables füllt Tisch für Tisch, die grössten zuerst — die Sieger
+  // vorne in der Reihenfolge landen also zusammen am ersten 4er-Tisch.
+  const reihenfolge = [
+    ...shuffle(ids.filter((id) => sieger.has(id))),
+    ...shuffle(ids.filter((id) => !sieger.has(id))),
+  ];
+  return dealIntoTables(reihenfolge, computeTableSizes(ids.length));
 }
 
 /** Wie viele Tische einer Grösse ungleich 4 eine Tischgrössen-Liste enthält. */
@@ -124,24 +137,21 @@ function splitInHalves(
 /**
  * Gewichte für die lokale Verbesserung (siehe `bewerteTisch`) — höher
  * heisst wichtiger. Rematches wiegen am schwersten (die ursprüngliche,
- * am längsten bewährte Vermeidung), die wiederholte 3er-Zuteilung mehr
- * als der Sieger-Zusammensitz-Bonus, der als reine Kür gedacht ist.
+ * am längsten bewährte Vermeidung). Dass Sieger zusammensitzen, ist keine
+ * Gewichtung mehr, sondern eine feste Regel (siehe `assignHalf`).
  */
 const GEWICHT_REMATCH = 3;
 const GEWICHT_WIEDERHOLTER_NICHT_VIERER = 2;
-const GEWICHT_SIEGER_ZUSAMMEN = 1;
 
 /**
  * "Kosten" eines Tisches für die lokale Verbesserung — je niedriger,
  * desto besser. Rematches und wiederholte Nicht-4er-Zuteilungen erhöhen
- * die Kosten, ein Sieger-Paar am selben Tisch senkt sie (siehe
- * `verbessereZuteilung`).
+ * die Kosten (siehe `verbessereZuteilung`).
  */
 function bewerteTisch(
   table: readonly string[],
   previousPairings: ReadonlySet<string>,
   wiederholteNichtVierer: ReadonlySet<string>,
-  sieger: ReadonlySet<string>,
 ): number {
   let kosten = GEWICHT_REMATCH * countRematches(table, previousPairings);
 
@@ -150,14 +160,6 @@ function bewerteTisch(
       GEWICHT_WIEDERHOLTER_NICHT_VIERER *
       table.filter((id) => wiederholteNichtVierer.has(id)).length;
   }
-
-  let siegerPaare = 0;
-  for (let i = 0; i < table.length; i++) {
-    for (let j = i + 1; j < table.length; j++) {
-      if (sieger.has(table[i]) && sieger.has(table[j])) siegerPaare++;
-    }
-  }
-  kosten -= GEWICHT_SIEGER_ZUSAMMEN * siegerPaare;
 
   return kosten;
 }
@@ -173,16 +175,17 @@ function bewerteTisch(
  *    schwächere. Die Trennlinie liegt nicht stur bei der exakten Mitte,
  *    sondern dort, wo insgesamt die wenigsten Nicht-4er-Tische entstehen
  *    (und, wo eine Wahl bleibt, in der unteren Hälfte statt der oberen).
- * 3. Innerhalb jeder Hälfte komplett zufällig auf die Tische verteilen —
- *    kein Rang-Bezug mehr. Das verhindert, dass sich dieselbe kleine
+ * 3. Innerhalb jeder Hälfte die Sieger der Vorrunde zusammen an die
+ *    grössten Tische, die übrigen komplett zufällig — kein Rang-Bezug
+ *    mehr (siehe `assignHalf`). Das verhindert, dass sich dieselbe kleine
  *    Gruppe (z.B. die besten 4-5) immer wieder an einem Tisch häuft, ein
  *    Effekt, den reines Zufalls-Rauschen auf einer durchgehenden
  *    Rangliste nicht auflösen konnte (siehe BACKLOG.md).
- * 4. Lokale Verbesserung (siehe `verbessereZuteilung`): zwei Spieler
+ * 4. Lokale Verbesserung (siehe `verbessereZuteilung`): zwei Nicht-Sieger
  *    *derselben Hälfte* dürfen getauscht werden, wenn das insgesamt die
  *    Kosten senkt — weniger Rematches, seltener zweimal an einem
- *    Nicht-4er-Tisch, mehr Sieger-Paare am selben Tisch. Nie über die
- *    Hälften-Grenze hinweg.
+ *    Nicht-4er-Tisch. Sieger bleiben, wo sie sind; getauscht wird nie über
+ *    die Hälften-Grenze hinweg.
  *
  * Bei sehr kleinen Abenden (unter 6 Anwesenden) liesse sich keine der
  * beiden Hälften mehr gültig auf Tische verteilen (mindestens 3 Spieler
@@ -197,7 +200,7 @@ function bewerteTisch(
  *   `buildPreviousNonFourTablePlayers` in leagueHistory.ts.
  * @param sieger IDs der Spieler, die ihre letzte Runde gewonnen haben —
  *   dieselbe Menge, die auch `rankValues` für den Sieg-Bonus bekommt.
- *   Erhöht die Chance, dass zwei Sieger an einem Tisch landen.
+ *   Sie sitzen innerhalb ihrer Hälfte garantiert zusammen.
  * @returns Array von Tischen (jeweils ein Array von Spieler-IDs).
  */
 export function assignLeagueRound(
@@ -211,7 +214,7 @@ export function assignLeagueRound(
     previousPairings.size > 0 || wiederholteNichtVierer.size > 0 || sieger.size > 0;
 
   if (sortiert.length < MIN_HAELFTE * 2) {
-    const tables = assignRandomly(sortiert.map((p) => p.id));
+    const tables = assignHalf(sortiert.map((p) => p.id), sieger);
     if (hatVerbesserungspotential) {
       verbessereZuteilung(tables, previousPairings, wiederholteNichtVierer, sieger);
     }
@@ -219,8 +222,8 @@ export function assignLeagueRound(
   }
 
   const [oben, unten] = splitInHalves(sortiert);
-  const obenTables = assignRandomly(oben.map((p) => p.id));
-  const untenTables = assignRandomly(unten.map((p) => p.id));
+  const obenTables = assignHalf(oben.map((p) => p.id), sieger);
+  const untenTables = assignHalf(unten.map((p) => p.id), sieger);
 
   if (hatVerbesserungspotential) {
     // Getrennt pro Hälfte aufgerufen, damit ein Tausch nie über die
@@ -238,7 +241,7 @@ export function assignLeagueRound(
     (obenTables.length === 1 || untenTables.length === 1)
   ) {
     const rang = new Map(sortiert.map((p, i) => [p.id, i]));
-    loeseRematchesAnDerGrenze(obenTables.at(-1)!, untenTables[0], previousPairings, rang);
+    loeseRematchesAnDerGrenze(obenTables.at(-1)!, untenTables[0], previousPairings, rang, sieger);
   }
 
   return [...obenTables, ...untenTables];
@@ -250,13 +253,15 @@ export function assignLeagueRound(
  * Tischen senkt. Unter gleich guten Tauschen gewinnt der mit dem kleinsten
  * Rangabstand — es rutscht also eher ein Spieler knapp über der Grenze nach
  * unten als die Nummer 1. Alle übrigen Tische bleiben unberührt; die
- * Tischgrössen ändern sich nicht.
+ * Tischgrössen ändern sich nicht. Sieger werden nie getauscht — sie
+ * sitzen fest mit den anderen Siegern ihrer Hälfte (siehe `assignHalf`).
  */
 function loeseRematchesAnDerGrenze(
   oben: string[],
   unten: string[],
   previousPairings: ReadonlySet<string>,
   rang: ReadonlyMap<string, number>,
+  sieger: ReadonlySet<string>,
 ): void {
   const rematches = () =>
     countRematches(oben, previousPairings) + countRematches(unten, previousPairings);
@@ -268,6 +273,7 @@ function loeseRematchesAnDerGrenze(
     let bester: { o: number; u: number; gewinn: number; abstand: number } | null = null;
     for (let o = 0; o < oben.length; o++) {
       for (let u = 0; u < unten.length; u++) {
+        if (sieger.has(oben[o]) || sieger.has(unten[u])) continue;
         [oben[o], unten[u]] = [unten[u], oben[o]];
         const gewinn = vorher - rematches();
         [oben[o], unten[u]] = [unten[u], oben[o]];
@@ -290,10 +296,11 @@ function loeseRematchesAnDerGrenze(
 /**
  * Tauscht Spieler zwischen zwei Tischen (innerhalb der übergebenen Liste),
  * wenn das insgesamt die Kosten senkt (siehe `bewerteTisch`) — weniger
- * Rematches, seltener eine wiederholte Nicht-4er-Zuteilung, mehr
- * Sieger-Paare am selben Tisch. Es gibt keine Bedingung an die Sortier-
- * werte der Tauschenden — innerhalb einer Hälfte sind ohnehin alle
- * Spieler gleichwertig austauschbar (siehe `assignLeagueRound`).
+ * Rematches, seltener eine wiederholte Nicht-4er-Zuteilung. Es gibt keine
+ * Bedingung an die Sortierwerte der Tauschenden — innerhalb einer Hälfte
+ * sind ohnehin alle Spieler gleichwertig austauschbar (siehe
+ * `assignLeagueRound`). Ausgenommen sind die Sieger: sie sitzen fest
+ * zusammen (siehe `assignHalf`).
  */
 function verbessereZuteilung(
   tables: string[][],
@@ -303,7 +310,7 @@ function verbessereZuteilung(
 ): void {
   const MAX_PASSES = 20;
   const kosten = (table: readonly string[]) =>
-    bewerteTisch(table, previousPairings, wiederholteNichtVierer, sieger);
+    bewerteTisch(table, previousPairings, wiederholteNichtVierer);
 
   for (let pass = 0; pass < MAX_PASSES; pass++) {
     let improved = false;
@@ -317,6 +324,7 @@ function verbessereZuteilung(
           for (let bi = 0; bi < tableB.length && !improved; bi++) {
             const playerA = tableA[ai];
             const playerB = tableB[bi];
+            if (sieger.has(playerA) || sieger.has(playerB)) continue;
 
             const before = kosten(tableA) + kosten(tableB);
 

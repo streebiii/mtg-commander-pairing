@@ -22,7 +22,7 @@ const TOPICS = [
   },
   {
     title: "Runde 2",
-    text: "Die Sieger aus Runde 1 rücken nach oben, Rematches werden möglichst vermieden.",
+    text: "Die Sieger aus Runde 1 rücken 4 Ränge nach oben und spielen innerhalb ihrer Hälfte garantiert gegeneinander. Die übrigen Plätze werden zufällig besetzt, Rematches möglichst vermieden.",
   },
   {
     title: "Drop und Nachzügler",

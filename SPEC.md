@@ -358,9 +358,11 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
      Nochmals dieselbe Auswahl antippen macht die Erfassung rückgängig.
      Erst wenn für **jeden** Tisch eines von beidem feststeht, lässt sich
      Runde 2 starten oder der Abend beenden.
-  4. **Runde 2**: Sortierung nach dem **Sieg aus Runde 1** — die Gewinner
-     spielen gegeneinander. Danach dieselbe Rang-Gruppierung wie in Runde 1
-     (Abschnitt 5.1), inklusive weicher Rematch-Vermeidung (Abschnitt 5.2).
+  4. **Runde 2**: dieselbe Rangfolge und Hälften-Teilung wie in Runde 1
+     (Abschnitt 5.1), wobei die Sieger aus Runde 1 um 4 Ränge nach oben
+     rücken. Innerhalb jeder Hälfte spielen die **Gewinner garantiert
+     gegeneinander** (Abschnitt 5.2), die übrigen Plätze werden zufällig
+     besetzt, mit weicher Rematch-Vermeidung.
   5. **Genau zwei Runden pro Abend** ("Pro Liga-Abend werden zwei Spiele
      gespielt", mtgbl.ch). Danach wird der Abend beendet.
 
@@ -493,12 +495,28 @@ Der Organisator kann eine Runde ausserdem jederzeit (solange noch keine
 Ergebnisse für sie eingetragen wurden) neu auswürfeln lassen ("Neu
 mischen"-Button), falls ihm der erste Vorschlag nicht zusagt.
 
-### 5.2 Lokale Verbesserung nach der Zuteilung
+### 5.2 Sieger zusammen, dann lokale Verbesserung
 
-Nach dem Zufalls-Schritt (innerhalb jeder Hälfte) versucht ein
-Tausch-Optimierer, drei weiche Kriterien zu verbessern — nie über die
-Hälften-Grenze hinweg, und nie auf Kosten der Tischgrössenverteilung
-(Abschnitt 3):
+**Sieger spielen gegeneinander — innerhalb ihrer Hälfte, als feste
+Regel** (Entscheid des Organisators vom 13.10.2026). In Runde 2 werden in
+jeder Hälfte zuerst die Sieger aus Runde 1 gemeinsam an die grössten
+Tische gesetzt (4er vor 3er), danach die übrigen zufällig auf die
+restlichen Plätze. Sind es mehr Sieger, als an einen Tisch passen (z. B.
+5 in einer Hälfte, weil der Sieg-Bonus zwei von unten hochgehoben hat),
+entsteht ein reiner Siegertisch und der Rest sitzt zusammen am nächsten.
+Ein Sieger aus der unteren Hälfte, den der Bonus über die Grenze hebt,
+spielt mit den Siegern der oberen Hälfte. Bis dahin war das Zusammensetzen
+nur ein schwach gewichtetes Kriterium des Tausch-Optimierers (in der
+Simulation trotzdem in 97–100 % der Fälle erfüllt).
+
+Unter den Siegern gibt es nie ein Rematch — sie sassen in Runde 1 alle an
+verschiedenen Tischen. Die feste Regel kostet deshalb keine
+Rematch-Vermeidung; gemessen bleiben die Rematches gleich.
+
+Danach versucht ein Tausch-Optimierer, zwei weiche Kriterien zu
+verbessern — nie über die Hälften-Grenze hinweg, nie auf Kosten der
+Tischgrössenverteilung (Abschnitt 3) und **ohne einen Sieger zu
+bewegen**:
 
 1. **Rematch-Vermeidung** (am stärksten gewichtet): ein Tausch wird
    bevorzugt, wenn er eine Wiederholungsbegegnung (Rematch) aus einer
@@ -507,22 +525,17 @@ Hälften-Grenze hinweg, und nie auf Kosten der Tischgrössenverteilung
    schon einmal an einem Nicht-4er-Tisch (i.d.R. ein 3er) sass, wird
    nach Möglichkeit nicht noch einmal an einen gesetzt — stattdessen
    jemand, der noch nie dort sass.
-3. **Sieger bevorzugt zusammensetzen** (am schwächsten gewichtet): zwei
-   Spieler, die ihre letzte Runde gewonnen haben, landen mit höherer
-   Wahrscheinlichkeit am selben Tisch als durch reinen Zufall. Da Sieger
-   von Runde zu Runde wechseln (anders als der Saison-Rang), entsteht
-   dadurch keine feste Gruppe, die sich immer wieder begegnet.
 
-Die drei Kriterien werden gemeinsam optimiert (ein Tausch zählt, wenn er
-die gewichtete Summe aller drei verbessert), nicht nacheinander — sonst
-könnte ein späteres Kriterium ein früheres wieder zunichtemachen.
+Beide Kriterien werden gemeinsam optimiert (ein Tausch zählt, wenn er die
+gewichtete Summe verbessert), nicht nacheinander — sonst könnte das
+spätere das frühere wieder zunichtemachen.
 
 **Ausnahme an der Grenze.** Besteht eine Hälfte aus einem einzigen Tisch
 (z.B. bei 13 Anwesenden: oben ein 4er, unten drei 3er), kann sie
 innerhalb ihrer selbst nichts tauschen, und in Runde 2 sässen oben meist
 wieder dieselben zusammen. Dann dürfen der unterste Tisch der oberen und
-der oberste Tisch der unteren Hälfte untereinander tauschen — nur um
-Rematches aufzulösen, unter gleich guten Tauschen der mit dem kleinsten
+der oberste Tisch der unteren Hälfte untereinander tauschen — nur
+Nicht-Sieger, nur um Rematches aufzulösen, unter gleich guten Tauschen der mit dem kleinsten
 Rangabstand (es rutscht eher die Nummer 4 als die Nummer 1). Alle übrigen
 Tische und die Tischgrössen bleiben unberührt; oben bleibt der 4er-Tisch.
 In Runde 1 gibt es noch keine Rematches, dort ändert sich nichts.
