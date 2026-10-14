@@ -39,6 +39,11 @@ function base64UrlToBytes(value: string): Uint8Array {
   return bytes;
 }
 
+/** HMAC über `data` mit dem Session-Secret, z.B. zum Pseudonymisieren einer IP. */
+export async function hmacWithSessionSecret(data: string): Promise<string> {
+  return hmacSign(data, getSessionSecret());
+}
+
 async function hmacSign(data: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
