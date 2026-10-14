@@ -45,7 +45,7 @@ Rang-Blöcke ein. Zwei Probleme kamen dabei ans Licht:
 
 1. Zwei Spieler konnten sich bei bis zu **2×RANG_RAUSCHEN** Rängen
    Abstand begegnen, nicht nur bei ±RANG_RAUSCHEN — beobachtet live bei
-   ±10: Marc S (Rang 1) und Danilo (Rang 16, Abstand 15) sassen nach
+   ±10: Anna S (Rang 1) und Rosa (Rang 16, Abstand 15) sassen nach
    beiderseitigem Sieg-Bonus zusammen. `RANG_RAUSCHEN` wurde daraufhin
    von 10 auf 7 reduziert.
 2. **Die eigentlich wichtigere Erkenntnis (Session vom 11.09.2026):**

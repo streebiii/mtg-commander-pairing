@@ -11,10 +11,10 @@ function norm(text: string): string {
 }
 
 /**
- * Findet zu einem Namen, wie ihn mtgbl.ch führt («Marc S.», «Fabian»,
- * «Marc Sobo.»), die passenden Spieler der App. Zuerst der ganze Name
+ * Findet zu einem Namen, wie ihn mtgbl.ch führt («Anna S.», «Fiona»,
+ * «Anna Sommerfeld.»), die passenden Spieler der App. Zuerst der ganze Name
  * (ohne Punkte), sonst Vorname gleich und Nachname beginnt mit dem
- * Kürzel — «Marc S.» passt also zu «Marc Steiner». Steht nur ein Vorname
+ * Kürzel — «Anna S.» passt also zu «Anna Stalder». Steht nur ein Vorname
  * da, zählt jeder mit diesem Vornamen.
  *
  * Gibt alle Treffer zurück; eindeutig ist der Name nur bei genau einem.

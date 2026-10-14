@@ -4,7 +4,7 @@
  * Sortiert wird **nicht** nach der Gesamtpunktzahl der offiziellen
  * Rangliste, sondern nach Punkten **pro besuchtem Abend**. Grund: die
  * Gesamtsumme misst zu einem guten Teil Anwesenheit statt Stärke. Im Stand
- * nach drei Abenden 2026 stand etwa David mit 11 Punkten auf Platz 23 —
+ * nach drei Abenden 2026 stand etwa ein Spieler mit 11 Punkten auf Platz 23 —
  * aus einem einzigen besuchten Abend, an dem er mehr geholt hat als die
  * Hälfte des Feldes im Schnitt. Nach Gesamtpunkten zu paaren hätte ihn an
  * den letzten Tisch gesetzt, und weil dieselben Leute regelmässig fehlen,

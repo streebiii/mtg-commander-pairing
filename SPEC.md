@@ -74,9 +74,9 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   bewusst nicht vorgesehen; eine Sitzung endet durch Ablauf oder durch
   Löschen der Browserdaten.
 - **Namen öffentlich nur gekürzt**: Rangliste, Pairings, Tischseite und
-  Erfassungsblatt zeigen Vorname und Initial wie auf mtgbl.ch («David
+  Erfassungsblatt zeigen Vorname und Initial wie auf mtgbl.ch («Tanja
   L.»). Teilen sich zwei Spieler Vorname und Initial, kommen so viele
-  Buchstaben dazu wie nötig («Marc St.», «Marc So.»), verglichen gegen
+  Buchstaben dazu wie nötig («Anna St.», «Anna So.»), verglichen gegen
   alle Spieler, damit jeder überall gleich heisst (`publicNames` in
   `src/lib/players.ts`). Den vollen Namen sieht nur der Organisator.
 - **Öffentliche Lese-Ansicht**: separate URL ohne Login, zeigt nur die
@@ -448,7 +448,7 @@ der Zuteilung, keine Eingabegrösse.
 **Die Rangfolge entsteht aus Punkten pro besuchtem Abend, nicht aus der
 Gesamtsumme** (`src/lib/pairing/leagueRanking.ts`). Die Gesamtsumme misst
 zu einem guten Teil Anwesenheit statt Stärke: im Stand nach drei Abenden
-2026 stand David mit 11 Punkten auf Platz 23 von 28 — aus einem einzigen
+2026 stand ein Spieler mit 11 Punkten auf Platz 23 von 28 — aus einem einzigen
 Abend, an dem er mehr geholt hat als die Hälfte des Feldes im Schnitt.
 Nach Gesamtpunkten zu paaren hätte ihn an den letzten Tisch gesetzt, und
 weil dieselben Leute regelmässig fehlen, säßen unten jeden Abend
@@ -898,7 +898,7 @@ offizielle Wertung bleibt auf mtgbl.ch.
   bekommen https:// (`src/lib/decklist.ts`).
 - **Farben setzen**: die Farbidentität wird im Spieler-Tab gepflegt. Für
   die ganze Saison auf einmal liest `npm run set:colors -- <datei.json>`
-  eine Liste im Format `[{ "name": "Marc S.", "colors": "WR" }, …]` mit
+  eine Liste im Format `[{ "name": "Anna S.", "colors": "WR" }, …]` mit
   den Namen, wie mtgbl.ch sie führt (Probelauf, mit `--apply` schreiben).
   Jeder Name muss genau einem Spieler zuzuordnen sein
   (`src/lib/nameMatch.ts`), sonst schreibt das Skript nichts. Die Datei
