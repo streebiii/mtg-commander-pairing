@@ -357,12 +357,23 @@ model LoginToken {
   /// theoretisch dieselben sechs Ziffern haben.
   tokenHash String
 
-  /// Zahl der Fehlversuche, seit dieser Code ausgestellt wurde. Ein
+  /// Zahl der Versuche, seit dieser Code ausgestellt wurde. Ein
   /// sechsstelliger Code hat nur eine Million Möglichkeiten — ohne diese
-  /// Bremse wäre er in Minuten durchprobiert. Bei jedem Fehlversuch wird
-  /// der Zähler aller offenen Codes erhöht; ab MAX_CODE_ATTEMPTS gilt der
-  /// Code als verbrannt (siehe src/lib/loginToken.ts).
+  /// Bremse wäre er in Minuten durchprobiert. Jeder Versuch aus dem
+  /// anfordernden Browser erhöht den Zähler aller offenen Codes dieses
+  /// Browsers; ab MAX_CODE_ATTEMPTS gilt der Code als verbrannt (siehe
+  /// src/lib/loginToken.ts).
   attempts Int @default(0)
+
+  /// SHA-256-Hash des Browser-Cookies, mit dem der Code angefordert wurde.
+  /// Einlösen lässt er sich nur aus diesem Browser — Fehlversuche von
+  /// anderswo können ihn so weder treffen noch verbrennen. null nur bei
+  /// Codes von vor dieser Regel; die sind nicht mehr einlösbar.
+  browserHash String?
+
+  /// Pseudonymisierte Herkunfts-IP der Anforderung (HMAC mit dem
+  /// Session-Secret), für das Anforderungs-Limit pro IP.
+  ipHash String?
 
   expiresAt DateTime
   /// null, solange der Code noch nicht eingelöst wurde. Ein Code ist
@@ -372,5 +383,6 @@ model LoginToken {
 
   @@index([tokenHash])
   @@index([createdAt])
+  @@index([browserHash])
   @@map("login_tokens")
 }

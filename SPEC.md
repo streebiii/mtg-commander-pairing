@@ -40,11 +40,23 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   **Schutz gegen Durchprobieren**: ein sechsstelliger Code hat nur eine
   Million Möglichkeiten, verglichen mit den 256 Bit des früheren Links
   verschwindend wenig. Deshalb sind pro ausgestelltem Code höchstens
-  **5 Fehlversuche** erlaubt; danach ist er verbrannt und es braucht einen
-  neuen. Jeder Fehlversuch belastet alle offenen Codes, da zu einem falsch
-  geratenen Code kein Datensatz existiert, den man belasten könnte.
-  Zusätzlich begrenzt das Rate-Limit das Anfordern selbst (max. 5 pro
-  10 Minuten).
+  **5 Versuche** erlaubt; danach ist er verbrannt und es braucht einen
+  neuen. Jeder Versuch belastet alle offenen Codes des Browsers, da zu
+  einem falsch geratenen Code kein Datensatz existiert, den man belasten
+  könnte. Der Versuch wird in einem einzigen Datenbank-Update verbucht,
+  bevor verglichen wird — so bleibt das Limit auch bei hunderten
+  gleichzeitigen Versuchen hart.
+
+  **Bindung an den Browser**: beim Anfordern bekommt der Browser ein
+  zufälliges Cookie, der Code ist nur mit diesem Cookie einlösbar.
+  Fehlversuche von anderswo können die Codes des Organisators so weder
+  treffen noch verbrennen.
+
+  Zusätzlich begrenzt das Rate-Limit das Anfordern selbst: max. 5 pro IP
+  und 20 insgesamt pro 10 Minuten. Ein einzelner Störer kann den
+  Organisator damit nicht mehr aussperren. Die IP wird nur pseudonymisiert
+  gespeichert (HMAC mit dem Session-Secret), Codes älter als ein Tag
+  werden gelöscht.
 
   Der eigentliche Login-Faktor ist damit "Zugriff auf das Email-Postfach" —
   kein zweiter Faktor im klassischen Sinn, aber ausreichend für eine
