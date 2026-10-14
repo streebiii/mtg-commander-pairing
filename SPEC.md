@@ -97,7 +97,10 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   Abschnittstitel `text-lg`. Eingabefelder ohnehin mindestens 16px
   (iOS-Zoom, siehe `globals.css`).
 - **Sicherheitshärtung**: Sicherheits-HTTP-Header (siehe `next.config.ts`),
-  Rate-Limiting auf den Login-Code-Versand, Login-Prüfung in **jeder**
+  eine Content-Security-Policy mit Nonce pro Anfrage (`src/proxy.ts`:
+  Skripte laufen nur mit dem Nonce, den Next.js beim Rendern setzt —
+  deshalb müssen alle Seiten dynamisch gerendert sein, auch die eigene
+  404-Seite), Rate-Limiting auf den Login-Code-Versand, Login-Prüfung in **jeder**
   Organisator-Server-Action (`requireAdmin`, `src/lib/adminGuard.ts`) —
   der Proxy schützt nur die Seiten unter `/admin`, Server Actions lassen
   sich aber auch über andere Pfade auslösen —, Prisma-parametrisierte
