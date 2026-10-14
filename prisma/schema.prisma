@@ -15,7 +15,7 @@ model Player {
   id           String    @id @default(cuid())
   firstName    String
   /// Optional, da der Textimport der Liga-Rangliste manchmal nur einen
-  /// Vornamen oder eine Initiale liefert (z.B. "Tyrone", "Marc S.").
+  /// Vornamen oder eine Initiale liefert (z.B. "Cyril", "Anna S.").
   lastName     String?
   /// Gesamt-Liga-Punktestand (Saison), Kopie des Standes von mtgbl.ch.
   /// Kommt über den Import (oder manuell im Liga-Tab) und dient der

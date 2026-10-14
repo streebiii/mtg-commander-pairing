@@ -15,7 +15,7 @@
  *     "seasonRound": 2,
  *     "rotating": ["He’s Dead, Jim", …],          // die 10 dieses Abends
  *     "players": [
- *       { "name": "Rolf Bammerlin", "games": [1, 2], "total": 8,
+ *       { "name": "Otto Brändli", "games": [1, 2], "total": 8,
  *         "marks": [["I’ve seen this movie", 1], ["No Sol Ring", 0], …] }
  *     ]
  *   }

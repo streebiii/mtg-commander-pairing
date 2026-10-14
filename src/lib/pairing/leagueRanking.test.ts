@@ -8,39 +8,40 @@ import {
 } from "./leagueRanking";
 
 /**
- * Echter Stand der Commander-Liga 2026 nach drei Abenden (mtgbl.ch).
- * Bewusst die Originaldaten: an ihnen ist die Entscheidung getroffen
+ * Stand der Commander-Liga 2026 nach drei Abenden (mtgbl.ch). Punkte und
+ * Abende sind die Originaldaten — an ihnen ist die Entscheidung getroffen
  * worden, nach Punkten pro Abend statt nach der Gesamtsumme zu sortieren.
+ * Die Namen sind erfunden.
  */
 const STAND = [
-  { id: "Marc S.", points: 50, attendedEvenings: 3 },
-  { id: "Thomas S.", points: 44, attendedEvenings: 3 },
-  { id: "Tyrone", points: 40, attendedEvenings: 3 },
-  { id: "Rafael S.", points: 39, attendedEvenings: 3 },
-  { id: "Georg", points: 36, attendedEvenings: 3 },
-  { id: "Fabian", points: 36, attendedEvenings: 3 },
-  { id: "Rayaan", points: 35, attendedEvenings: 3 },
-  { id: "Marc Sobo.", points: 30, attendedEvenings: 3 },
-  { id: "Philippe", points: 30, attendedEvenings: 3 },
-  { id: "Debora", points: 29, attendedEvenings: 3 },
-  { id: "Christophe N.", points: 28, attendedEvenings: 3 },
-  { id: "Marc V.", points: 27, attendedEvenings: 3 },
-  { id: "Sander", points: 25, attendedEvenings: 3 },
-  { id: "Timo", points: 24, attendedEvenings: 3 },
-  { id: "Mario", points: 21, attendedEvenings: 2 },
-  { id: "Floyd", points: 20, attendedEvenings: 3 },
-  { id: "Rolf", points: 18, attendedEvenings: 3 },
-  { id: "Lennox", points: 18, attendedEvenings: 3 },
-  { id: "Raffa", points: 18, attendedEvenings: 2 },
-  { id: "Danilo", points: 17, attendedEvenings: 2 },
-  { id: "Thomas K.", points: 15, attendedEvenings: 3 },
-  { id: "Caspar", points: 14, attendedEvenings: 3 },
-  { id: "David", points: 11, attendedEvenings: 1 },
-  { id: "Niklas", points: 8, attendedEvenings: 1 },
-  { id: "Ruth", points: 8, attendedEvenings: 1 },
-  { id: "Jonathan", points: 7, attendedEvenings: 2 },
-  { id: "Chris", points: 4, attendedEvenings: 1 },
-  { id: "Joshua", points: 4, attendedEvenings: 1 },
+  { id: "Anna S.", points: 50, attendedEvenings: 3 },
+  { id: "Bruno S.", points: 44, attendedEvenings: 3 },
+  { id: "Cyril", points: 40, attendedEvenings: 3 },
+  { id: "Dora S.", points: 39, attendedEvenings: 3 },
+  { id: "Emil", points: 36, attendedEvenings: 3 },
+  { id: "Fiona", points: 36, attendedEvenings: 3 },
+  { id: "Gustav", points: 35, attendedEvenings: 3 },
+  { id: "Anna Sommerfeld.", points: 30, attendedEvenings: 3 },
+  { id: "Hugo", points: 30, attendedEvenings: 3 },
+  { id: "Ida", points: 29, attendedEvenings: 3 },
+  { id: "Jakob N.", points: 28, attendedEvenings: 3 },
+  { id: "Anna V.", points: 27, attendedEvenings: 3 },
+  { id: "Kurt", points: 25, attendedEvenings: 3 },
+  { id: "Lea", points: 24, attendedEvenings: 3 },
+  { id: "Moritz", points: 21, attendedEvenings: 2 },
+  { id: "Nora", points: 20, attendedEvenings: 3 },
+  { id: "Otto", points: 18, attendedEvenings: 3 },
+  { id: "Paula", points: 18, attendedEvenings: 3 },
+  { id: "Quirin", points: 18, attendedEvenings: 2 },
+  { id: "Rosa", points: 17, attendedEvenings: 2 },
+  { id: "Bruno K.", points: 15, attendedEvenings: 3 },
+  { id: "Silas", points: 14, attendedEvenings: 3 },
+  { id: "Tanja", points: 11, attendedEvenings: 1 },
+  { id: "Udo", points: 8, attendedEvenings: 1 },
+  { id: "Vera", points: 8, attendedEvenings: 1 },
+  { id: "Willi", points: 7, attendedEvenings: 2 },
+  { id: "Xenia", points: 4, attendedEvenings: 1 },
+  { id: "Yann", points: 4, attendedEvenings: 1 },
 ];
 
 /** Position eines Spielers in der berechneten Rangfolge (0 = oben). */
@@ -67,16 +68,16 @@ describe("dampedAverage", () => {
   const schnitt = leagueAverage(STAND);
 
   it("zieht einen einzelnen Abend stark zur Mitte", () => {
-    const david = STAND.find((p) => p.id === "David")!;
+    const tanja = STAND.find((p) => p.id === "Tanja")!;
     // Ungedämpft wären es 11,0 — mit zwei Vorschuss-Abenden 9,9.
-    expect(david.points / david.attendedEvenings).toBe(11);
-    expect(dampedAverage(david, schnitt)).toBeCloseTo(9.91, 2);
+    expect(tanja.points / tanja.attendedEvenings).toBe(11);
+    expect(dampedAverage(tanja, schnitt)).toBeCloseTo(9.91, 2);
   });
 
   it("lässt Spieler mit vielen Abenden fast unberührt", () => {
-    const marc = STAND.find((p) => p.id === "Marc S.")!;
-    const roh = marc.points / marc.attendedEvenings;
-    expect(Math.abs(dampedAverage(marc, schnitt) - roh)).toBeLessThan(3);
+    const anna = STAND.find((p) => p.id === "Anna S.")!;
+    const roh = anna.points / anna.attendedEvenings;
+    expect(Math.abs(dampedAverage(anna, schnitt) - roh)).toBeLessThan(3);
   });
 
   it("verwendet DAEMPFUNG_ABENDE als Gewicht", () => {
@@ -91,46 +92,46 @@ describe("rankValues", () => {
   it("lässt die Spitze unverändert — dort waren alle immer dabei", () => {
     const oben = rankValues(STAND).slice(0, 7).map((w) => w.id);
     expect(oben).toEqual([
-      "Marc S.",
-      "Thomas S.",
-      "Tyrone",
-      "Rafael S.",
-      "Georg",
-      "Fabian",
-      "Rayaan",
+      "Anna S.",
+      "Bruno S.",
+      "Cyril",
+      "Dora S.",
+      "Emil",
+      "Fiona",
+      "Gustav",
     ]);
   });
 
   it("hebt Spieler, die Abende verpasst haben, aus dem Tabellenkeller", () => {
-    // David steht in der offiziellen Rangliste auf Platz 23 von 28.
-    expect(position("David")).toBeLessThan(12);
-    expect(position("Mario")).toBeLessThan(12);
+    // Tanja steht in der offiziellen Rangliste auf Platz 23 von 28.
+    expect(position("Tanja")).toBeLessThan(12);
+    expect(position("Moritz")).toBeLessThan(12);
   });
 
   it("senkt regelmässige Spieler mit schwachem Schnitt", () => {
-    // Caspar war an allen drei Abenden dabei und holt 4,7 pro Abend.
-    expect(position("Caspar")).toBeGreaterThan(20);
+    // Silas war an allen drei Abenden dabei und holt 4,7 pro Abend.
+    expect(position("Silas")).toBeGreaterThan(20);
   });
 
   it("vergibt dem Sieger genau SIEG_BONUS_RAENGE Ränge", () => {
-    const ohne = rankValues(STAND).find((w) => w.id === "Timo")!;
-    const mit = rankValues(STAND, new Set(["Timo"])).find((w) => w.id === "Timo")!;
+    const ohne = rankValues(STAND).find((w) => w.id === "Lea")!;
+    const mit = rankValues(STAND, new Set(["Lea"])).find((w) => w.id === "Lea")!;
     expect(mit.points - ohne.points).toBe(SIEG_BONUS_RAENGE);
   });
 
   it("hebt einen Sieger vom hinteren Tisch nicht durch den Bonus an die Spitze", () => {
-    const sieger = new Set(["Joshua"]);
+    const sieger = new Set(["Yann"]);
     const werte = rankValues(STAND, sieger);
-    const joshua = werte.find((w) => w.id === "Joshua")!;
+    const yann = werte.find((w) => w.id === "Yann")!;
     const bester = Math.max(
-      ...werte.filter((w) => w.id !== "Joshua").map((w) => w.points),
+      ...werte.filter((w) => w.id !== "Yann").map((w) => w.points),
     );
-    // Joshua steht auch nach seinem Sieg 19 Ränge unter der Spitze — der
+    // Yann steht auch nach dem Sieg 19 Ränge unter der Spitze — der
     // Sieg-Bonus holt davon nur einen Bruchteil auf.
-    expect(bester - joshua.points).toBeGreaterThan(15);
-    expect(bester - joshua.points).toBeGreaterThan(SIEG_BONUS_RAENGE * 4);
+    expect(bester - yann.points).toBeGreaterThan(15);
+    expect(bester - yann.points).toBeGreaterThan(SIEG_BONUS_RAENGE * 4);
     // assignLeagueRound teilt danach ohnehin in obere/untere Hälfte auf
-    // (siehe leagueAssignment.ts) — bei so grossem Abstand bleibt Joshua
+    // (siehe leagueAssignment.ts) — bei so grossem Abstand bleibt Yann
     // sicher in der unteren Hälfte, unabhängig vom Sieg-Bonus.
   });
 

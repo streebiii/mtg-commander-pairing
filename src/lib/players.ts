@@ -48,11 +48,11 @@ interface NamedRosterPlayer {
 
 /**
  * Namen für die öffentlichen Seiten (Rangliste, Pairings, Tischkarten,
- * Erfassung): Vorname und Initial wie auf mtgbl.ch — «David L.» statt des
+ * Erfassung): Vorname und Initial wie auf mtgbl.ch — «Tanja L.» statt des
  * vollen Nachnamens, der nur im Organisator-Bereich steht.
  *
  * Teilen sich zwei Spieler Vorname und Initial, bekommen beide so viele
- * Buchstaben, bis sie sich unterscheiden («Marc St.», «Marc So.»).
+ * Buchstaben, bis sie sich unterscheiden («Anna St.», «Anna So.»).
  * Verglichen wird gegen den ganzen übergebenen Bestand, damit derselbe
  * Spieler auf jeder Seite gleich heisst.
  */

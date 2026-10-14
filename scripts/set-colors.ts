@@ -9,7 +9,7 @@
  * gehört deshalb nicht ins öffentliche Repository (Ablage in
  * `information-files/`). Format — Namen so, wie mtgbl.ch sie führt:
  *
- *   [{ "name": "Marc S.", "colors": "WR" }, { "name": "Fabian", "colors": "UG" }, …]
+ *   [{ "name": "Anna S.", "colors": "WR" }, { "name": "Fiona", "colors": "UG" }, …]
  *
  * Jeder Name muss genau einem Spieler zugeordnet werden können
  * (`matchPlayerName`); sonst bricht das Skript ab, ohne etwas zu schreiben.
