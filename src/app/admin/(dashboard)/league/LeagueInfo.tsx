@@ -18,7 +18,7 @@ const TOPICS = [
   },
   {
     title: "Sieger",
-    text: "Ist ein Tisch fertig: Spieler antippen und die Krone, oder «Unentschieden» bei Zeitlimit. Erst wenn jeder Tisch erfasst ist, startet Match 2.",
+    text: "Ist ein Tisch fertig: Spieler antippen und den Pokal, oder «Unentschieden» bei Zeitlimit. Hakt ein Spieler «Winner winner» zuerst ab, steht er hier schon als Sieger. Erst wenn jeder Tisch erfasst ist, startet Match 2.",
   },
   {
     title: "Match 2",

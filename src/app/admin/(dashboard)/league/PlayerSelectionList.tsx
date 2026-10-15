@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useActionState, useState } from "react";
+import { type ReactNode, useActionState, useEffect, useState } from "react";
 import { PrimaryButton, SecondaryButton } from "@/components/Button";
 import MobileActionBar from "@/components/MobileActionBar";
 import SeasonRoundSelect, { initialSeasonRound } from "@/components/SeasonRoundSelect";
@@ -18,6 +18,13 @@ interface PlayerOption {
   name: string;
   points: number;
 }
+
+/**
+ * Die Auswahl übersteht ein Neuladen, wie im Casual-Tab — nur im Browser,
+ * nicht in der Datenbank. Spieler, die es nicht mehr gibt, fallen still
+ * heraus.
+ */
+const STORAGE_KEY = "liga-selection-v1";
 
 /** Die noch offene Erfassung des letzten Abends, die der Start schliesst. */
 export interface OpenEntryInfo {
@@ -61,6 +68,7 @@ export default function PlayerSelectionList({
   sidebarExtra?: ReactNode;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [hydrated, setHydrated] = useState(false);
   const [state, formAction, pending] = useActionState(startEvening, null);
   // Rückfrage zur offenen Erfassung: in welcher Spalte sie zählt.
   const [confirming, setConfirming] = useState(false);
@@ -68,6 +76,32 @@ export default function PlayerSelectionList({
     initialSeasonRound(openEntry?.suggestedRound ?? null),
   );
   const { search, setSearch, filtered, enterTarget } = usePlayerSearch(players);
+
+  // Erst nach dem Laden lesen, damit Server- und Browser-Darstellung
+  // übereinstimmen; ohne Speicher (privates Fenster) startet sie leer.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const ids: unknown = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(ids)) {
+        const known = new Set(players.map((p) => p.id));
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- einmalig nach dem Laden
+        setSelected(new Set(ids.filter((id): id is string => typeof id === "string" && known.has(id))));
+      }
+    } catch {
+      // Kein Speicher oder kaputter Eintrag — dann eben leer.
+    }
+    setHydrated(true);
+  }, [players]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected]));
+    } catch {
+      // Nur eine Bequemlichkeit.
+    }
+  }, [hydrated, selected]);
 
   const allSelected = players.length > 0 && selected.size === players.length;
   const canStart = selected.size >= 3;
@@ -142,7 +176,19 @@ export default function PlayerSelectionList({
   );
 
   return (
-    <form action={formAction} className="grid gap-8 lg:grid-cols-4">
+    <form
+      action={formAction}
+      // Mit dem Start ist die Auswahl verbraucht — beim nächsten Liga-Abend,
+      // Wochen später, soll nicht noch die von heute stehen.
+      onSubmit={() => {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch {
+          // Nur eine Bequemlichkeit.
+        }
+      }}
+      className="grid gap-8 lg:grid-cols-4"
+    >
       <section className="flex flex-col gap-3 lg:col-span-3">
         <h2 className="text-lg font-medium">
           Anwesende Spieler auswählen ({selected.size})
@@ -153,7 +199,7 @@ export default function PlayerSelectionList({
             <PlayerTile
               key={p.id}
               name={p.name}
-              detail={`(${p.points})`}
+              detail={`· ${p.points} Pkt.`}
               selected={selected.has(p.id)}
               enterTarget={p.id === enterTarget?.id}
               disabled={pending}
@@ -174,11 +220,11 @@ export default function PlayerSelectionList({
 
       <Sidebar>
         <h2 className="text-lg font-medium">Runde</h2>
+        {/* Auf dem Handy steht der Start in der Leiste unten. */}
+        <div className="hidden lg:block">{startControls}</div>
         <SecondaryButton onClick={toggleAll} className="w-full" disabled={pending}>
           {allSelected ? "Auswahl aufheben" : "Alle auswählen"}
         </SecondaryButton>
-        {/* Auf dem Handy steht der Start in der Leiste unten. */}
-        <div className="hidden lg:block">{startControls}</div>
         {sidebarExtra}
       </Sidebar>
 

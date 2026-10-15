@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { fingerprint } from "@/lib/fingerprint";
 import { prisma } from "@/lib/prisma";
 import { getCasualPairing } from "@/lib/casualPairing";
 import { loadPublicNames } from "@/lib/publicRoster";
@@ -110,5 +110,5 @@ export async function loadPublicPairings(): Promise<PublicPairings> {
  * sich auch er — die offene Seite lädt dann neu, sonst nicht.
  */
 export function pairingsVersion(pairings: PublicPairings): string {
-  return createHash("sha256").update(JSON.stringify(pairings)).digest("hex").slice(0, 16);
+  return fingerprint(pairings);
 }

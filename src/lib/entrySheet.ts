@@ -7,6 +7,9 @@ import { CATEGORIES, isRepeatable } from "@/lib/achievements";
 
 export const PARTICIPATION_KEY = "participation";
 
+/** «Winner winner» folgt dem Tisch-Ergebnis (SPEC.md Abschnitt 12.2). */
+export const WINNER_KEY = "winner";
+
 /** Höchste Anzahl bei mehrfach zählenden Achievements — Schutz vor Tippfehlern. */
 export const MAX_REPEAT_COUNT = 20;
 
@@ -53,6 +56,10 @@ export function markKey(eveningAchievementId: string, game: number): string {
 
 export function isParticipation(a: Pick<SheetAchievement, "systemKey">): boolean {
   return a.systemKey === PARTICIPATION_KEY;
+}
+
+export function isWinnerAchievement(a: Pick<SheetAchievement, "systemKey">): boolean {
+  return a.systemKey === WINNER_KEY;
 }
 
 /**

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { applyMark, getDeviceEntry } from "@/lib/entries";
+import { applyPlayerMark, getDeviceEntry } from "@/lib/entries";
 
 /**
  * Die Erfassung dieses Geräts, solange der Spieler noch ändern darf: bis
@@ -23,8 +23,12 @@ export async function setMyMark(
 ): Promise<boolean> {
   const entry = await editableEntry();
   if (!entry) return false;
-  const ok = await applyMark(entry, eveningAchievementId, game, count);
-  if (ok) revalidatePath("/admin/ligaverwaltung");
+  const ok = await applyPlayerMark(entry, eveningAchievementId, game, count);
+  if (ok) {
+    revalidatePath("/admin/ligaverwaltung");
+    // «Winner winner» kann das Tisch-Ergebnis setzen.
+    revalidatePath("/admin/league");
+  }
   return ok;
 }
 

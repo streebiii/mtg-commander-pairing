@@ -666,6 +666,12 @@ export default function CasualClient({
               </PrimaryButton>
             )}
           </div>
+          {/* Wie man nachbessert, stand bisher nur im i-Text. */}
+          <p className="text-base opacity-70">
+            Zwei Spieler antippen tauscht ihre Plätze.
+            {tables.length > 1 &&
+              " Tisch-Titel antippen wählt Tische aus, um sie untereinander neu zu mischen."}
+          </p>
           {unseatedCount > 0 && (
             <p className="rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-base">
               {unseatedCount} Spieler ohne Tischzuteilung
@@ -682,7 +688,10 @@ export default function CasualClient({
                   tableNumber={table.tableNumber}
                   size={table.size}
                   tone={isSelectedForReshuffle ? "selected" : "default"}
-                  onTitleClick={() => toggleTableSelection(table.tableNumber)}
+                  // Neumischen braucht mindestens zwei Tische.
+                  onTitleClick={
+                    tables.length > 1 ? () => toggleTableSelection(table.tableNumber) : undefined
+                  }
                   aside={
                     isSelectedForReshuffle && (
                       <span className="text-blue-400">ausgewählt</span>

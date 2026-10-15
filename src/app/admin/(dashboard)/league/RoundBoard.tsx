@@ -98,18 +98,18 @@ function applyOptimisticAction(
  * Grill-Notizen): Tap auf Spieler A hebt ihn hervor, Tap auf Spieler B
  * tauscht die beiden, nochmal auf A tippen bricht ab.
  *
- * Im "live"-Modus (Runde veröffentlicht) erscheint zusätzlich eine Krone
+ * Im "live"-Modus (Runde veröffentlicht) erscheint zusätzlich ein Pokal (🏆)
  * auf dem hervorgehobenen Spieler — Tap darauf markiert ihn als Sieger
  * (nochmal antippen macht's rückgängig, wie schon vorher). Im
  * "draft"-Modus (Warteraum) gibt es noch keine Sieger, nur den Tausch —
  * die Spieler sitzen ja noch nicht öffentlich sichtbar am Tisch.
  *
- * Mit `eveningId` erscheint neben der Krone zusätzlich «Drop» (bzw.
+ * Mit `eveningId` erscheint neben dem Pokal zusätzlich «Drop» (bzw.
  * «Zurück» bei einem schon gedroppten Spieler, siehe SPEC.md Abschnitt
  * 5.3). Im Warteraum mischt ein Drop die Runde neu — das wartet auf den
  * Server; in einer laufenden Runde wird nur markiert, das wirkt sofort.
  *
- * Tausch/Krone/Unentschieden zeigen ihre Wirkung **sofort** über
+ * Tausch/Pokal/Unentschieden zeigen ihre Wirkung **sofort** über
  * `useOptimistic`, statt auf die Server-Antwort (inkl. revalidatePath) zu
  * warten — bei spürbarer Netzwerklatenz zur DB wirkte das Tippen sonst wie
  * wirkungslos, bis die Antwort Sekunden später eintraf.
@@ -241,7 +241,7 @@ export default function RoundBoard({
                         title="Als Sieger markieren"
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded border border-amber-500 text-lg transition-colors hover:bg-amber-500/10 disabled:opacity-60"
                       >
-                        👑
+                        🏆
                       </button>
                     )}
                     {eveningId && isArmed && (

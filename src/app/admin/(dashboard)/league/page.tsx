@@ -7,6 +7,7 @@ import { loadPairingStandings } from "@/lib/rankingData";
 import { eveningLabel, eveningNumber } from "@/lib/season";
 import { findOpenEvening } from "@/lib/entries";
 import { getCasualPairing } from "@/lib/casualPairing";
+import AutoRefresh from "@/components/AutoRefresh";
 import AttendancePanel from "./AttendancePanel";
 import MobileActionBar from "@/components/MobileActionBar";
 import Sidebar from "@/components/Sidebar";
@@ -18,6 +19,7 @@ import PlayerSelectionList, { type OpenEntryInfo } from "./PlayerSelectionList";
 import PublishRoundButton from "./PublishRoundButton";
 import RegenerateButton from "./RegenerateButton";
 import RoundBoard from "./RoundBoard";
+import { leagueVersion } from "./version";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +27,10 @@ export default async function LeaguePage() {
   // Unabhängige Top-Level-Abfragen parallel starten statt nacheinander zu
   // warten — spart bei jedem Seitenaufbau (auch nach jeder Aktion durch
   // revalidatePath) eine volle Round-Trip-Latenz zur DB.
-  const [eveningResult, allPlayers] = await Promise.all([
+  const [version, eveningResult, allPlayers] = await Promise.all([
+    // Stand für AutoRefresh — gleichzeitig mit den Daten geholt: ändert
+    // sich dazwischen etwas, merkt es die nächste Abfrage.
+    leagueVersion(),
     prisma.evening.findFirst({
       where: { finishedAt: null },
       orderBy: { createdAt: "desc" },
@@ -197,6 +202,9 @@ export default async function LeaguePage() {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Trägt ein Spieler «Winner winner» selbst ein, erscheint der Sieger
+          hier ohne Neuladen (lib/winner.ts). */}
+      <AutoRefresh src="/admin/league/stand" version={version} />
       <LeagueInfo subtitle={`${eveningLabel(evening.date)} läuft · gestartet ${startedAt}`} />
 
       <div className="grid gap-8 lg:grid-cols-4">

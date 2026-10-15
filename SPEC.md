@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-10-15 (Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
+Stand: 2026-10-15 («Winner winner» folgt dem Tisch-Ergebnis, Navigation zeigt die aktive Seite, Schrift Geist, Liga-Auswahl bleibt gespeichert, Aktuelle Runde sortiert nach Status; Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
 
 ## 1. Zweck
 
@@ -16,7 +16,7 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   sechs), die zwei Paarungen darin **Match 1** und **Match 2**. Im Code
   heisst die Runde weiterhin `Evening`, das Match `Round`.
 - **Organisator-Navigation**: Dashboard · Casual · Liga · Ligaverwaltung ·
-  Spieler. Nach dem Login landet der Organisator auf dem **Dashboard**
+  Spieler, die aktive Seite fett und unterstrichen. Nach dem Login landet der Organisator auf dem **Dashboard**
   (`/admin`), einer Übersicht dessen, was gerade los ist: laufende Runde
   mit Match-Stand (sonst die Zahl aktiver rotierender Achievements, mit
   Warnung, wenn es nicht 10 sind), Stand der Achievement-Erfassung,
@@ -98,6 +98,8 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   demselben cyon-Konto betroffen). Nur der **Email-Versand (SMTP)** läuft
   weiterhin über das bestehende cyon.ch-Hosting des Auftraggebers (siehe
   DEPLOYMENT.md).
+- **Schrift**: Geist (über `next/font`), Arial nur als Rückfall beim Laden.
+  Die Seiten sind als Deutsch (`de-CH`) ausgezeichnet.
 - **Schriftgrösse**: in der ganzen App kein Text unter 16px (`text-base`),
   auch nicht für Hinweise und Tabellen. Seitentitel `text-xl`,
   Abschnittstitel `text-lg`. Eingabefelder ohnehin mindestens 16px
@@ -206,7 +208,8 @@ frei ist, weicht sie auf einen grösseren aus.
   - Suchfeld filtert die Liste live (Substring-Match auf Vorname+Nachname),
     unabhängig vom Auswahlstatus eines Eintrags — ein ausgewählter Spieler,
     der nicht zum Suchtext passt, wird also ebenfalls ausgefiltert; das
-    Leeren des Suchfelds zeigt wieder alle mit ihrem Häkchen.
+    Leeren des Suchfelds zeigt wieder alle mit ihrem Häkchen. Esc oder das
+    × im Feld leeren es.
   - Neuen Spieler anlegen geht auf zwei Wegen: ein fester Button "+ Neuen
     Spieler erfassen" oben an der Liste (öffnet ein kleines Formular:
     Vorname, optional Nachname, optional Skill-Einstufung), oder — wenn
@@ -242,6 +245,10 @@ frei ist, weicht sie auf einen grösseren aus.
 - **Warteraum wie in der Liga**: eine berechnete Zuteilung sieht zuerst nur
   der Organisator. Erst **"Live schalten"** macht sie öffentlich
   (Abschnitt 4.3).
+- Über den Tischen steht, wie man nachbessert: «Zwei Spieler antippen
+  tauscht ihre Plätze», ab zwei Tischen auch, dass ein Tisch-Titel den
+  Tisch zum Neumischen auswählt. Bei nur einem Tisch ist der Titel kein
+  Knopf — neu mischen geht erst ab zwei.
 - Organisator kann die Zuteilung manuell anpassen (Spieler zwischen Tischen
   tauschen, einzelne Tische neu mischen) — im Warteraum wie nach dem Live
   schalten. Ist sie schon live, sieht die öffentliche Seite die Änderung
@@ -390,6 +397,9 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
 - **Ablauf pro Abend:**
   1. Anwesende Spieler aus den Liga-teilnehmenden Vereinsspielern auswählen
      (siehe Abschnitt 6 — nicht jeder Vereinsspieler nimmt an der Liga teil).
+     Neben dem Namen steht der Saisonstand («· 12 Pkt.»). Die Auswahl
+     übersteht ein Neuladen (Browser-Speicher, wie in Casual) und wird mit
+     dem Start verworfen.
   2. **Match 1**: Sortierung nach der eigenen Rangliste der Saison
      (Abschnitt 13, Stand vor diesem Abend). Tischverteilung gemäss Algorithmus aus
      Abschnitt 3, Spieler in Punktereihenfolge auf die Tische verteilt
@@ -592,7 +602,7 @@ geht, «droppt», und wer später kommt, wird nachgetragen. Beides ist
 möglich, bis Match 2 live ist — danach ändert es an keiner Paarung mehr
 etwas.
 
-- **Drop**: Spieler an der Tischkachel antippen, neben der Krone erscheint
+- **Drop**: Spieler an der Tischkachel antippen, neben dem Pokal erscheint
   «Drop».
   - Match 1 im Warteraum: er hat noch nicht gespielt, fliegt aus der Runde,
     und sie wird neu gemischt.
@@ -628,7 +638,9 @@ Achievement-Katalog (Abschnitt 11.1):
   Rangliste, nur lesend). Sortierbar nach Vor-
   und Nachname, Stufe und Saisonpunkten.
 - Bearbeitet wird direkt in der Tabelle: ein Klick auf eine Zelle macht
-  sie zum Eingabefeld, Enter oder Verlassen speichert, Esc verwirft. Die
+  sie zum Eingabefeld, Enter oder Verlassen speichert, Esc verwirft. Eine
+  ungültige Deckliste-Adresse bleibt im Feld stehen, darunter steht
+  sichtbar «Keine gültige Adresse — Esc verwirft.» Die
   Liga-Teilnahme ist ein Schalter. Angelegt wird in einem Seitenpanel
   mit ausdrücklichem «Anlegen» (Vorname, optional Nachname, Stufe,
   Liga-Teilnahme).
@@ -862,7 +874,26 @@ und der Organisator erfasst für ihn.
 - Mehrfach zählende Achievements («pro Spieler», «mehrmals pro Runde»)
   haben ein Anzahl-Feld (− / +, höchstens 20), alle anderen ein Häkchen.
 - **Participation** setzt die App für jedes gespielte Spiel automatisch,
-  es ist nicht änderbar. «Winner winner» trägt der Spieler selbst ein.
+  es ist nicht änderbar.
+- **«Winner winner» und das Tisch-Ergebnis sind dasselbe** — wer zuerst
+  einträgt, gilt (Entscheid des Organisators vom 15.10.2026):
+  - Setzt der Organisator im Liga-Tab den Sieger (🏆), bekommt der Spieler
+    «Winner winner» automatisch, auch wenn er sich noch nicht angemeldet
+    hat. Ein anderer Sieger oder «Unentschieden» nimmt es den übrigen am
+    Tisch wieder weg.
+  - Hakt ein Spieler es ab, solange sein Tisch noch kein Ergebnis hat,
+    wird er dessen Sieger; der offene Liga-Tab zeigt das ohne Neuladen.
+    Aushaken macht den Tisch wieder offen.
+  - Steht schon ein Ergebnis, ist das Häkchen gesperrt und nennt es
+    («Sieger: Anna S.», «Unentschieden»). Ist das Match nicht mehr das
+    neueste oder die Runde beendet, folgt es nur noch dem Ergebnis.
+  - Kennung `systemKey = "winner"` (Migration
+    `20261015090000_winner_system_key`), Logik in `src/lib/winner.ts`. Die
+    Korrektur durch den Organisator in der Ligaverwaltung bleibt frei.
+- Wurde die Runde nach Match 1 beendet, zeigt das Blatt bei Match 2 «Match
+  2 wurde in dieser Runde nicht gespielt» und warnt beim Abgeben nicht
+  mehr, es stehe noch aus. Ein offenes Blatt lädt neu, sobald sich daran
+  etwas ändert (z.B. der Sieger), wie die Pairing-Seite.
 - Oben steht die laufende Summe mit Teilsummen **Core / Deckbau /
   Rotate**, wie auf dem Punkteblatt. Jede Änderung speichert sofort.
 - Grundlage sind die eingefrorenen Achievements des Abends (Abschnitt
@@ -877,9 +908,14 @@ und der Organisator erfasst für ihn.
 
 - Der Liga-Tab zeigt, solange eine Erfassung offen ist, den Hinweis
   «Achievement-Erfassung offen» mit Anzahl der Abgaben. Er bleibt auch
-  nach «Runde beenden» stehen.
+  nach «Runde beenden» stehen. Solange noch kein Match live ist, steht
+  statt «0 von 0» «Sobald Match 1 live ist, melden sich die Spieler über
+  die Tischkarten an.» Der offene Liga-Tab lädt neu, sobald sich am Abend
+  etwas ändert (Sieger von einem Spieler, Abgaben), sonst nie.
 - In der Ligaverwaltung unter **Aktuelle Runde** stehen alle Anwesenden
-  mit Status (nicht angemeldet / erfasst gerade / abgegeben) und Total.
+  mit Status (nicht angemeldet / erfasst gerade / abgegeben) und Total,
+  sortiert in dieser Reihenfolge — wer noch etwas braucht, steht oben —,
+  innerhalb alphabetisch. «Erfassung schliessen» steht über der Tabelle.
   Pro Spieler gibt es «Korrigieren» (dasselbe Blatt, für Korrekturen und
   Papierzettel, mit «Als abgegeben markieren») und «Handy freigeben».
   «Wieder öffnen» ist entfallen — Spieler können bis zum Schliessen
@@ -1000,8 +1036,10 @@ gespielt hat, steht stattdessen in der Erfassung (`PlayerEntry.games`).
 ### 13.4 Auf dem Handy
 
 Rang mit Δ, Spieler (mit den Farbpunkten) und Total bleiben links
-fixiert, die Spalten R1–R6 scrollen horizontal. Die Seite selbst scrollt
-nie seitlich.
+fixiert, die Spalten R1–R6 scrollen horizontal. Solange rechts noch
+Spalten folgen, läuft der Rand in einem Verlauf aus. Die Seite selbst
+scrollt nie seitlich. Der Erklärtext sagt auf Touch-Geräten «antippen»,
+sonst «mit der Maus darauf zeigen» (nach Fähigkeit, wie 13.2).
 
 ## 14. Ligaverwaltung
 

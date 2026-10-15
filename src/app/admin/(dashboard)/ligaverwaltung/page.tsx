@@ -14,6 +14,13 @@ const STATUS: Record<EntryStatus, { label: string; dot: string }> = {
   abgegeben: { label: "Abgegeben", dot: "bg-green-500" },
 };
 
+/**
+ * Wer noch etwas braucht, steht oben: erst wer sich nicht angemeldet hat
+ * (Papierzettel, nachfragen), dann wer gerade erfasst, zuletzt wer fertig
+ * ist. Innerhalb davon alphabetisch.
+ */
+const STATUS_ORDER: Record<EntryStatus, number> = { offen: 0, angemeldet: 1, abgegeben: 2 };
+
 const ACTION =
   "inline-flex min-h-11 items-center rounded px-2 text-base underline-offset-2 hover:underline";
 
@@ -30,7 +37,12 @@ export default async function CurrentRoundPage() {
   const openEvening = await findOpenEvening();
   if (!openEvening) return <Preparation />;
 
-  const { evening, rows } = await loadEveningOverview(openEvening.id);
+  const { evening, rows: unsorted } = await loadEveningOverview(openEvening.id);
+  const rows = [...unsorted].sort(
+    (a, b) =>
+      STATUS_ORDER[a.status] - STATUS_ORDER[b.status] ||
+      formatPlayerName(a.name).localeCompare(formatPlayerName(b.name), "de-CH"),
+  );
   const submitted = rows.filter((r) => r.status === "abgegeben").length;
 
   return (
@@ -46,6 +58,14 @@ export default async function CurrentRoundPage() {
           </span>
         </p>
       </div>
+
+      {/* Oben statt unter der Tabelle: bei 24 Spielern lag der Knopf sonst
+          weit unter dem sichtbaren Bereich. */}
+      <CloseEntryButton
+        eveningId={evening.id}
+        openCount={rows.length - submitted}
+        suggestedRound={eveningNumber(evening.date)}
+      />
 
       <div className="w-full max-w-3xl overflow-x-auto rounded border border-white/10">
         <table className="w-full min-w-[560px] border-separate border-spacing-0 text-base">
@@ -98,12 +118,6 @@ export default async function CurrentRoundPage() {
         «Handy freigeben» löst die Bindung an ein Gerät, z.B. nach einem
         Handywechsel — die Einträge bleiben erhalten.
       </p>
-
-      <CloseEntryButton
-        eveningId={evening.id}
-        openCount={rows.length - submitted}
-        suggestedRound={eveningNumber(evening.date)}
-      />
     </div>
   );
 }
