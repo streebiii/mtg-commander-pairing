@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { loadPublicNames } from "@/lib/publicRoster";
 import { findOpenEvening, getDeviceEntry } from "@/lib/entries";
-import { claimPlayer } from "./actions";
+import ClaimList from "./ClaimList";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,8 @@ const ERRORS: Record<string, string> = {
 
 // Ziel der Tischkarten-QR-Codes (siehe SPEC.md Abschnitt 12). Zeigt die
 // Spieler, die in der aktuellen (veröffentlichten) Runde an diesem Tisch
-// sitzen; Antippen meldet das Handy für diesen Namen an. Öffentlich, ohne
+// sitzen; Antippen und Bestätigen meldet das Handy für diesen Namen an
+// (ClaimList). Öffentlich, ohne
 // Login — Schutz bieten die Beschränkung auf den Tisch, die Namenssperre
 // und die Prüfung durch den Organisator.
 export default async function TablePage({
@@ -98,28 +99,15 @@ export default async function TablePage({
         <p className="text-base opacity-70">
           Match {round.number} — tippe auf deinen Namen.
         </p>
-        <ul className="flex flex-col gap-2">
-          {table.assignments.map((a) => {
-            const taken = claimed.has(a.playerId);
-            const mine = deviceHere && device.playerId === a.playerId;
-            return (
-              <li key={a.id}>
-                <form action={claimPlayer.bind(null, tableNumber, a.playerId)}>
-                  <button
-                    type="submit"
-                    disabled={taken && !mine}
-                    className="flex min-h-14 w-full items-center justify-between gap-3 rounded border border-white/20 px-4 py-3 text-left text-base transition-colors hover:bg-white/5 active:bg-white/10 disabled:opacity-40"
-                  >
-                    <span className="font-medium">{names.get(a.playerId) ?? a.player.firstName}</span>
-                    <span className="text-base opacity-70">
-                      {mine ? "du" : taken ? "angemeldet" : ""}
-                    </span>
-                  </button>
-                </form>
-              </li>
-            );
-          })}
-        </ul>
+        <ClaimList
+          tableNumber={tableNumber}
+          options={table.assignments.map((a) => ({
+            playerId: a.playerId,
+            name: names.get(a.playerId) ?? a.player.firstName,
+            taken: claimed.has(a.playerId),
+            mine: Boolean(deviceHere && device.playerId === a.playerId),
+          }))}
+        />
       </div>
     );
   }
