@@ -1,7 +1,6 @@
+import AutoRefresh from "@/components/AutoRefresh";
 import PublicHeader from "@/components/PublicHeader";
-import { prisma } from "@/lib/prisma";
-import { getCasualPairing } from "@/lib/casualPairing";
-import { loadPublicNames } from "@/lib/publicRoster";
+import { loadPublicPairings, pairingsVersion } from "@/lib/publicPairings";
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -16,100 +15,18 @@ import {
 // Startseite ("/") — der Organisator-Bereich liegt unter /admin.
 //
 // Es läuft immer nur eines von beidem: entweder eine Casual-Zuteilung oder
-// ein Liga-Abend. Gezeigt wird jeweils erst, was der Organisator live
-// geschaltet hat. Eine live geschaltete Casual-Zuteilung hat Vorrang; sie
-// verschwindet mit "Zurücksetzen", nach 24 Stunden oder wenn ein
-// Liga-Abend startet. Spieler-Stufen tauchen hier nie auf (siehe SPEC.md
-// Abschnitt 6.1).
+// ein Liga-Abend (siehe loadPublicPairings). Ändert sich daran etwas, lädt
+// die offene Seite von selbst neu (AutoRefresh).
 export const dynamic = "force-dynamic";
 
-interface DisplayAchievement {
-  id: string;
-  title: string;
-  description: string;
-  points: number;
-  scope: keyof typeof SCOPE_LABELS;
-  category: (typeof CATEGORIES)[number];
-}
-
-interface DisplayTable {
-  key: string;
-  tableNumber: number;
-  players: { key: string; name: string }[];
-}
-
 export default async function Home() {
-  // Öffentlich nur Vorname und Initial (siehe publicNames).
-  const [casual, names] = await Promise.all([getCasualPairing(), loadPublicNames()]);
-  const casualTables = casual?.published ? casual.tables : [];
-
-  let tables: DisplayTable[] = casualTables.map((t) => ({
-    key: `casual-${t.tableNumber}`,
-    tableNumber: t.tableNumber,
-    players: t.players.map((p) => ({ key: p.id, name: names.get(p.id) ?? p.name })),
-  }));
-
-  // Die geltenden Achievements des laufenden Liga-Abends, damit die
-  // Spieler sie am Tisch nachschlagen können (siehe SPEC.md Abschnitt 11).
-  let achievements: DisplayAchievement[] = [];
-
-  if (tables.length === 0) {
-    const evening = await prisma.evening.findFirst({
-      where: { finishedAt: null },
-      orderBy: { createdAt: "desc" },
-      include: {
-        achievements: {
-          orderBy: { sortOrder: "asc" },
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            points: true,
-            scope: true,
-            category: true,
-          },
-        },
-        rounds: {
-          // Nur veröffentlichte Runden — eine gerade im Warteraum
-          // geprüfte Zuteilung ist bewusst noch nicht öffentlich
-          // sichtbar (siehe Grill-Notizen). Solange die neueste Runde
-          // noch nicht live ist, bleibt hier die vorherige stehen.
-          where: { publishedAt: { not: null } },
-          orderBy: { number: "desc" },
-          take: 1,
-          include: {
-            tables: {
-              orderBy: { tableNumber: "asc" },
-              include: {
-                assignments: {
-                  include: { player: true },
-                  orderBy: [
-                    { player: { firstName: "asc" } },
-                    { player: { lastName: "asc" } },
-                  ],
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    tables =
-      evening?.rounds[0]?.tables.map((t) => ({
-        key: t.id,
-        tableNumber: t.tableNumber,
-        players: t.assignments.map((a) => ({
-          key: a.id,
-          name: names.get(a.playerId) ?? a.player.firstName,
-        })),
-      })) ?? [];
-    achievements = evening?.achievements ?? [];
-  }
+  const pairings = await loadPublicPairings();
+  const { tables, achievements, matchNumber } = pairings;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
       <PublicHeader active="pairings" />
+      <AutoRefresh version={pairingsVersion(pairings)} />
 
       {tables.length === 0 ? (
         <p className="text-base opacity-70">
@@ -117,23 +34,28 @@ export default async function Home() {
           Zuteilung freigibt, erscheinen hier die aktuellen Tische.
         </p>
       ) : (
-        <div className="flex flex-wrap gap-5">
-          {tables.map((table) => (
-            <div
-              key={table.key}
-              className="w-full rounded border border-white/20 p-5 sm:w-56"
-            >
-              <div className="mb-3 text-lg font-semibold">
-                Tisch {table.tableNumber}
+        <section className="flex flex-col gap-4">
+          <h2 className="text-lg font-medium">
+            {matchNumber !== null ? `Match ${matchNumber}` : "Tische"}
+          </h2>
+          <div className="flex flex-wrap gap-5">
+            {tables.map((table) => (
+              <div
+                key={table.key}
+                className="w-full rounded border border-white/20 p-5 sm:w-56"
+              >
+                <div className="mb-3 text-lg font-semibold">
+                  Tisch {table.tableNumber}
+                </div>
+                <ul className="flex flex-col gap-1.5 text-base">
+                  {table.players.map((p) => (
+                    <li key={p.key}>{p.name}</li>
+                  ))}
+                </ul>
               </div>
-              <ul className="flex flex-col gap-1.5 text-base">
-                {table.players.map((p) => (
-                  <li key={p.key}>{p.name}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {achievements.length > 0 && (

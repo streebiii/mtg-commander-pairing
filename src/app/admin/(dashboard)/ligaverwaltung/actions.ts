@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/adminGuard";
-import { applyMark } from "@/lib/entries";
-import { EVENINGS_PER_SEASON, isInSeason } from "@/lib/season";
+import { applyMark, seasonRoundError } from "@/lib/entries";
 
 // Organisator-Aktionen der Achievement-Erfassung (siehe SPEC.md Abschnitt
 // 12). Jede Action prüft die Anmeldung selbst (siehe requireAdmin) —
@@ -69,32 +68,15 @@ export async function confirmEntry(eveningId: string, playerId: string) {
  * mehr ändern, und der Abend zählt in der Rangliste — in der Spalte
  * `seasonRound` (R1–R6). null heisst Testabend: er zählt nicht.
  *
- * Jede Spalte gehört höchstens einem Abend der Saison; sonst wäre nicht
- * klar, welcher gilt.
+ * Jede Spalte gehört höchstens einem Abend der Saison (seasonRoundError).
  */
 export async function closeEntry(
   eveningId: string,
   seasonRound: number | null,
 ): Promise<{ error: string } | undefined> {
   await requireAdmin();
-  if (
-    seasonRound !== null &&
-    (!Number.isInteger(seasonRound) || seasonRound < 1 || seasonRound > EVENINGS_PER_SEASON)
-  ) {
-    return { error: "Ungültige Spalte" };
-  }
-
-  if (seasonRound !== null) {
-    const taken = await prisma.evening.findMany({
-      where: { id: { not: eveningId }, seasonRound },
-      select: { date: true },
-    });
-    const conflict = taken.find((e) => isInSeason(e.date));
-    if (conflict) {
-      const day = conflict.date.toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" });
-      return { error: `R${seasonRound} ist schon der Runde vom ${day} zugeordnet.` };
-    }
-  }
+  const error = await seasonRoundError(eveningId, seasonRound);
+  if (error) return { error };
 
   await prisma.evening.update({
     where: { id: eveningId },

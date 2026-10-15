@@ -10,6 +10,8 @@ import { loadEveningHistory } from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
 import { adoptAchievementsForEvening } from "@/lib/achievements";
 import { loadPairingStandings } from "@/lib/rankingData";
+import { findOpenEvening, seasonRoundError } from "@/lib/entries";
+import { parseSeasonRound } from "@/components/SeasonRoundSelect";
 
 /**
  * @param db Übergibt entweder `prisma` direkt oder einen Transaktions-
@@ -147,16 +149,29 @@ async function rebuildDraftRound(
   ]);
 }
 
-/** Startet einen neuen Liga-Abend (Modus B) mit Runde 1. */
-export async function startEvening(formData: FormData) {
+export type StartEveningState = { error: string } | null;
+
+/**
+ * Startet einen neuen Liga-Abend (Modus B) mit Runde 1.
+ *
+ * Ist die Erfassung des letzten Abends noch offen, wird sie dabei
+ * geschlossen — mit der Spalte, die der Organisator in der Rückfrage
+ * bestätigt hat (`closeEveningId`, `closeSeasonRound`). Früher geschah das
+ * stillschweigend und ohne Spalte: der Abend zählte dann als Testrunde,
+ * ohne dass es jemand merkte (SPEC.md Abschnitt 12.3).
+ */
+export async function startEvening(
+  _prev: StartEveningState,
+  formData: FormData,
+): Promise<StartEveningState> {
   await requireAdmin();
   const playerIds = formData.getAll("playerIds").map(String);
-  if (playerIds.length < 3) return;
+  if (playerIds.length < 3) return { error: "Mindestens 3 Spieler nötig." };
 
   const active = await prisma.evening.findFirst({
     where: { finishedAt: null },
   });
-  if (active) return; // es läuft bereits ein Abend — erst beenden
+  if (active) return { error: "Es läuft bereits eine Runde — lade die Seite neu." };
 
   // leagueActive: true zur Sicherheit auch hier geprüft (nicht nur in der
   // UI-Auswahlliste) — nur Liga-teilnehmende Spieler dürfen in einen
@@ -164,7 +179,31 @@ export async function startEvening(formData: FormData) {
   const eligible = await prisma.player.count({
     where: { id: { in: playerIds }, leagueActive: true, archivedAt: null },
   });
-  if (eligible !== playerIds.length) return;
+  if (eligible !== playerIds.length) {
+    return { error: "Die Spielerliste hat sich geändert — lade die Seite neu." };
+  }
+
+  // Eine offene Erfassung schliesst nur, wer ihre Spalte bestätigt hat —
+  // und zwar genau für diesen Abend, nicht für einen, der inzwischen
+  // dazugekommen ist.
+  const openEntry = await findOpenEvening();
+  let closeRound: number | null = null;
+  if (openEntry) {
+    if (formData.get("closeEveningId") !== openEntry.id) {
+      return { error: "Die offene Erfassung hat sich geändert — lade die Seite neu." };
+    }
+    closeRound = parseSeasonRound(String(formData.get("closeSeasonRound") ?? ""));
+    const error = await seasonRoundError(openEntry.id, closeRound);
+    if (error) return { error };
+    // Vor der Paarung schliessen, nicht erst in der Transaktion unten: erst
+    // dann zählen die Punkte dieses Abends in der Rangfolge, nach der
+    // Match 1 gepaart wird. Schlägt das Anlegen danach fehl, bleibt nur
+    // das bestätigte Schliessen stehen.
+    await prisma.evening.update({
+      where: { id: openEntry.id },
+      data: { entryClosedAt: new Date(), seasonRound: closeRound },
+    });
+  }
 
   // Runde 1: nach der Rangfolge, keine Historie, noch keine Sieger.
   const tables = assignLeagueRound(rankValues(await loadPairingStandings(playerIds)));
@@ -175,9 +214,10 @@ export async function startEvening(formData: FormData) {
   // geltenden Achievements gehören mit in dieselbe Transaktion, damit es
   // keinen Abend ohne seine Achievements gibt.
   await prisma.$transaction(async (tx) => {
-    // Eine noch offene Erfassung eines früheren Abends wird geschlossen:
-    // es gibt immer nur eine offene Erfassung, sonst wäre die alte in der
-    // Übersicht nicht mehr erreichbar (siehe SPEC.md Abschnitt 12).
+    // Es gibt immer nur eine offene Erfassung, sonst wäre die alte in der
+    // Übersicht nicht mehr erreichbar (SPEC.md Abschnitt 12). Die offene
+    // ist oben schon geschlossen; das hier fängt nur noch Altlasten ohne
+    // Runden, die findOpenEvening nicht findet.
     await tx.evening.updateMany({
       where: { entryClosedAt: null },
       data: { entryClosedAt: new Date() },
@@ -193,8 +233,10 @@ export async function startEvening(formData: FormData) {
 
   revalidatePath("/admin/league");
   revalidatePath("/admin/ligaverwaltung/achievements");
-  revalidatePath("/admin/ligaverwaltung");
+  revalidatePath("/admin/ligaverwaltung", "layout");
+  revalidatePath("/rangliste");
   revalidatePath("/");
+  return null;
 }
 
 /**

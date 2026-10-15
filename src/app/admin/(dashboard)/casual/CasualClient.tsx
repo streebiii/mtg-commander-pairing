@@ -8,6 +8,7 @@ import {
   PlayerTileGrid,
   usePlayerSearch,
 } from "@/components/PlayerPicker";
+import MobileActionBar from "@/components/MobileActionBar";
 import Sidebar from "@/components/Sidebar";
 import TableCard from "@/components/TableCard";
 import { SKILL_LEVELS } from "@/lib/players";
@@ -155,6 +156,10 @@ export default function CasualClient({
   const [adding, setAdding] = useState(false);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  // Nach «Tische berechnen» zur neuen Zuteilung scrollen: auf dem Handy
+  // steht sie über der langen Spielerliste, der Knopf aber unten.
+  const tablesRef = useRef<HTMLElement>(null);
+  const scrollToTables = useRef(false);
 
   const selectedCount = selected.size;
 
@@ -392,6 +397,7 @@ export default function CasualClient({
         setError(result.error);
         return;
       }
+      scrollToTables.current = true;
       setTables(result.tables);
       setPublished(false);
     } catch {
@@ -589,6 +595,24 @@ export default function CasualClient({
     );
   }, [tableSizes, groups]);
 
+  useEffect(() => {
+    if (!tables || !scrollToTables.current) return;
+    scrollToTables.current = false;
+    tablesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [tables]);
+
+  /**
+   * Wie viele ausgewählte Spieler an keinem Tisch sitzen — wer nach dem
+   * Berechnen dazukommt, ändert an der Zuteilung nichts, und den Tischen
+   * sähe man das sonst nicht an. Erst nach dem Laden der Auswahl aus dem
+   * Browser-Speicher gezählt.
+   */
+  const unseatedCount = useMemo(() => {
+    if (!tables || !hydrated) return 0;
+    const seated = new Set(tables.flatMap((t) => t.players.map((p) => p.id)));
+    return [...selected].filter((id) => !seated.has(id)).length;
+  }, [tables, hydrated, selected]);
+
   // Gruppen, deren Mitglieder vollständig auf den aktuell für das
   // selektive Neumischen ausgewählten Tischen sitzen (siehe Grill-Notizen:
   // eine Gruppe kann per Definition nie über zwei Tische verteilt sein —
@@ -631,7 +655,7 @@ export default function CasualClient({
       {/* Die fertige Zuteilung steht bewusst zuoberst — beim Spielabend
           schaut man darauf, nicht auf die Auswahlliste darunter. */}
       {tables && (
-        <section className="flex flex-col gap-3">
+        <section ref={tablesRef} className="flex scroll-mt-4 flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-lg font-medium">
               Tischzuteilung — {published ? "live" : "Warteraum"}
@@ -642,6 +666,11 @@ export default function CasualClient({
               </PrimaryButton>
             )}
           </div>
+          {unseatedCount > 0 && (
+            <p className="rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-base">
+              {unseatedCount} Spieler ohne Tischzuteilung
+            </p>
+          )}
           <div className="flex flex-wrap gap-4">
             {tables.map((table) => {
               const isSelectedForReshuffle = selectedForReshuffle.has(
@@ -985,25 +1014,67 @@ export default function CasualClient({
           </div>
 
           <div className="flex flex-col gap-2">
-            <PrimaryButton
-              className="w-full"
-              disabled={selectedCount < 3 || !!groupConflict}
-              loading={loading}
-              onClick={computePairing}
-            >
-              {loading ? "Berechne…" : "Tische berechnen"}
-            </PrimaryButton>
+            {/* Auf dem Handy steht «Tische berechnen» in der Leiste unten. */}
+            <div className="hidden lg:block">
+              <PrimaryButton
+                className="w-full"
+                disabled={selectedCount < 3 || !!groupConflict}
+                loading={loading}
+                onClick={computePairing}
+              >
+                {loading ? "Berechne…" : "Tische berechnen"}
+              </PrimaryButton>
+            </div>
             {tables && (
               <DangerButton className="w-full" onClick={handleReset}>
                 Zurücksetzen
               </DangerButton>
             )}
             {selectedCount > 0 && selectedCount < 3 && (
-              <p className="text-base opacity-70">Mindestens 3 Spieler nötig.</p>
+              <p className="hidden text-base opacity-70 lg:block">Mindestens 3 Spieler nötig.</p>
             )}
             {error && <p className="text-base text-red-600">{error}</p>}
           </div>
         </Sidebar>
+
+        <MobileActionBar>
+          <p className={`text-base ${groupConflict ? "text-red-600" : "opacity-70"}`}>
+            {groupConflict
+              ? groupConflict.message
+              : selectedCount > 0 && selectedCount < 3
+                ? `${selectedCount} ausgewählt · mindestens 3 nötig`
+                : `${selectedCount} ausgewählt`}
+          </p>
+          {/* Steht eine Zuteilung im Warteraum, ist «Live schalten» der
+              nächste Schritt; neu berechnen bleibt daneben möglich. */}
+          <div className="flex gap-2">
+            {tables && !published && (
+              <PrimaryButton className="flex-1" loading={publishing} onClick={handlePublish}>
+                {publishing ? "Schalte live…" : "Live schalten"}
+              </PrimaryButton>
+            )}
+            {tables && !published ? (
+              <SecondaryButton
+                className="flex-1"
+                disabled={selectedCount < 3 || !!groupConflict}
+                loading={loading}
+                onClick={computePairing}
+              >
+                {loading ? "Berechne…" : "Neu berechnen"}
+              </SecondaryButton>
+            ) : (
+              <PrimaryButton
+                className="flex-1"
+                disabled={selectedCount < 3 || !!groupConflict}
+                loading={loading}
+                onClick={computePairing}
+              >
+                {loading ? "Berechne…" : "Tische berechnen"}
+              </PrimaryButton>
+            )}
+          </div>
+          {error && <p className="text-base text-red-600">{error}</p>}
+        </MobileActionBar>
     </div>
   );
 }

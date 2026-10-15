@@ -4,15 +4,17 @@ import TableCard from "@/components/TableCard";
 import { MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
 import { rankValues } from "@/lib/pairing/leagueRanking";
 import { loadPairingStandings } from "@/lib/rankingData";
-import { eveningLabel } from "@/lib/season";
-import { startEvening } from "./actions";
+import { eveningLabel, eveningNumber } from "@/lib/season";
+import { findOpenEvening } from "@/lib/entries";
+import { getCasualPairing } from "@/lib/casualPairing";
 import AttendancePanel from "./AttendancePanel";
+import MobileActionBar from "@/components/MobileActionBar";
 import Sidebar from "@/components/Sidebar";
 import EntryBanner from "./EntryBanner";
 import LeagueInfo from "./LeagueInfo";
 import FinishEveningButton from "./FinishEveningButton";
 import NextRoundButton from "./NextRoundButton";
-import PlayerSelectionList from "./PlayerSelectionList";
+import PlayerSelectionList, { type OpenEntryInfo } from "./PlayerSelectionList";
 import PublishRoundButton from "./PublishRoundButton";
 import RegenerateButton from "./RegenerateButton";
 import RoundBoard from "./RoundBoard";
@@ -87,6 +89,29 @@ export default async function LeaguePage() {
   const standingById = new Map(preview.map((p) => [p.id, p]));
 
   if (!evening) {
+    // Was der Start nebenbei schliesst bzw. verwirft — beides soll der
+    // Organisator vorher sehen (SPEC.md Abschnitte 4.3 und 12.3).
+    const [openEvening, casual] = await Promise.all([findOpenEvening(), getCasualPairing()]);
+    let openEntry: OpenEntryInfo | null = null;
+    if (openEvening) {
+      const [attendees, submitted] = await Promise.all([
+        prisma.tableAssignment.findMany({
+          where: { table: { round: { eveningId: openEvening.id, publishedAt: { not: null } } } },
+          distinct: ["playerId"],
+          select: { playerId: true },
+        }),
+        prisma.playerEntry.count({
+          where: { eveningId: openEvening.id, submittedAt: { not: null } },
+        }),
+      ]);
+      openEntry = {
+        eveningId: openEvening.id,
+        label: eveningLabel(openEvening.date),
+        suggestedRound: eveningNumber(openEvening.date),
+        openCount: Math.max(0, attendees.length - submitted),
+      };
+    }
+
     return (
       <div className="flex flex-col gap-4">
         <LeagueInfo />
@@ -96,16 +121,16 @@ export default async function LeaguePage() {
             Spieler-Tab welche auf.
           </p>
         ) : (
-          <form action={startEvening}>
-            <PlayerSelectionList
-              players={activePlayers.map((p) => ({
-                id: p.id,
-                name: formatPlayerName(p),
-                points: standingById.get(p.id)?.points ?? 0,
-              }))}
-              sidebarExtra={<EntryBanner />}
-            />
-          </form>
+          <PlayerSelectionList
+            players={activePlayers.map((p) => ({
+              id: p.id,
+              name: formatPlayerName(p),
+              points: standingById.get(p.id)?.points ?? 0,
+            }))}
+            openEntry={openEntry}
+            casualPairing={casual ? (casual.published ? "live" : "warteraum") : null}
+            sidebarExtra={<EntryBanner />}
+          />
         )}
       </div>
     );
@@ -145,6 +170,30 @@ export default async function LeaguePage() {
   // Die aktuelle Runde zuoberst — wie die Tischzuteilung im Casual-Tab:
   // beim Spielabend schaut man darauf, nicht auf die Vorrunde.
   const roundsNewestFirst = [...evening.rounds].reverse();
+
+  const openTableCount = lastRound.tables.filter((t) => t.resultEnteredAt === null).length;
+  const status = `Match ${lastRound.number} von ${MAX_ROUNDS} · ${
+    !lastRoundPublished
+      ? "im Warteraum"
+      : lastRoundComplete
+        ? "alle Tische erfasst"
+        : `${openTableCount} ${openTableCount === 1 ? "Tisch" : "Tische"} offen`
+  }`;
+  // Der jeweils nächste Schritt des Abends — in der Seitenleiste und auf
+  // dem Handy in der festen Leiste unten.
+  const finishButton = (
+    <FinishEveningButton
+      eveningId={evening.id}
+      roundsMissing={MAX_ROUNDS - lastRound.number + (lastRoundPublished ? 0 : 1)}
+    />
+  );
+  const nextStep = !lastRoundPublished ? (
+    <PublishRoundButton roundId={lastRound.id} className="w-full" />
+  ) : lastRound.number < MAX_ROUNDS ? (
+    <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
+  ) : (
+    finishButton
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -251,29 +300,27 @@ export default async function LeaguePage() {
 
         <Sidebar>
           <h2 className="text-lg font-medium">{eveningLabel(evening.date)}</h2>
-          <p className="text-base">
-            Match {lastRound.number} von {MAX_ROUNDS} ·{" "}
-            {!lastRoundPublished
-              ? "im Warteraum"
-              : lastRoundComplete
-                ? "alle Tische erfasst"
-                : `${lastRound.tables.filter((t) => t.resultEnteredAt === null).length} Tische offen`}
-          </p>
+          <p className="text-base">{status}</p>
 
           <div className="flex flex-col gap-2">
             {!lastRoundPublished && (
               <RegenerateButton roundId={lastRound.id} roundNumber={lastRound.number} />
             )}
+            {/* Was in der Leiste unten steht (nextStep), auf dem Handy hier
+                nicht noch einmal. */}
             {lastRoundPublished && lastRound.number < MAX_ROUNDS && (
-              <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
+              <div className="hidden lg:block">
+                <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
+              </div>
             )}
             {/* Bewusst nie durch fehlende Ergebnisse gesperrt: der Abend
                 muss sich auch beenden lassen, wenn Runde 2 nicht (mehr)
                 gespielt wird. Die Rückfrage warnt dann. */}
-            <FinishEveningButton
-              eveningId={evening.id}
-              roundsMissing={MAX_ROUNDS - lastRound.number + (lastRoundPublished ? 0 : 1)}
-            />
+            {nextStep === finishButton ? (
+              <div className="hidden lg:block">{finishButton}</div>
+            ) : (
+              finishButton
+            )}
           </div>
 
           {attendanceOpen && (
@@ -291,6 +338,11 @@ export default async function LeaguePage() {
           <EntryBanner />
         </Sidebar>
       </div>
+
+      <MobileActionBar>
+        <p className="text-base opacity-70">{status}</p>
+        {nextStep}
+      </MobileActionBar>
     </div>
   );
 }

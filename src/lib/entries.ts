@@ -1,7 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { isLastEvening } from "@/lib/season";
+import { EVENINGS_PER_SEASON, isInSeason, isLastEvening } from "@/lib/season";
 import {
   type SheetAchievement,
   type SheetMark,
@@ -53,6 +53,30 @@ export async function findOpenEvening() {
     where: { entryClosedAt: null, rounds: { some: {} } },
     orderBy: { createdAt: "desc" },
   });
+}
+
+/**
+ * Prüft die Spalte (R1–R6), in der ein Abend beim Schliessen seiner
+ * Erfassung zählen soll; null heisst Testrunde und ist immer erlaubt. Jede
+ * Spalte gehört höchstens einem Abend der Saison, sonst wäre nicht klar,
+ * welcher gilt. Gibt die Fehlermeldung zurück oder null.
+ */
+export async function seasonRoundError(
+  eveningId: string,
+  seasonRound: number | null,
+): Promise<string | null> {
+  if (seasonRound === null) return null;
+  if (!Number.isInteger(seasonRound) || seasonRound < 1 || seasonRound > EVENINGS_PER_SEASON) {
+    return "Ungültige Spalte";
+  }
+  const taken = await prisma.evening.findMany({
+    where: { id: { not: eveningId }, seasonRound },
+    select: { date: true },
+  });
+  const conflict = taken.find((e) => isInSeason(e.date));
+  if (!conflict) return null;
+  const day = conflict.date.toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" });
+  return `R${seasonRound} ist schon der Runde vom ${day} zugeordnet.`;
 }
 
 /** Die Erfassung, die dieses Gerät per Cookie hält — oder null. */

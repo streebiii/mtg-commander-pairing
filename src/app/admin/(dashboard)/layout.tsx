@@ -11,7 +11,7 @@ const NAV = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
-      <header className="border-b border-white/10 px-4 py-4 print:hidden">
+      <header className="border-b border-white/10 px-4 py-2 sm:py-4 print:hidden">
         <nav className="mx-auto flex w-full max-w-2xl flex-wrap justify-center gap-x-5 text-base font-medium sm:gap-x-0">
           {NAV.map((item) => (
             <Link

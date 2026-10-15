@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-10-13 (Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
+Stand: 2026-10-15 (Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
 
 ## 1. Zweck
 
@@ -82,7 +82,13 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
 - **Öffentliche Lese-Ansicht**: separate URL ohne Login, zeigt nur die
   live geschalteten Tischzuteilungen des laufenden Abends (z. B. für einen
   Bildschirm vor Ort oder zum Teilen mit den Spielern). Keine
-  Bearbeitungsmöglichkeit. Daneben, ebenfalls ohne Login, die Rangliste
+  Bearbeitungsmöglichkeit. Über den Tischen steht, was gezeigt wird
+  («Match 2» bzw. «Tische» bei Casual).
+  **Neu geladen wird nur bei einer Änderung**: die offene Seite fragt alle
+  10 Sekunden einen kurzen Fingerabdruck der Zuteilung ab (`/stand`) und
+  holt die Seite erst neu, wenn er sich ändert — live schalten, tauschen,
+  neues Match, Zurücksetzen. In einem Hintergrund-Tab ruht die Abfrage.
+  Daneben, ebenfalls ohne Login, die Rangliste
   der Saison unter `/rangliste` (Abschnitt 13); eine Umschaltung
   „Pairings | Rangliste“ verbindet die beiden.
 - **Hosting — Hybrid**: die App UND die Datenbank (Vercel Postgres)
@@ -242,6 +248,15 @@ frei ist, weicht sie auf einen grösseren aus.
   sofort.
 - **Neu auswürfeln**: erneutes "Tische berechnen" ersetzt die Zuteilung;
   die neue landet wieder im Warteraum.
+- Kommen nach dem Berechnen Spieler zur Auswahl dazu, bleiben die Tische,
+  wie sie sind; darüber steht «n Spieler ohne Tischzuteilung», bis neu
+  berechnet wird.
+- **Auf dem Handy** (unter der lg-Breite) steht die Hauptaktion in einer
+  festen Leiste am unteren Rand — Casual: «Tische berechnen» bzw. «Live
+  schalten» / «Neu berechnen»; Liga: «Runde starten», danach der jeweils
+  nächste Schritt des Abends mit Stand («Match 1 von 2 · 3 Tische
+  offen»). In der Seitenleiste fehlt sie dort, damit sie nicht doppelt
+  steht. Nach «Tische berechnen» springt die Ansicht zur Zuteilung.
 - **Zurücksetzen**: verwirft die Zuteilung. Die Spielerauswahl bleibt
   bestehen, die öffentliche Ansicht ist danach wieder leer.
 - Die Spielerauswahl (Liste, Suche, Enter-Kette) ist dieselbe wie beim
@@ -811,8 +826,11 @@ und der Organisator erfasst für ihn.
   sichern» ergibt das PDF). Die Karten werden einmal gedruckt und bleiben
   gültig: der QR-Code enthält nur `/tisch/<nr>`, nicht den Abend.
 - Die Tischseite zeigt die Spieler, die in der **aktuellen
-  veröffentlichten Runde** an diesem Tisch sitzen. Ein Antippen meldet das
-  Handy für diesen Namen an. Es braucht kein Konto und keinen Code.
+  veröffentlichten Runde** an diesem Tisch sitzen. Ein Antippen fragt
+  «Du bist Anna S.?» mit «Ja» und «Zurück», erst «Ja» meldet das Handy für diesen
+  Namen an — ein Fehltipp würde sonst den falschen Namen und das Handy
+  sperren. Der eigene, schon angemeldete Name führt ohne Rückfrage weiter.
+  Es braucht kein Konto und keinen Code.
 - Das Handy bekommt ein zufälliges Token als Cookie (14 Tage gültig), in
   der Datenbank steht nur dessen Hash. **Ein Name pro Handy und Abend**,
   und ein angemeldeter Name ist für andere Handys gesperrt. Der
@@ -874,9 +892,15 @@ und der Organisator erfasst für ihn.
   zählt in der Rangliste. Die Rückfrage bestätigt zugleich die **Spalte**
   (R1–R6), in der er zählt — aus dem Datum vorbelegt und änderbar —, oder
   «Testrunde — zählt nicht». Jede Spalte gehört höchstens einem Abend der
-  Saison; ist sie schon vergeben, lehnt die App ab und nennt den Abend. Startet ein neuer Liga-Abend, wird eine noch
-  offene Erfassung automatisch geschlossen. Es gibt immer nur eine
-  offene Erfassung.
+  Saison; ist sie schon vergeben, lehnt die App ab und nennt den Abend.
+  Es gibt immer nur eine offene Erfassung: ist beim Start einer neuen
+  Runde die letzte noch offen, fragt «Runde starten» zuerst dieselbe
+  Spalte ab, und «Schliessen und starten» schliesst sie darin. Geschlossen
+  wird vor der Paarung, damit ihre Punkte schon in der Rangfolge von
+  Match 1 zählen. Früher schloss der Start sie stillschweigend ohne
+  Spalte — der Abend zählte dann als Testrunde.
+- Steht beim Start eine Casual-Zuteilung, sagt ein Satz unter dem Knopf,
+  dass sie verworfen wird (Abschnitt 4.3).
 - Welcher Liga-Abend (1–6) ein Abend ist, leitet die App aus den
   Terminen auf mtgbl.ch ab (`src/lib/season.ts`). Bei einer
   Terminverschiebung muss die Liste angepasst werden. Ein Abend nach dem
