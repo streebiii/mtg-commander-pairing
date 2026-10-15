@@ -59,22 +59,44 @@ export function PlayerSearchField({
   onEnter: () => void;
   inputRef?: Ref<HTMLInputElement>;
 }) {
+  // Esc und × leeren das Feld — am Spielabend tippt man reihum Namen ein
+  // und will schnell wieder die ganze Liste sehen.
   return (
     <label className="flex flex-col gap-1.5 text-base">
       Spieler suchen
-      <input
-        type="text"
-        ref={inputRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter") return;
-          e.preventDefault();
-          onEnter();
-        }}
-        placeholder="Name eingeben…"
-        className="min-h-9 w-full max-w-sm rounded border border-white/20 px-3 py-2"
-      />
+      <span className="relative w-full max-w-sm">
+        <input
+          type="text"
+          ref={inputRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && value) {
+              e.preventDefault();
+              onChange("");
+              return;
+            }
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            onEnter();
+          }}
+          placeholder="Name eingeben…"
+          className="min-h-9 w-full rounded border border-white/20 py-2 pl-3 pr-11"
+        />
+        {value && (
+          <button
+            type="button"
+            aria-label="Suche leeren"
+            onClick={(e) => {
+              onChange("");
+              e.currentTarget.parentElement?.querySelector("input")?.focus();
+            }}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg opacity-70 hover:opacity-100"
+          >
+            ×
+          </button>
+        )}
+      </span>
     </label>
   );
 }

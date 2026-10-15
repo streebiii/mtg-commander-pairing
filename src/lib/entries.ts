@@ -2,11 +2,13 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { EVENINGS_PER_SEASON, isInSeason, isLastEvening } from "@/lib/season";
+import { setWinnerByPlayer } from "@/lib/winner";
 import {
   type SheetAchievement,
   type SheetMark,
   computeTotals,
   isParticipation,
+  isWinnerAchievement,
   marksToMap,
   maxCount,
   validGame,
@@ -156,6 +158,8 @@ export interface SheetData {
   /** Runden, die schon live sind (siehe `liveRounds`). */
   liveRounds: number[];
   lastEvening: boolean;
+  /** Die Runde ist beendet — ein nicht gestartetes Match kommt nicht mehr. */
+  finished: boolean;
 }
 
 /** Alles, was das Erfassungsblatt eines Spielers an einem Abend braucht. */
@@ -191,6 +195,7 @@ export async function loadSheet(
     gamesPlayed: games,
     liveRounds: live,
     lastEvening,
+    finished: evening.finishedAt !== null,
   };
 }
 
@@ -246,6 +251,28 @@ export async function applyMark(
     });
   }
   return true;
+}
+
+/**
+ * Eine Änderung durch den Spieler selbst. Wie `applyMark`, nur dass
+ * «Winner winner» über das Tisch-Ergebnis läuft (lib/winner.ts) — der
+ * Organisator korrigiert dagegen frei.
+ */
+export async function applyPlayerMark(
+  entry: { id: string; eveningId: string; playerId: string },
+  eveningAchievementId: string,
+  game: number,
+  count: number,
+): Promise<boolean> {
+  const achievement = await prisma.eveningAchievement.findUnique({
+    where: { id: eveningAchievementId },
+    select: { eveningId: true, systemKey: true },
+  });
+  if (achievement?.eveningId === entry.eveningId && isWinnerAchievement(achievement)) {
+    if (count !== 0 && count !== 1) return false;
+    return setWinnerByPlayer(entry, game, count === 1);
+  }
+  return applyMark(entry, eveningAchievementId, game, count);
 }
 
 export type EntryStatus = "offen" | "angemeldet" | "abgegeben";

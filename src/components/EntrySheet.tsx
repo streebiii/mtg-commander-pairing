@@ -11,6 +11,7 @@ import {
   computeTotals,
   isParticipation,
   isPerGame,
+  isWinnerAchievement,
   markKey,
   marksToMap,
   maxCount,
@@ -24,6 +25,8 @@ export interface EntrySheetData {
   /** Runden, die schon live sind — fehlt bei nachgetragenen Abenden. */
   liveRounds?: number[];
   lastEvening: boolean;
+  /** Die Runde ist beendet — ein nicht gestartetes Match kommt nicht mehr. */
+  finished?: boolean;
 }
 
 const GROUP_LABELS: Record<AchievementCategory, string> = {
@@ -72,6 +75,7 @@ export default function EntrySheet({
   stepped = false,
   storageKey,
   submitSlot,
+  winnerNotes,
 }: {
   sheet: EntrySheetData;
   locked: boolean;
@@ -85,8 +89,21 @@ export default function EntrySheet({
   storageKey?: string;
   /** Der «Abgeben»-Knopf — erscheint im letzten Schritt. */
   submitSlot?: ReactNode;
+  /**
+   * Nur auf dem Blatt des Spielers: warum «Winner winner» je Match gesperrt
+   * ist (z.B. «Sieger: Anna S.»), null, wenn er es selbst setzen darf. Es
+   * folgt dem Tisch-Ergebnis (lib/winner.ts).
+   */
+  winnerNotes?: Record<number, string | null>;
 }) {
   const [marks, setMarks] = useState(() => marksToMap(sheet.marks));
+  // Lädt die Seite neu (AutoRefresh, z.B. nach einem Sieger des
+  // Organisators), gelten die frischen Einträge vom Server.
+  const [loadedMarks, setLoadedMarks] = useState(sheet.marks);
+  if (loadedMarks !== sheet.marks) {
+    setLoadedMarks(sheet.marks);
+    setMarks(marksToMap(sheet.marks));
+  }
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [step, setStep] = useState<Step>("deckbau");
@@ -161,7 +178,8 @@ export default function EntrySheet({
     const count = participation ? 1 : (marks.get(markKey(a.id, game)) ?? 0);
     const repeatable = isRepeatable(a.scope);
     const active = count > 0;
-    const disabled = locked || participation;
+    const winnerNote = isWinnerAchievement(a) ? (winnerNotes?.[game] ?? null) : null;
+    const disabled = locked || participation || winnerNote !== null;
 
     const label = (
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -172,6 +190,7 @@ export default function EntrySheet({
             <span className="opacity-60"> · {SCOPE_LABELS[a.scope]}</span>
           )}
           {participation && <span className="opacity-60"> · automatisch</span>}
+          {winnerNote && <span className="opacity-60"> · {winnerNote}</span>}
         </span>
         {a.description && (
           <span className="whitespace-pre-line opacity-60">{a.description}</span>
@@ -299,9 +318,12 @@ export default function EntrySheet({
   const previous = STEPS[stepIndex - 1];
   const next = STEPS[stepIndex + 1];
 
-  function gameState(game: number): "offen" | "nicht-gespielt" | "gesperrt" {
+  function gameState(game: number): "offen" | "nicht-gespielt" | "ausgefallen" | "gesperrt" {
     if (sheet.gamesPlayed.includes(game)) return "offen";
-    return live.includes(game) ? "nicht-gespielt" : "gesperrt";
+    if (live.includes(game)) return "nicht-gespielt";
+    // Runde nach Match 1 beendet: Match 2 kommt nicht mehr, also steht es
+    // auch nicht mehr aus.
+    return sheet.finished ? "ausgefallen" : "gesperrt";
   }
 
   let content: ReactNode;
@@ -357,6 +379,8 @@ export default function EntrySheet({
         groups(perGame, step)
       ) : state === "nicht-gespielt" ? (
         <p className="text-base opacity-70">Du hast Match {step} nicht gespielt.</p>
+      ) : state === "ausgefallen" ? (
+        <p className="text-base opacity-70">Match {step} wurde in dieser Runde nicht gespielt.</p>
       ) : (
         <p className="text-base opacity-70">
           Match {step} lässt sich erfassen, sobald es live ist.

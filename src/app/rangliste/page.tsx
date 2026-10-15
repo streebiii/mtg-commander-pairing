@@ -31,10 +31,13 @@ export default async function RankingPage() {
           {ranking.lastRound !== null && ` · Stand nach R${ranking.lastRound}`}
         </h2>
         <p className="text-base opacity-70">
-          Unterstrichene Punkte stammen aus der Achievement-Erfassung — mit
-          der Maus darauf zeigen oder antippen, um die Achievements der Runde
-          zu sehen. Nach der letzten Runde zählt das schlechteste Resultat
-          nicht (durchgestrichen).
+          {/* Wie man die Details öffnet, hängt vom Gerät ab — nach Fähigkeit,
+              nicht nach Breite, wie die Details selbst (SPEC.md 13.2). */}
+          Unterstrichene Punkte stammen aus der Achievement-Erfassung —{" "}
+          <span className="[@media(hover:hover)]:hidden">antippen</span>
+          <span className="hidden [@media(hover:hover)]:inline">mit der Maus darauf zeigen</span>
+          , um die Achievements der Runde zu sehen. Nach der letzten Runde
+          zählt das schlechteste Resultat nicht (durchgestrichen).
         </p>
       </div>
 

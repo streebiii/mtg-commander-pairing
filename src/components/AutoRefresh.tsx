@@ -7,16 +7,23 @@ import { useEffect } from "react";
 const CHECK_INTERVAL_MS = 10_000;
 
 /**
- * Lädt die öffentliche Pairing-Seite neu, sobald sich an der Zuteilung
- * etwas ändert — sonst nie. Ein Bildschirm vor Ort oder ein Handy zeigt
- * damit ohne Zutun das aktuelle Match.
+ * Lädt eine Seite neu, sobald sich an ihrem Inhalt etwas ändert — sonst
+ * nie. Die öffentliche Pairing-Seite zeigt damit ohne Zutun das aktuelle
+ * Match, der Liga-Tab einen Sieger, den ein Spieler selbst eingetragen
+ * hat, und das Erfassungsblatt den Sieger, den der Organisator gesetzt hat.
  *
- * Gefragt wird nur nach einem kurzen Fingerabdruck (`/stand`); die Seite
- * selbst wird nur bei einer Änderung neu geholt, Scroll-Position bleibt
- * erhalten. In einem Hintergrund-Tab ruht die Abfrage und holt beim
- * Zurückkehren sofort nach.
+ * Gefragt wird nur nach einem kurzen Fingerabdruck (`src`, Standard
+ * `/stand`); die Seite selbst wird nur bei einer Änderung neu geholt,
+ * Scroll-Position und Eingaben bleiben erhalten. In einem Hintergrund-Tab
+ * ruht die Abfrage und holt beim Zurückkehren sofort nach.
  */
-export default function AutoRefresh({ version }: { version: string }) {
+export default function AutoRefresh({
+  version,
+  src = "/stand",
+}: {
+  version: string;
+  src?: string;
+}) {
   const router = useRouter();
 
   useEffect(() => {
@@ -25,7 +32,7 @@ export default function AutoRefresh({ version }: { version: string }) {
     async function check() {
       if (document.visibilityState !== "visible") return;
       try {
-        const res = await fetch("/stand", { cache: "no-store" });
+        const res = await fetch(src, { cache: "no-store" });
         if (!res.ok) return;
         const data: { version?: string } = await res.json();
         if (!stopped && data.version && data.version !== version) router.refresh();
@@ -41,7 +48,7 @@ export default function AutoRefresh({ version }: { version: string }) {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", check);
     };
-  }, [version, router]);
+  }, [version, src, router]);
 
   return null;
 }

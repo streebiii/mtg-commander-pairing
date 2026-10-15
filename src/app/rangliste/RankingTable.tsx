@@ -59,6 +59,25 @@ export default function RankingTable({
   const closeSheet = useCallback(() => setSheet(null), []);
   const closePopover = useCallback(() => setPopover(null), []);
 
+  // Ob rechts noch Spalten versteckt sind — dann deutet ein Verlauf am
+  // Rand an, dass die Tabelle seitlich weitergeht. Auf dem Handy sind
+  // sonst nur R1–R2 sichtbar, ohne Hinweis auf den Rest.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [moreRight, setMoreRight] = useState(false);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const update = () => setMoreRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, []);
+
   function showDetail(detail: Detail, target: HTMLElement, via: "hover" | "tap") {
     if (via === "hover") setPopover({ ...detail, anchor: target });
     else setSheet({ ...detail, trigger: target });
@@ -66,7 +85,8 @@ export default function RankingTable({
 
   return (
     <>
-      <div className="-mx-4 overflow-x-auto px-4">
+      <div className="relative -mx-4">
+      <div ref={scrollRef} className="overflow-x-auto px-4">
         <table className="border-separate border-spacing-0 text-base tabular-nums">
           <thead>
             <tr className="text-left">
@@ -92,7 +112,7 @@ export default function RankingTable({
                 <td className={`${STICKY.name} ${CELL}`}>
                   <span className="flex items-center gap-2">
                     <span className="min-w-0 truncate">{row.name}</span>
-                    <ColorDots identity={row.colorIdentity} />
+                    <ColorDots identity={row.colorIdentity} size="h-2.5 w-2.5" />
                     {row.decklistUrl && (
                       <DecklistLink url={row.decklistUrl} name={row.name} />
                     )}
@@ -123,6 +143,13 @@ export default function RankingTable({
             ))}
           </tbody>
         </table>
+      </div>
+      {moreRight && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background"
+        />
+      )}
       </div>
 
       {popover && (

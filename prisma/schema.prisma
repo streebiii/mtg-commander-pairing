@@ -233,9 +233,9 @@ model Achievement {
   active      Boolean             @default(true)
   /// Reihenfolge wie auf mtgbl.ch, innerhalb der Kategorie.
   sortOrder   Int                 @default(0)
-  /// Kennung für Achievements, die die App selbst kennt. Heute nur
-  /// «participation»: wird bei der Erfassung für jedes gespielte Spiel
-  /// automatisch gesetzt.
+  /// Kennung für Achievements, die die App selbst kennt: «participation»
+  /// wird für jedes gespielte Spiel automatisch gesetzt, «winner» folgt dem
+  /// Tisch-Ergebnis (SPEC.md Abschnitt 12.2).
   systemKey   String?             @unique
   createdAt   DateTime            @default(now())
 

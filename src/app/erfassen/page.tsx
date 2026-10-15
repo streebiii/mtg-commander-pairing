@@ -1,6 +1,9 @@
 import EntrySheet from "@/components/EntrySheet";
 import { loadPublicNames } from "@/lib/publicRoster";
+import AutoRefresh from "@/components/AutoRefresh";
 import { getDeviceEntry, loadSheet } from "@/lib/entries";
+import { winnerNotes } from "@/lib/winner";
+import { deviceSheetVersion } from "./version";
 import { eveningLabel } from "@/lib/season";
 import { setMyMark } from "./actions";
 import SubmitEntryButton from "./SubmitEntryButton";
@@ -28,6 +31,7 @@ export default async function MyEntryPage() {
     loadSheet(entry.eveningId, entry.playerId),
     loadPublicNames(),
   ]);
+  const notes = await winnerNotes(entry.eveningId, entry.playerId, sheet.gamesPlayed, names);
   const closed = entry.evening.entryClosedAt !== null;
   const submitted = entry.submittedAt !== null;
   const locked = closed;
@@ -56,8 +60,13 @@ export default async function MyEntryPage() {
         </p>
       ) : null}
 
+      {!closed && (
+        <AutoRefresh src="/erfassen/stand" version={deviceSheetVersion(sheet, notes)} />
+      )}
+
       <EntrySheet
         sheet={sheet}
+        winnerNotes={notes}
         locked={locked}
         onSetMark={setMyMark}
         stepped

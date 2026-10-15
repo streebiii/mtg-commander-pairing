@@ -11,6 +11,7 @@ import { clearCasualPairing } from "@/lib/casualPairing";
 import { adoptAchievementsForEvening } from "@/lib/achievements";
 import { loadPairingStandings } from "@/lib/rankingData";
 import { findOpenEvening, seasonRoundError } from "@/lib/entries";
+import { syncWinnerMarks } from "@/lib/winner";
 import { parseSeasonRound } from "@/components/SeasonRoundSelect";
 
 /**
@@ -294,26 +295,28 @@ export async function setTableResult(formData: FormData) {
   const istWiderruf =
     table.resultEnteredAt !== null && winnerAssignmentId === bisherigerSieger;
 
-  await prisma.$transaction([
-    prisma.tableAssignment.updateMany({
+  await prisma.$transaction(async (tx) => {
+    await tx.tableAssignment.updateMany({
       where: { tableId },
       data: { isWinner: false },
-    }),
-    ...(istWiderruf || !winnerAssignmentId
-      ? []
-      : [
-          prisma.tableAssignment.update({
-            where: { id: winnerAssignmentId },
-            data: { isWinner: true },
-          }),
-        ]),
-    prisma.table.update({
+    });
+    if (!istWiderruf && winnerAssignmentId) {
+      await tx.tableAssignment.update({
+        where: { id: winnerAssignmentId },
+        data: { isWinner: true },
+      });
+    }
+    await tx.table.update({
       where: { id: tableId },
       data: { resultEnteredAt: istWiderruf ? null : new Date() },
-    }),
-  ]);
+    });
+    // Der Pokal zieht «Winner winner» auf den Blättern mit (lib/winner.ts).
+    await syncWinnerMarks(tx, tableId);
+  });
 
   revalidatePath("/admin/league");
+  revalidatePath("/admin/ligaverwaltung");
+  revalidatePath("/erfassen");
 }
 
 /**

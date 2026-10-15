@@ -159,7 +159,7 @@ function CellEditor({
     );
   }
 
-  return (
+  const input = (
     <input
       autoFocus
       type="text"
@@ -168,7 +168,10 @@ function CellEditor({
         setText(e.target.value);
         setInvalid(false);
       }}
-      onBlur={() => (invalid ? cancel() : commit(text))}
+      // Auch beim Verlassen nicht verwerfen: eine ungültige Adresse bleibt
+      // stehen und ist markiert, bis sie korrigiert oder mit Esc verworfen
+      // wird. Früher ging sie beim zweiten Verlassen still verloren.
+      onBlur={() => commit(text)}
       onKeyDown={onKeyDown}
       onFocus={(e) => e.currentTarget.select()}
       placeholder={
@@ -184,11 +187,22 @@ function CellEditor({
               : "Farben"
       }
       aria-invalid={invalid || undefined}
-      title={invalid ? "Keine gültige Adresse (http oder https)" : undefined}
+      aria-describedby={invalid ? "decklist-error" : undefined}
       className={`${CELL_INPUT} ${column === "colorIdentity" ? "uppercase" : ""} ${
         invalid ? "ring-red-500" : ""
       }`}
     />
+  );
+
+  if (!invalid) return input;
+  // Sichtbar statt nur als Tooltip — den sieht man auf dem Handy nie.
+  return (
+    <>
+      {input}
+      <span id="decklist-error" role="alert" className="block px-3 pb-2 text-base text-red-400">
+        Keine gültige Adresse — Esc verwirft.
+      </span>
+    </>
   );
 }
 
