@@ -39,6 +39,14 @@ export default async function RankingPage() {
           , um die Achievements der Runde zu sehen. Nach der letzten Runde
           zählt das schlechteste Resultat nicht (durchgestrichen).
         </p>
+        {/* Rückweg zur Vereinsseite, die von dort auf diese Rangliste
+            verlinkt. */}
+        <a
+          href={`https://mtgbl.ch/liga/commander/${SEASON_YEAR}/rangliste`}
+          className="inline-flex min-h-11 w-fit items-center text-base underline underline-offset-2 opacity-70 hover:opacity-100"
+        >
+          Rangliste auf mtgbl.ch →
+        </a>
       </div>
 
       {ranking.rows.length === 0 ? (
