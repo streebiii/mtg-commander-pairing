@@ -946,9 +946,13 @@ und der Organisator erfasst für ihn.
 
 ## 13. Rangliste
 
-Öffentlich unter `/rangliste`, ohne Login — dieselbe Rangliste wie auf
-mtgbl.ch, zusätzlich mit den erreichten Achievements pro Abend. Die
-offizielle Wertung bleibt auf mtgbl.ch.
+Öffentlich unter `/rangliste`, ohne Login — die Rangliste der Liga mit
+den erreichten Achievements pro Abend. Die Rangliste auf mtgbl.ch wird
+nicht mehr weitergeführt; dort verlinkt das Untermenü der Commander-Liga
+hierher. Unter dem Titel stehen dieselben Liga-Links wie in diesem
+Untermenü: Übersicht, Regeln und Achievements auf mtgbl.ch. Einen
+Erklärtext zu den Details gibt es nicht mehr (Entscheid des Organisators
+vom 17.10.2026).
 
 ### 13.1 Inhalt
 
@@ -1038,8 +1042,7 @@ gespielt hat, steht stattdessen in der Erfassung (`PlayerEntry.games`).
 Rang mit Δ, Spieler (mit den Farbpunkten) und Total bleiben links
 fixiert, die Spalten R1–R6 scrollen horizontal. Solange rechts noch
 Spalten folgen, läuft der Rand in einem Verlauf aus. Die Seite selbst
-scrollt nie seitlich. Der Erklärtext sagt auf Touch-Geräten «antippen»,
-sonst «mit der Maus darauf zeigen» (nach Fähigkeit, wie 13.2).
+scrollt nie seitlich.
 
 ## 14. Ligaverwaltung
 
