@@ -88,134 +88,138 @@ export default function NewAchievementPanel({
   const titleId = "new-achievement-title";
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50">
       <div
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
         aria-hidden="true"
       />
-      <form
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onSubmit={submit}
-        className="relative flex h-full w-full flex-col border-l border-white/10 bg-surface shadow-2xl sm:max-w-md"
-      >
-        <header className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
-          <h2 id={titleId} className="text-lg font-medium">
-            Neues Achievement
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Schliessen"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded text-xl hover:bg-white/10"
-          >
-            ×
-          </button>
-        </header>
+      {/* Am rechten Rand der Box (max-w-app), nicht des Bildschirms —
+          auf einem 49-Zoll-Monitor sässe es sonst weit weg vom Inhalt. */}
+      <div className="pointer-events-none relative mx-auto flex h-full max-w-app justify-end">
+        <form
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          onSubmit={submit}
+          className="pointer-events-auto relative flex h-full w-full flex-col border-l border-white/10 bg-surface shadow-2xl sm:max-w-md"
+        >
+          <header className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
+            <h2 id={titleId} className="text-lg font-medium">
+              Neues Achievement
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Schliessen"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded text-xl hover:bg-white/10"
+            >
+              ×
+            </button>
+          </header>
 
-        <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 text-base">
-          <label className="flex flex-col gap-1.5">
-            Titel
-            <input
-              ref={titleInput}
-              type="text"
-              required
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setError(null);
-              }}
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error ? "new-achievement-error" : undefined}
-              className={INPUT}
-            />
-            {error && (
-              <span
-                id="new-achievement-error"
-                role="alert"
-                className="text-base text-red-400"
-              >
-                {error}
-              </span>
-            )}
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            Beschreibung
-            <textarea
-              rows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className={INPUT}
-            />
-          </label>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 text-base">
             <label className="flex flex-col gap-1.5">
-              Punkte
+              Titel
               <input
-                type="number"
+                ref={titleInput}
+                type="text"
                 required
-                value={points}
-                onChange={(e) => setPoints(e.target.value)}
-                className={`${INPUT} tabular-nums`}
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setError(null);
+                }}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "new-achievement-error" : undefined}
+                className={INPUT}
+              />
+              {error && (
+                <span
+                  id="new-achievement-error"
+                  role="alert"
+                  className="text-base text-red-400"
+                >
+                  {error}
+                </span>
+              )}
+            </label>
+
+            <label className="flex flex-col gap-1.5">
+              Beschreibung
+              <textarea
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className={INPUT}
               />
             </label>
+
+            <div className="grid grid-cols-2 gap-4">
+              <label className="flex flex-col gap-1.5">
+                Punkte
+                <input
+                  type="number"
+                  required
+                  value={points}
+                  onChange={(e) => setPoints(e.target.value)}
+                  className={`${INPUT} tabular-nums`}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                Kategorie
+                <select
+                  value={category}
+                  onChange={(e) => {
+                    const next = e.target.value as AchievementCategory;
+                    // Art mitziehen, solange sie noch der Vorbelegung entspricht.
+                    if (scope === DEFAULT_SCOPE[category]) {
+                      setScope(DEFAULT_SCOPE[next]);
+                    }
+                    setCategory(next);
+                  }}
+                  className={`${INPUT} bg-surface`}
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {CATEGORY_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
             <label className="flex flex-col gap-1.5">
-              Kategorie
+              Art
               <select
-                value={category}
-                onChange={(e) => {
-                  const next = e.target.value as AchievementCategory;
-                  // Art mitziehen, solange sie noch der Vorbelegung entspricht.
-                  if (scope === DEFAULT_SCOPE[category]) {
-                    setScope(DEFAULT_SCOPE[next]);
-                  }
-                  setCategory(next);
-                }}
+                value={scope}
+                onChange={(e) => setScope(e.target.value as AchievementScope)}
                 className={`${INPUT} bg-surface`}
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {CATEGORY_LABELS[c]}
+                {SCOPES.map((s) => (
+                  <option key={s} value={s}>
+                    {SCOPE_LABELS[s]}
                   </option>
                 ))}
               </select>
+              <span className="text-base opacity-60">
+                {isRepeatable(scope)
+                  ? "Zählt mehrfach — bei der Erfassung gibt es ein Anzahl-Feld."
+                  : "Zählt einmal — bei der Erfassung gibt es ein Häkchen."}
+              </span>
             </label>
           </div>
 
-          <label className="flex flex-col gap-1.5">
-            Art
-            <select
-              value={scope}
-              onChange={(e) => setScope(e.target.value as AchievementScope)}
-              className={`${INPUT} bg-surface`}
-            >
-              {SCOPES.map((s) => (
-                <option key={s} value={s}>
-                  {SCOPE_LABELS[s]}
-                </option>
-              ))}
-            </select>
-            <span className="text-base opacity-60">
-              {isRepeatable(scope)
-                ? "Zählt mehrfach — bei der Erfassung gibt es ein Anzahl-Feld."
-                : "Zählt einmal — bei der Erfassung gibt es ein Häkchen."}
-            </span>
-          </label>
-        </div>
-
-        <footer className="flex justify-end gap-2 border-t border-white/10 px-5 py-4">
-          <SecondaryButton onClick={onClose} disabled={isPending}>
-            Abbrechen
-          </SecondaryButton>
-          <PrimaryButton type="submit" loading={isPending}>
-            {isPending ? "Lege an…" : "Anlegen"}
-          </PrimaryButton>
-        </footer>
-      </form>
+          <footer className="flex justify-end gap-2 border-t border-white/10 px-5 py-4">
+            <SecondaryButton onClick={onClose} disabled={isPending}>
+              Abbrechen
+            </SecondaryButton>
+            <PrimaryButton type="submit" loading={isPending}>
+              {isPending ? "Lege an…" : "Anlegen"}
+            </PrimaryButton>
+          </footer>
+        </form>
+      </div>
     </div>
   );
 }

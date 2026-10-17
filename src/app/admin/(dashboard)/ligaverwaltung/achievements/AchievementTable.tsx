@@ -10,6 +10,7 @@ import {
   formatPoints,
 } from "@/lib/achievements";
 import { updateAchievement } from "./actions";
+import DrawPanel from "./DrawPanel";
 import NewAchievementPanel from "./NewAchievementPanel";
 
 export interface TableAchievement {
@@ -227,6 +228,7 @@ export default function AchievementTable({
     setPatches({});
   }
   const [creating, setCreating] = useState(false);
+  const [drawing, setDrawing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [justSaved, setJustSaved] = useState(false);
   const savedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -476,10 +478,14 @@ export default function AchievementTable({
       </div>
 
       <div className="flex min-h-8 items-center justify-between gap-3 text-base">
-        <span>
+        <span className="flex flex-wrap items-center gap-x-3">
           <span className="font-medium tabular-nums">
             {activeInTab} von {totalInTab} aktiv
           </span>
+          {/* Die Ziehung für die nächste Runde (SPEC.md Abschnitt 11.2). */}
+          {tab === "ROTATING" && (
+            <SecondaryButton onClick={() => setDrawing(true)}>Auslosen</SecondaryButton>
+          )}
           <span className="opacity-70">
             {" "}
             · Zum Ändern auf eine Zelle klicken · Enter speichert · Esc
@@ -599,6 +605,12 @@ export default function AchievementTable({
         )}
       </div>
 
+      {drawing && (
+        <DrawPanel
+          pool={merged.filter((a) => a.category === "ROTATING")}
+          onClose={() => setDrawing(false)}
+        />
+      )}
       {creating && (
         <NewAchievementPanel
           category={tab}

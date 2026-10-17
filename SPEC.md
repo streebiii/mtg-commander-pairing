@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-10-15 («Winner winner» folgt dem Tisch-Ergebnis, Navigation zeigt die aktive Seite, Schrift Geist, Liga-Auswahl bleibt gespeichert, Aktuelle Runde sortiert nach Status; Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
+Stand: 2026-10-17 (Korrekturblatt als Tabelle mit einer Spalte pro Match, Rangliste auf dem Handy kompakter, Δ nur noch Aufstiege, Organisator-Bereich auf grossen Bildschirmen zentriert und geboxt, Auslosung der rotierenden Achievements in der App; «Winner winner» folgt dem Tisch-Ergebnis, Navigation zeigt die aktive Seite, Schrift Geist, Liga-Auswahl bleibt gespeichert, Aktuelle Runde sortiert nach Status; Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
 
 ## 1. Zweck
 
@@ -100,6 +100,14 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   DEPLOYMENT.md).
 - **Schrift**: Geist (über `next/font`), Arial nur als Rückfall beim Laden.
   Die Seiten sind als Deutsch (`de-CH`) ausgezeichnet.
+- **Bildschirmgrössen**: jede Seite muss vom Handy (iPhone 13 mini,
+  375 px) bis zum 49-Zoll-Ultrawide (5120 px) funktionieren und wird auf
+  375, 768, 1024, 1280, 1440, 2560 und 5120 px geprüft. Der
+  Organisator-Bereich wird höchstens 1600 px breit (`max-w-app`) und steht
+  zentriert; ab 1696 px (`boxed:`) ist er als Box mit Rand vor etwas
+  dunklerem Grund abgesetzt. Seitenpanels öffnen sich am rechten Rand
+  der Box, nicht des Bildschirms. Die öffentlichen Seiten und das
+  Erfassungsblatt sind ohnehin schmal und zentriert.
 - **Schriftgrösse**: in der ganzen App kein Text unter 16px (`text-base`),
   auch nicht für Hinweise und Tabellen. Seitentitel `text-xl`,
   Abschnittstitel `text-lg`. Eingabefelder ohnehin mindestens 16px
@@ -804,18 +812,24 @@ Katalog in der Ligaverwaltung, Reiter **«Achievements»** (Abschnitt 14).
 
 1. **Abend beenden** im Liga-Tab. Die 25 Achievements des Abends bleiben
    bei ihm gespeichert.
-2. **mtgbl.ch zieht** die 10 rotierenden für den nächsten Abend und
-   veröffentlicht sie (ausserhalb der App).
-3. In der Ligaverwaltung unter «Achievements», Reiter **Rotierend**, werden die 10 neuen
-   **aktiv** und die bisherigen **inaktiv** gestellt. Jeder Klick
-   speichert sofort. Ohne Sperre auf 10, weil die Ziehung übernommen und
-   nicht hier entschieden wird; die Anzeige «10 von 76 aktiv» dient zur
-   Kontrolle.
+2. **Die App lost aus** (seit 17.10.2026, vorher zog mtgbl.ch): in der
+   Ligaverwaltung unter «Achievements», Reiter **Rotierend**, zieht
+   «Auslosen» zufällig 10 aus **allen** rotierenden — auch den gerade
+   aktiven, Wiederholungen sind also möglich (Entscheid des Organisators).
+   Erst eine Vorschau in einem Seitenpanel, «Neu ziehen» zieht nochmals.
+   **«Übernehmen»** stellt die 10 in einer Transaktion aktiv und alle
+   übrigen rotierenden inaktiv.
+3. Danach zeigt das Panel die Ziehung als Text («Titel (+1): Beschreibung»,
+   eine Zeile pro Achievement) mit «Liste kopieren» — **mtgbl.ch übernimmt
+   die Ziehung der App** und wird von Hand nachgeführt. Lässt der Browser
+   nicht direkt in die Zwischenablage schreiben, wird der Text markiert.
+   Von Hand umstellen geht weiterhin über die Schalter in der Tabelle; die
+   Anzeige «10 von 76 aktiv» dient zur Kontrolle.
 4. Beim **Start des nächsten Liga-Abends** übernimmt der Abend, in
    derselben Transaktion wie Runde und Match 1, alle aktiven
    Achievements als **eingefrorene Kopie** (Titel, Beschreibung, Punkte,
    Kategorie, Art). Der Katalog bleibt unverändert — die rotierenden
-   bleiben aktiv, bis nach der nächsten Ziehung umgestellt wird.
+   bleiben aktiv, bis die nächste Auslosung übernommen wird.
 
 Ein gestarteter Abend behält seine Liste: Änderungen im Katalog wirken
 erst auf den nächsten Abend, auch während ein Abend läuft.
@@ -870,7 +884,17 @@ und der Organisator erfasst für ihn.
   Schritt; ohne Speicher beginnt das Blatt bei Deckbau. «Abgeben» zeigt
   eine Übersicht je Match und warnt, solange ein Match noch aussteht.
 - Der Organisator (Papierzettel, Korrekturen in der Ligaverwaltung) sieht
-  das ganze Blatt auf einer Seite.
+  das ganze Blatt auf einer Seite, als **Liste mit Spalten** (Entscheid des
+  Organisators vom 17.10.2026): jedes Achievement nur einmal, mit Titel,
+  Punkten und der **vollen, lesbaren Beschreibung**, rechts je gespieltes
+  Match eine Spalte zum Anhaken bzw. − n +.
+  - «Pro Match» und «Ganze Runde» (Deckbau usw., Spalte «Runde») stehen ab
+    lg nebeneinander, die Seite nutzt die volle Breite; darunter
+    untereinander. Ist der Bildschirm hoch genug, bleibt «Ganze Runde»
+    beim Scrollen neben der langen Liste stehen.
+  - Auf dem Handy heissen die Spalten «M1», «M2»; ein − n + bekommt dort
+    eine eigene Zeile unter dem Text, mit «M1»/«M2» davor.
+  - Geprüft auf 375, 768, 1024, 1280 und 1440 px Breite.
 - Mehrfach zählende Achievements («pro Spieler», «mehrmals pro Runde»)
   haben ein Anzahl-Feld (− / +, höchstens 20), alle anderen ein Häkchen.
 - **Participation** setzt die App für jedes gespielte Spiel automatisch,
@@ -987,8 +1011,10 @@ offizielle Wertung bleibt auf mtgbl.ch.
   0 und ist damit das schlechteste; bei mehreren gleich schlechten trifft
   es den letzten.
 - **Δ**: Veränderung gegenüber dem Stand vor dem letzten Abend (höchste
-  Spalte mit Punkten), nach denselben Regeln gerechnet — ▲ grün, ▼ rot,
-  nichts bei gleichem Rang. Wer vor dem letzten Abend noch keinen hatte,
+  Spalte mit Punkten), nach denselben Regeln gerechnet. Gezeigt werden
+  **nur Aufstiege** (▲ grün); Abstiege und gleicher Rang bleiben leer
+  (Entscheid des Organisators vom 17.10.2026). Auf dem Handy entfällt Δ
+  ganz (Abschnitt 13.4). Wer vor dem letzten Abend noch keinen hatte,
   bekommt «neu». Nach R6 vergleicht Δ den Stand mit Streichresultat mit
   dem nach R5 ohne. Vor dem zweiten Abend gibt es kein Δ.
 - Bis es ein Saison-Objekt gibt (BACKLOG.md), gilt als Saison das
@@ -1035,8 +1061,12 @@ gespielt hat, steht stattdessen in der Erfassung (`PlayerEntry.games`).
 
 ### 13.4 Auf dem Handy
 
-Rang mit Δ, Spieler (mit den Farbpunkten) und Total bleiben links
-fixiert, die Spalten R1–R6 scrollen horizontal. Solange rechts noch
+Rang, Spieler (mit den Farbpunkten) und Total bleiben links fixiert, die
+Spalten R1–R6 scrollen horizontal. Damit auf einem schmalen Handy (iPhone
+13 mini, 375 px) mehr Runden sichtbar sind: kein Δ, schmalere Rangspalte,
+und sobald seitlich gescrollt wird, klappt die Namensspalte zusammen (nur
+noch der Name, ohne Farbpunkte und Deckliste); zurück am linken Rand geht
+sie wieder auf. Solange rechts noch
 Spalten folgen, läuft der Rand in einem Verlauf aus. Die Seite selbst
 scrollt nie seitlich. Der Erklärtext sagt auf Touch-Geräten «antippen»,
 sonst «mit der Maus darauf zeigen» (nach Fähigkeit, wie 13.2).

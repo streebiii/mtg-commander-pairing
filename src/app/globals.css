@@ -22,12 +22,27 @@
    * zweite Farbwelt.
    */
   --surface: #161616;
+  /*
+   * Fläche ausserhalb der Box auf sehr breiten Bildschirmen (siehe
+   * `max-w-app` und `boxed:` unten) — eine Nuance dunkler als die Seite,
+   * damit die Box als Fläche lesbar ist.
+   */
+  --outside: #050505;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-outside: var(--outside);
+  /*
+   * Grosse Bildschirme bis 49-Zoll-Ultrawide (5120 px): der
+   * Organisator-Bereich wächst höchstens bis `max-w-app` und steht
+   * zentriert; ab `boxed:` ist er als Box mit Rand abgesetzt, statt sich
+   * über die ganze Breite zu dehnen.
+   */
+  --container-app: 100rem;
+  --breakpoint-boxed: 106rem;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

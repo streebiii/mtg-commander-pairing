@@ -68,6 +68,9 @@ export function parseScope(value: unknown): AchievementScope | null {
     : null;
 }
 
+/** So viele rotierende gelten pro Runde (SPEC.md Abschnitt 11.1). */
+export const ROTATING_DRAW_SIZE = 10;
+
 /** «+1», «+2», «−3» — mit Vorzeichen wie auf mtgbl.ch. */
 export function formatPoints(points: number): string {
   return points >= 0 ? `+${points}` : `−${Math.abs(points)}`;

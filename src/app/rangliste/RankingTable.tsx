@@ -64,10 +64,17 @@ export default function RankingTable({
   // sonst nur R1–R2 sichtbar, ohne Hinweis auf den Rest.
   const scrollRef = useRef<HTMLDivElement>(null);
   const [moreRight, setMoreRight] = useState(false);
+  // Auf dem Handy klappt die Namensspalte beim seitlichen Scrollen
+  // zusammen (nur noch der Name, ohne Farben), damit mehr Runden-Spalten
+  // Platz haben; zurück am linken Rand geht sie wieder auf.
+  const [collapsed, setCollapsed] = useState(false);
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const update = () => setMoreRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    const update = () => {
+      setMoreRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+      setCollapsed(el.scrollLeft > 8);
+    };
     update();
     el.addEventListener("scroll", update, { passive: true });
     const observer = new ResizeObserver(update);
@@ -86,7 +93,10 @@ export default function RankingTable({
   return (
     <>
       <div className="relative -mx-4">
-      <div ref={scrollRef} className="overflow-x-auto px-4">
+      <div
+        ref={scrollRef}
+        className={`overflow-x-auto px-4 ${COLUMN_WIDTHS} ${collapsed ? COLLAPSED : ""}`}
+      >
         <table className="border-separate border-spacing-0 text-base tabular-nums">
           <thead>
             <tr className="text-left">
@@ -106,16 +116,21 @@ export default function RankingTable({
                 <td className={`${STICKY.rank} ${CELL}`}>
                   <span className="inline-flex items-baseline gap-1.5">
                     {row.rank}
-                    <Delta delta={row.delta} />
+                    {/* Auf dem Handy ohne Δ — der Platz gehört den Runden. */}
+                    <span className="hidden sm:inline">
+                      <Delta delta={row.delta} />
+                    </span>
                   </span>
                 </td>
                 <td className={`${STICKY.name} ${CELL}`}>
                   <span className="flex items-center gap-2">
                     <span className="min-w-0 truncate">{row.name}</span>
-                    <ColorDots identity={row.colorIdentity} size="h-2.5 w-2.5" />
-                    {row.decklistUrl && (
-                      <DecklistLink url={row.decklistUrl} name={row.name} />
-                    )}
+                    <span className={`flex shrink-0 items-center gap-2 ${collapsed ? "max-sm:hidden" : ""}`}>
+                      <ColorDots identity={row.colorIdentity} size="h-2.5 w-2.5" />
+                      {row.decklistUrl && (
+                        <DecklistLink url={row.decklistUrl} name={row.name} />
+                      )}
+                    </span>
                   </span>
                 </td>
                 <td className={`${STICKY.total} ${CELL} text-right font-semibold`}>
@@ -166,12 +181,19 @@ export default function RankingTable({
   );
 }
 
-// Rang mit Δ, Spieler und Total bleiben beim horizontalen Scrollen stehen;
-// die Abstände links entsprechen den Breiten der Spalten davor.
+// Rang, Spieler und Total bleiben beim horizontalen Scrollen stehen. Ihre
+// Breiten stehen als Variablen am Scroll-Container, damit die Abstände
+// links (Summe der Spalten davor) mitwandern, wenn die Namensspalte auf
+// dem Handy zusammenklappt. Auf dem Handy ist der Rang schmaler, weil dort
+// kein Δ steht.
+const COLUMN_WIDTHS =
+  "[--rank-w:2rem] [--name-w:8rem] [--total-w:3.5rem] sm:[--rank-w:3rem] sm:[--name-w:10rem]";
+const COLLAPSED = "max-sm:[--name-w:5.5rem]";
+const SLIDE = "transition-[width,min-width,max-width,left] duration-200";
 const STICKY = {
-  rank: "sticky left-0 z-10 w-12 min-w-12 bg-background",
-  name: "sticky left-12 z-10 w-32 min-w-32 max-w-32 bg-background sm:w-40 sm:min-w-40 sm:max-w-40",
-  total: "sticky left-44 z-10 w-14 min-w-14 border-r border-white/10 bg-background pr-3 sm:left-52",
+  rank: `sticky left-0 z-10 w-[var(--rank-w)] min-w-[var(--rank-w)] bg-background ${SLIDE}`,
+  name: `sticky left-[var(--rank-w)] z-10 w-[var(--name-w)] min-w-[var(--name-w)] max-w-[var(--name-w)] bg-background ${SLIDE}`,
+  total: `sticky left-[calc(var(--rank-w)+var(--name-w))] z-10 w-[var(--total-w)] min-w-[var(--total-w)] border-r border-white/10 bg-background pr-3 ${SLIDE}`,
 };
 // Abgedunkelt über die Schriftfarbe, nicht `opacity`: sonst würde auch der
 // Hintergrund der fixierten Zellen durchsichtig und die Spalten dahinter
@@ -179,16 +201,13 @@ const STICKY = {
 const HEAD = "border-b border-white/10 px-2 py-2.5 font-medium text-foreground/70";
 const CELL = "border-b border-white/5 px-2 py-2";
 
+/** Nur Aufstiege (und «neu») — Abstiege zeigt die Rangliste bewusst nicht. */
 function Delta({ delta }: { delta: RankingRow["delta"] }) {
   if (delta === "neu") return <span className="text-base text-blue-400">neu</span>;
-  if (!delta) return null;
-  return delta > 0 ? (
+  if (!delta || delta < 0) return null;
+  return (
     <span className="text-base text-green-400" aria-label={`${delta} Ränge gewonnen`}>
       ▲{delta}
-    </span>
-  ) : (
-    <span className="text-base text-red-400" aria-label={`${-delta} Ränge verloren`}>
-      ▼{-delta}
     </span>
   );
 }
