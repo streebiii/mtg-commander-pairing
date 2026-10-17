@@ -9,6 +9,12 @@ import RankingTable from "./RankingTable";
 // Erfassung geschlossen hat.
 export const dynamic = "force-dynamic";
 
+const LEAGUE_LINKS = [
+  { href: "https://mtgbl.ch/liga/commander/uebersicht", label: "Übersicht" },
+  { href: `https://mtgbl.ch/liga/commander/${SEASON_YEAR}/regeln`, label: "Regeln" },
+  { href: `https://mtgbl.ch/liga/commander/${SEASON_YEAR}/achievements`, label: "Achievements" },
+];
+
 export const metadata: Metadata = { title: "Rangliste · Commander" };
 
 export default async function RankingPage() {
@@ -30,23 +36,19 @@ export default async function RankingPage() {
           Commander-Liga {SEASON_YEAR}
           {ranking.lastRound !== null && ` · Stand nach R${ranking.lastRound}`}
         </h2>
-        <p className="text-base opacity-70">
-          {/* Wie man die Details öffnet, hängt vom Gerät ab — nach Fähigkeit,
-              nicht nach Breite, wie die Details selbst (SPEC.md 13.2). */}
-          Unterstrichene Punkte stammen aus der Achievement-Erfassung —{" "}
-          <span className="[@media(hover:hover)]:hidden">antippen</span>
-          <span className="hidden [@media(hover:hover)]:inline">mit der Maus darauf zeigen</span>
-          , um die Achievements der Runde zu sehen. Nach der letzten Runde
-          zählt das schlechteste Resultat nicht (durchgestrichen).
-        </p>
-        {/* Rückweg zur Vereinsseite, die von dort auf diese Rangliste
-            verlinkt. */}
-        <a
-          href={`https://mtgbl.ch/liga/commander/${SEASON_YEAR}/rangliste`}
-          className="inline-flex min-h-11 w-fit items-center text-base underline underline-offset-2 opacity-70 hover:opacity-100"
-        >
-          Rangliste auf mtgbl.ch →
-        </a>
+        {/* Dieselben Liga-Seiten wie im Untermenü auf mtgbl.ch; deren
+            «Rangliste» verlinkt hierher. */}
+        <nav className="flex flex-wrap gap-x-5 text-base">
+          {LEAGUE_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="inline-flex min-h-11 items-center underline underline-offset-2 opacity-70 hover:opacity-100"
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </div>
 
       {ranking.rows.length === 0 ? (
