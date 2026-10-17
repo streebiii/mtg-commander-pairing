@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/adminGuard";
 import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_SCOPE,
+  ROTATING_DRAW_SIZE,
   parseCategory,
   parseScope,
 } from "@/lib/achievements";
@@ -94,4 +95,34 @@ export async function updateAchievement(formData: FormData) {
     },
   });
   revalidateAchievementViews();
+}
+
+/**
+ * Übernimmt eine Auslosung der rotierenden Achievements (DrawPanel): die
+ * gezogenen werden aktiv, alle übrigen rotierenden inaktiv — in einer
+ * Transaktion, damit nie eine halbe Ziehung gilt. Wirkt wie jede
+ * Katalogänderung erst auf die nächste Runde.
+ */
+export async function activateRotatingDraw(ids: string[]): Promise<boolean> {
+  await requireAdmin();
+  const unique = [...new Set(ids)];
+  const pool = await prisma.achievement.count({ where: { category: "ROTATING" } });
+  if (unique.length !== Math.min(ROTATING_DRAW_SIZE, pool)) return false;
+  const found = await prisma.achievement.count({
+    where: { id: { in: unique }, category: "ROTATING" },
+  });
+  if (found !== unique.length) return false;
+
+  await prisma.$transaction([
+    prisma.achievement.updateMany({
+      where: { category: "ROTATING", id: { notIn: unique } },
+      data: { active: false },
+    }),
+    prisma.achievement.updateMany({
+      where: { id: { in: unique } },
+      data: { active: true },
+    }),
+  ]);
+  revalidateAchievementViews();
+  return true;
 }

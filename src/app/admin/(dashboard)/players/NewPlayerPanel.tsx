@@ -59,101 +59,105 @@ export default function NewPlayerPanel({ onClose }: { onClose: () => void }) {
   const titleId = "new-player-title";
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
-      <form
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onSubmit={submit}
-        className="relative flex h-full w-full flex-col border-l border-white/10 bg-surface shadow-2xl sm:max-w-md"
-      >
-        <header className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
-          <h2 id={titleId} className="text-lg font-medium">
-            Neuer Spieler
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Schliessen"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded text-xl hover:bg-white/10"
-          >
-            ×
-          </button>
-        </header>
-
-        <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 text-base">
-          <label className="flex flex-col gap-1.5">
-            Vorname
-            <input
-              ref={firstInput}
-              type="text"
-              required
-              value={firstName}
-              onChange={(e) => {
-                setFirstName(e.target.value);
-                setError(null);
-              }}
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error ? "new-player-error" : undefined}
-              className={INPUT}
-            />
-            {error && (
-              <span id="new-player-error" role="alert" className="text-base text-red-400">
-                {error}
-              </span>
-            )}
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            Nachname (optional)
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className={INPUT}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            Stufe (0-3)
-            <select
-              value={skillLevel}
-              onChange={(e) => setSkillLevel(Number(e.target.value))}
-              className={`${INPUT} w-24 bg-surface`}
+      {/* Am rechten Rand der Box (max-w-app), nicht des Bildschirms —
+          auf einem 49-Zoll-Monitor sässe es sonst weit weg vom Inhalt. */}
+      <div className="pointer-events-none relative mx-auto flex h-full max-w-app justify-end">
+        <form
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          onSubmit={submit}
+          className="pointer-events-auto relative flex h-full w-full flex-col border-l border-white/10 bg-surface shadow-2xl sm:max-w-md"
+        >
+          <header className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
+            <h2 id={titleId} className="text-lg font-medium">
+              Neuer Spieler
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Schliessen"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded text-xl hover:bg-white/10"
             >
-              {SKILL_LEVELS.map((level) => (
-                <option key={level} value={level}>
-                  {level}
-                </option>
-              ))}
-            </select>
-            <span className="text-base opacity-60">
-              Nur hier sichtbar — dient allein der ausgewogenen Zuteilung im
-              Casual-Modus.
-            </span>
-          </label>
+              ×
+            </button>
+          </header>
 
-          <label className="flex min-h-11 items-center gap-2">
-            <input
-              type="checkbox"
-              checked={leagueActive}
-              onChange={(e) => setLeagueActive(e.target.checked)}
-              className="h-5 w-5"
-            />
-            Nimmt an der Liga teil
-          </label>
-        </div>
+          <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 text-base">
+            <label className="flex flex-col gap-1.5">
+              Vorname
+              <input
+                ref={firstInput}
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => {
+                  setFirstName(e.target.value);
+                  setError(null);
+                }}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "new-player-error" : undefined}
+                className={INPUT}
+              />
+              {error && (
+                <span id="new-player-error" role="alert" className="text-base text-red-400">
+                  {error}
+                </span>
+              )}
+            </label>
 
-        <footer className="flex justify-end gap-2 border-t border-white/10 px-5 py-4">
-          <SecondaryButton onClick={onClose} disabled={isPending}>
-            Abbrechen
-          </SecondaryButton>
-          <PrimaryButton type="submit" loading={isPending}>
-            {isPending ? "Lege an…" : "Anlegen"}
-          </PrimaryButton>
-        </footer>
-      </form>
+            <label className="flex flex-col gap-1.5">
+              Nachname (optional)
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className={INPUT}
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5">
+              Stufe (0-3)
+              <select
+                value={skillLevel}
+                onChange={(e) => setSkillLevel(Number(e.target.value))}
+                className={`${INPUT} w-24 bg-surface`}
+              >
+                {SKILL_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </select>
+              <span className="text-base opacity-60">
+                Nur hier sichtbar — dient allein der ausgewogenen Zuteilung im
+                Casual-Modus.
+              </span>
+            </label>
+
+            <label className="flex min-h-11 items-center gap-2">
+              <input
+                type="checkbox"
+                checked={leagueActive}
+                onChange={(e) => setLeagueActive(e.target.checked)}
+                className="h-5 w-5"
+              />
+              Nimmt an der Liga teil
+            </label>
+          </div>
+
+          <footer className="flex justify-end gap-2 border-t border-white/10 px-5 py-4">
+            <SecondaryButton onClick={onClose} disabled={isPending}>
+              Abbrechen
+            </SecondaryButton>
+            <PrimaryButton type="submit" loading={isPending}>
+              {isPending ? "Lege an…" : "Anlegen"}
+            </PrimaryButton>
+          </footer>
+        </form>
+      </div>
     </div>
   );
 }

@@ -34,7 +34,10 @@ export default async function CorrectEntryPage({
   const open = evening.entryClosedAt === null;
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-6">
+    // Volle Breite wie die übrigen Seiten der Ligaverwaltung: Pro Match und
+    // Ganze Runde stehen ab lg nebeneinander (EntrySheet), die Beschreibungen
+    // brauchen den Platz.
+    <div className="flex w-full flex-col gap-6">
       <div className="flex flex-col gap-1">
         <Link
           href={`/admin/ligaverwaltung/runden/${evening.id}`}
@@ -64,7 +67,7 @@ export default async function CorrectEntryPage({
         <form action={confirmEntry.bind(null, evening.id, playerId)}>
           <button
             type="submit"
-            className="inline-flex min-h-11 w-full items-center justify-center rounded bg-foreground px-4 py-2 text-base font-medium text-background hover:opacity-90"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded bg-foreground px-4 py-2 text-base font-medium text-background hover:opacity-90 sm:w-fit"
           >
             Als abgegeben markieren
           </button>
