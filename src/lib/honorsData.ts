@@ -12,7 +12,7 @@ export async function loadHonors() {
   const [players, evenings, names, open] = await Promise.all([
     prisma.player.findMany({
       where: { leagueActive: true },
-      select: { id: true, firstName: true },
+      select: { id: true, firstName: true, colorIdentity: true },
     }),
     loadSeasonEvenings(),
     loadPublicNames(),
@@ -20,7 +20,11 @@ export async function loadHonors() {
   ]);
   return {
     ...computeHonors(
-      players.map((p) => ({ id: p.id, name: names.get(p.id) ?? p.firstName })),
+      players.map((p) => ({
+        id: p.id,
+        name: names.get(p.id) ?? p.firstName,
+        colorIdentity: p.colorIdentity,
+      })),
       evenings,
     ),
     /** Läuft eine Erfassung noch? Dann fehlt deren Runde. */

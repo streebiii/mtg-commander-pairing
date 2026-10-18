@@ -1121,14 +1121,24 @@ nichts zusätzlich einzutragen.
   R1–R4. Eine offene Erfassung zählt erst nach dem Schliessen; am
   Finale also zuerst die Erfassung schliessen, dann präsentieren.
   Gezählt werden die Liga-Teilnehmenden, mit den Namen der Rangliste.
-- **Ehrungen** (Reihenfolge der Präsentation): Hardcore-Mulligan
-  («Hardcore Mode»), Schon wieder ich? («I’ve seen this movie»), Herr des
-  Rings (in keiner Runde «No Sol Ring»), Gnadenlos («Eliminate»), Andere
-  Wege («Alternative»), Showtime (rotierende Achievements), Einzigartig
-  (Achievements, die nur eine Person geschafft hat), Sammelwut
-  (verschiedene Achievements), Deckbau-Kunst (Deckbau-Punkte), Immer
-  dabei (jedes Match gespielt), Sternstunde (bestes Rundentotal), Chicken
-  Dinner (Siege). Dazu «Die Saison in Zahlen» als Einstieg.
+- **Ehrungen** (Reihenfolge der Präsentation), mit sachlichen Titeln
+  (Entscheid des Organisators vom 18.10.2026):
+  Mulligan auf 5 («Hardcore Mode»), Sieg nach Mulligan, Mulligan und als
+  erstes raus, Als erstes eliminiert («I’ve seen this movie»), Immer mit
+  Sol Ring (in keiner Runde «No Sol Ring»), Eliminiert, aber nicht
+  gewonnen, Neutrale Matches, Die meisten Eliminierungen («Eliminate»),
+  Alternative Win-Con, Rotierende Achievements, Nur einmal geschafft,
+  Verschiedene Achievements, Deckbau-Punkte, Jedes Match gespielt,
+  Grösste Schwankung, Beste Runde, Beide Matches gewonnen, Farbe mit den
+  meisten Siegen, Die meisten Siege. Dazu «Die Saison in Zahlen» als
+  Einstieg.
+- **Kombinationen** werten aus, was jemand im *selben* Match erreicht hat
+  (z.B. «Hardcore Mode» und Sieg), «Beide Matches gewonnen» Match 1 und 2
+  derselben Runde. **Neutral** ist ein Match ohne Sieg, ohne Eliminierung
+  und ohne als erstes eliminiert zu werden — gezählt nur, wo der Spieler
+  selbst etwas erfasst hat. **Schwankung** erst ab drei Runden.
+  **Farbe**: Siege pro Match aller, deren ausgeloste Farbidentität die
+  Farbe enthält (ein Spieler «WR» zählt für Weiss und Rot).
 - **Gleichstand**: alle mit dem Höchstwert werden geehrt; die bis zu drei
   Nächsten stehen als «Dahinter» daneben. Wer den Wert 0 hat, wird nie
   geehrt; eine Ehrung ohne Geehrte lässt die Präsentation aus.

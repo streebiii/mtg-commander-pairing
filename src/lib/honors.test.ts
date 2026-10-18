@@ -3,9 +3,9 @@ import type { SheetAchievement } from "./entrySheet";
 import { computeHonors, type HonorsEvening, type HonorsPlayer } from "./honors";
 
 const players: HonorsPlayer[] = [
-  { id: "anna", name: "Anna" },
-  { id: "ben", name: "Ben" },
-  { id: "cara", name: "Cara" },
+  { id: "anna", name: "Anna", colorIdentity: "WR" },
+  { id: "ben", name: "Ben", colorIdentity: "G" },
+  { id: "cara", name: "Cara", colorIdentity: "RG" },
 ];
 
 function achievement(
@@ -33,6 +33,7 @@ const sheet: SheetAchievement[] = [
   achievement("hard", "Hardcore Mode"),
   achievement("nosol", "No Sol Ring", { category: "DECKBUILDING", scope: "EVENING" }),
   achievement("flush", "Flush", { category: "ROTATING" }),
+  achievement("elim", "Eliminate"),
 ];
 
 /** Markierungen als «Achievement:Spiel» → Anzahl. */
@@ -75,14 +76,14 @@ describe("computeHonors", () => {
 
   it("ehrt niemanden, solange niemand das Achievement hat", () => {
     const result = computeHonors(players, [evening(1, { anna: { marks: { "flush:1": 1 } } })]);
-    expect(honor(result, "hardcore").winners).toEqual([]);
+    expect(honor(result, "mulligan").winners).toEqual([]);
   });
 
   it("ignoriert Markierungen für ein nicht gespieltes Match", () => {
     const result = computeHonors(players, [
       evening(1, { anna: { games: [1], marks: { "hard:1": 1, "hard:2": 1 } } }),
     ]);
-    expect(honor(result, "hardcore").winners[0].value).toBe(1);
+    expect(honor(result, "mulligan").winners[0].value).toBe(1);
   });
 
   it("Herr des Rings: nie «No Sol Ring», Runden ohne eigene Erfassung zählen nicht", () => {
@@ -112,11 +113,11 @@ describe("computeHonors", () => {
       evening(1, { anna: { marks: { "win:1": 1 } }, ben: { marks: { "win:2": 1, "flush:2": 1 } } }),
       evening(3, { anna: { marks: { "win:1": 1, "win:2": 1, "flush:1": 1 } } }),
     ]);
-    expect(honor(result, "chicken-dinner").winners).toMatchObject([
+    expect(honor(result, "siege").winners).toMatchObject([
       { name: "Anna", value: 3, label: "3 Siege" },
     ]);
     // R3: 2 Teilnahmen + 2 Siege + Flush = 5 Punkte.
-    expect(honor(result, "sternstunde").winners[0].label).toBe("5 Punkte in R3");
+    expect(honor(result, "beste-runde").winners[0].label).toBe("5 Punkte in R3");
   });
 
   it("Einzigartig: Achievements, die nur eine Person erreicht hat", () => {
@@ -135,7 +136,70 @@ describe("computeHonors", () => {
     const result = computeHonors(players, [
       evening(1, { dora: { marks: { "hard:1": 1 } }, anna: { marks: { "flush:1": 1 } } }),
     ]);
-    expect(honor(result, "hardcore").winners).toEqual([]);
+    expect(honor(result, "mulligan").winners).toEqual([]);
     expect(result.facts[0]).toEqual({ value: 1, label: "Spielerinnen und Spieler" });
+  });
+
+  it("kombiniert Achievements im selben Match", () => {
+    const result = computeHonors(players, [
+      evening(1, {
+        // Match 1: Mulligan und Sieg, Match 2: Mulligan und als erstes raus.
+        anna: { marks: { "hard:1": 1, "win:1": 1, "hard:2": 1, "first:2": 1 } },
+        // Mulligan in Match 1, Sieg erst in Match 2 — keine Kombination.
+        ben: { marks: { "hard:1": 1, "win:2": 1, "elim:1": 1 } },
+      }),
+    ]);
+    expect(honor(result, "mulligan-sieg").winners).toMatchObject([{ name: "Anna", value: 1 }]);
+    expect(honor(result, "mulligan-raus").winners).toMatchObject([{ name: "Anna", value: 1 }]);
+    expect(honor(result, "eliminiert-ohne-sieg").winners).toMatchObject([{ name: "Ben", value: 1 }]);
+  });
+
+  it("neutrale Matches zählen nur mit eigener Erfassung", () => {
+    const result = computeHonors(players, [
+      evening(1, {
+        anna: { marks: { "flush:1": 1 } }, // Match 1 und 2 neutral
+        ben: { marks: { "win:1": 1 } }, // nur Match 2 neutral
+        cara: {}, // nichts erfasst: zählt nicht
+      }),
+    ]);
+    const neutral = honor(result, "neutral");
+    expect(neutral.winners).toMatchObject([{ name: "Anna", value: 2, label: "2 Matches" }]);
+    expect(names(neutral.runnersUp)).toEqual(["Ben"]);
+  });
+
+  it("beide Matches gewonnen zählt Runden", () => {
+    const result = computeHonors(players, [
+      evening(1, { anna: { marks: { "win:1": 1, "win:2": 1 } }, ben: { marks: { "win:1": 1 } } }),
+      evening(2, { anna: { marks: { "win:1": 1, "win:2": 1 } } }),
+    ]);
+    expect(honor(result, "beide-gewonnen").winners).toMatchObject([{ name: "Anna", value: 2 }]);
+  });
+
+  it("Schwankung erst ab drei Runden", () => {
+    const result = computeHonors(players, [
+      evening(1, { anna: { marks: { "flush:1": 1 } }, ben: {}, cara: {} }),
+      evening(2, { anna: {}, ben: { marks: { "flush:1": 1 } }, cara: { marks: { "win:1": 1, "win:2": 1 } } }),
+      evening(3, { anna: { marks: { "flush:1": 1, "win:1": 1 } }, ben: {} }),
+    ]);
+    // Anna: 3, 2, 4 Punkte. Ben: 2, 3, 2. Cara schwankt mit 2 und 4 am
+    // stärksten, hat aber nur zwei Runden.
+    const swing = honor(result, "schwankung");
+    expect(swing.winners).toMatchObject([{ name: "Anna", value: 2, label: "2 bis 4 Punkte" }]);
+    expect(names(swing.runnersUp)).toEqual(["Ben"]);
+  });
+
+  it("Farbe mit den meisten Siegen pro Match", () => {
+    const result = computeHonors(players, [
+      evening(1, {
+        anna: { marks: { "win:1": 1 } }, // W, R: 1 von 2
+        ben: { marks: { "win:1": 1, "win:2": 1 } }, // G: 2 von 2
+        cara: { marks: { "flush:1": 1 } }, // R, G: 0 von 2
+      }),
+    ]);
+    const color = honor(result, "farbe");
+    // Grün: 2 Siege in 4 Matches (Ben, Cara), Weiss: 1 in 2, Rot: 1 in 4.
+    expect(color.winners.map((w) => w.name)).toEqual(["Grün", "Weiss"]);
+    expect(color.winners[0].label).toBe("50 % (2 von 4)");
+    expect(names(color.runnersUp)).toEqual(["Rot"]);
   });
 });
