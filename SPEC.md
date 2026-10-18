@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-10-17 (Korrekturblatt als Tabelle mit einer Spalte pro Match, Rangliste auf dem Handy kompakter, Δ nur noch Aufstiege, Organisator-Bereich auf grossen Bildschirmen zentriert und geboxt, Auslosung der rotierenden Achievements in der App; «Winner winner» folgt dem Tisch-Ergebnis, Navigation zeigt die aktive Seite, Schrift Geist, Liga-Auswahl bleibt gespeichert, Aktuelle Runde sortiert nach Status; Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
+Stand: 2026-10-17 (Ehrungen für die Rangverkündigung; Korrekturblatt als Tabelle mit einer Spalte pro Match, Rangliste auf dem Handy kompakter, Δ nur noch Aufstiege, Organisator-Bereich auf grossen Bildschirmen zentriert und geboxt, Auslosung der rotierenden Achievements in der App; «Winner winner» folgt dem Tisch-Ergebnis, Navigation zeigt die aktive Seite, Schrift Geist, Liga-Auswahl bleibt gespeichert, Aktuelle Runde sortiert nach Status; Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
 
 ## 1. Zweck
 
@@ -1077,7 +1077,7 @@ scrollt nie seitlich.
 ## 14. Ligaverwaltung
 
 Alles, was die Liga ausserhalb des Spielabends braucht, unter
-`/admin/ligaverwaltung` mit vier Reitern (gestaltet wie die Reiter im
+`/admin/ligaverwaltung` mit fünf Reitern (gestaltet wie die Reiter im
 Achievement-Katalog):
 
 - **Aktuelle Runde** — die Achievement-Erfassung der offenen Runde
@@ -1101,8 +1101,46 @@ Achievement-Katalog):
   Abschnitt 7).
 - **Achievements** — der Katalog (Abschnitt 11).
 - **Tischkarten** — die Druckvorlage (Abschnitt 12.1).
+- **Ehrungen** — die Statistiken für die Rangverkündigung (Abschnitt 15).
 
 Die früheren Adressen `/admin/erfassung` und `/admin/achievements` leiten
 hierher um (`next.config.ts`). Im Spieler-Tab zeigt die Seite eines
 Spielers seine Achievements pro Runde nur noch an, mit einem Link zum
 Korrigieren hier.
+
+## 15. Ehrungen
+
+Für die Rangverkündigung nach dem Finale ehrt die Liga neben der
+Rangliste auch Lustiges: wer am öftesten als erstes eliminiert wurde, wer
+immer mit Sol Ring gespielt hat, wer am öftesten mit 5 oder weniger
+Karten gestartet ist usw. Alles folgt aus den Erfassungen — es gibt
+nichts zusätzlich einzutragen.
+
+- **Grundlage** sind dieselben Runden wie in der Rangliste: geschlossen
+  und einer Spalte zugeordnet (Abschnitt 13), samt den nachgetragenen
+  R1–R4. Eine offene Erfassung zählt erst nach dem Schliessen; am
+  Finale also zuerst die Erfassung schliessen, dann präsentieren.
+  Gezählt werden die Liga-Teilnehmenden, mit den Namen der Rangliste.
+- **Ehrungen** (Reihenfolge der Präsentation): Hardcore-Mulligan
+  («Hardcore Mode»), Schon wieder ich? («I’ve seen this movie»), Herr des
+  Rings (in keiner Runde «No Sol Ring»), Gnadenlos («Eliminate»), Andere
+  Wege («Alternative»), Showtime (rotierende Achievements), Einzigartig
+  (Achievements, die nur eine Person geschafft hat), Sammelwut
+  (verschiedene Achievements), Deckbau-Kunst (Deckbau-Punkte), Immer
+  dabei (jedes Match gespielt), Sternstunde (bestes Rundentotal), Chicken
+  Dinner (Siege). Dazu «Die Saison in Zahlen» als Einstieg.
+- **Gleichstand**: alle mit dem Höchstwert werden geehrt; die bis zu drei
+  Nächsten stehen als «Dahinter» daneben. Wer den Wert 0 hat, wird nie
+  geehrt; eine Ehrung ohne Geehrte lässt die Präsentation aus.
+- **Herr des Rings** zählt nur Runden, in denen der Spieler selbst etwas
+  erfasst hat — ohne Markierung lässt sich nicht sagen, ob «No Sol Ring»
+  fehlt oder nur nichts eingetragen wurde.
+- **Übersicht** im Reiter «Ehrungen» der Ligaverwaltung zur Vorbereitung,
+  **Präsentation** unter `/admin/ehrungen` für den Beamer: ohne
+  Navigation, zuerst Titel und Beschreibung, beim nächsten Schritt die
+  Geehrten. Weiter mit Pfeiltaste, Leertaste, Klick oder Presenter,
+  zurück mit Pfeil links, «F» für Vollbild. Der Stand steht in der
+  Adresse (`#5`), ein Neuladen beginnt nicht von vorne. Beides nur für
+  den Organisator, damit nichts vor der Verkündigung bekannt wird.
+- Die Berechnung liegt in `src/lib/honors.ts` (mit Tests), das Laden in
+  `src/lib/honorsData.ts`.
