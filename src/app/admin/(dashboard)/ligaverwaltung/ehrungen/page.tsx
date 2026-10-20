@@ -23,7 +23,7 @@ function EntryList({ entries, muted = false }: { entries: HonorEntry[]; muted?: 
 // Einstieg in die Präsentation für den Beamer. Rechnet bei jedem Aufruf
 // neu — nach dem Schliessen der letzten Erfassung ist alles drin.
 export default async function HonorsPage() {
-  const { rounds, facts, honors, entryOpen } = await loadHonors();
+  const { rounds, facts, groups, entryOpen } = await loadHonors();
   const missing = EVENINGS_PER_SEASON - rounds.length;
 
   return (
@@ -49,9 +49,9 @@ export default async function HonorsPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-medium">Die Saison in Zahlen</h2>
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 xl:grid-cols-6">
           {facts.map((f) => (
-            <div key={f.label} className="flex flex-col gap-1 rounded border border-white/10 bg-surface p-4">
+            <div key={f.label} className="flex flex-col gap-1 border-t border-white/10 pt-3">
               <dt className="order-2 text-base opacity-70">{f.label}</dt>
               <dd className="order-1 text-2xl font-semibold tabular-nums">{f.value}</dd>
             </div>
@@ -59,32 +59,27 @@ export default async function HonorsPage() {
         </dl>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Ehrungen</h2>
-        <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {honors.map((h, i) => (
-            <li key={h.id} className="flex flex-col gap-3 rounded border border-white/10 p-4">
-              <div className="flex flex-col gap-0.5">
-                <h3 className="text-base font-medium">
-                  <span className="tabular-nums opacity-60">{i + 1}.</span> {h.title}
-                </h3>
-                <p className="text-base opacity-70">{h.description}</p>
-              </div>
-              {h.winners.length === 0 ? (
-                <p className="text-base opacity-60">Noch niemand — wird in der Präsentation übersprungen.</p>
-              ) : (
-                <EntryList entries={h.winners} />
-              )}
-              {h.runnersUp.length > 0 && (
-                <div className="flex flex-col gap-1 border-t border-white/10 pt-3">
-                  <p className="text-base opacity-60">Dahinter</p>
-                  <EntryList entries={h.runnersUp} muted />
+      {groups.map((group) => (
+        <section key={group.title} className="flex flex-col gap-3">
+          <h2 className="text-lg font-medium">{group.title}</h2>
+          <ul className="grid gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
+            {group.honors.map((h) => (
+              <li key={h.id} className="flex flex-col gap-2 border-t border-white/10 pt-3">
+                <div className="flex flex-col">
+                  <h3 className="text-base font-medium">{h.title}</h3>
+                  <p className="text-base opacity-60">{h.description}</p>
                 </div>
-              )}
-            </li>
-          ))}
-        </ol>
-      </section>
+                {h.winners.length === 0 ? (
+                  <p className="text-base opacity-60">Noch niemand, wird übersprungen.</p>
+                ) : (
+                  <EntryList entries={h.winners} />
+                )}
+                {h.runnersUp.length > 0 && <EntryList entries={h.runnersUp} muted />}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }

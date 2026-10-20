@@ -2,170 +2,134 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import type { Honor, HonorEntry, SeasonFact } from "@/lib/honors";
+import type { Honor, HonorGroup, SeasonFact } from "@/lib/honors";
 
-type Slide =
-  | { kind: "intro" }
-  | { kind: "facts" }
-  | { kind: "honor"; honor: Honor; number: number; revealed: boolean }
-  | { kind: "outro" };
+/** Abstand, mit dem die Ehrungen einer Folie nacheinander erscheinen. */
+const STEP_MS = 1200;
+/** Die Geehrten erscheinen so lange nach Titel und Beschreibung. */
+const WINNERS_DELAY_MS = 600;
 
 const CONTROL =
   "inline-flex min-h-11 min-w-11 items-center justify-center rounded px-3 text-base opacity-40 transition-opacity hover:bg-white/10 hover:opacity-100 focus-visible:opacity-100";
 
-/** Schriftgrösse der Namen: je mehr Geehrte, desto kleiner — nie unter 16px. */
-function nameSize(count: number) {
-  if (count <= 2) return "text-[max(2rem,8vmin)]";
-  if (count <= 4) return "text-[max(1.5rem,5.5vmin)]";
-  if (count <= 8) return "text-[max(1.25rem,4vmin)]";
-  return "text-[max(1rem,2.8vmin)]";
+/** Spalten je nach Zahl der Ehrungen einer Folie (feste Klassen für Tailwind). */
+const COLUMNS: Record<number, string> = {
+  1: "",
+  2: "md:grid-cols-2",
+  3: "md:grid-cols-3",
+  4: "md:grid-cols-2 xl:grid-cols-4",
+};
+
+/** Blendet nach `delay` ein, ausser die Folie soll sofort vollständig dastehen. */
+function fade(delay: number, instant: boolean) {
+  return instant
+    ? { className: "" }
+    : { className: "motion-safe:animate-reveal", style: { animationDelay: `${delay}ms` } };
 }
 
-function Winners({ entries }: { entries: HonorEntry[] }) {
-  const size = nameSize(entries.length);
-  const many = entries.length > 4;
-  // Nacheinander einblenden, insgesamt aber nie länger als gut eine Sekunde.
-  const step = Math.min(150, 1000 / entries.length);
+function Winners({ honor }: { honor: Honor }) {
+  const { winners } = honor;
+  const sameLabel = winners.every((w) => w.label === winners[0].label);
+
+  // Viele mit demselben Wert (z.B. «Jedes Match gespielt»): Namen in einer Zeile.
+  if (winners.length > 3 && sameLabel) {
+    return (
+      <div className="flex flex-col gap-[0.5vmin]">
+        <p className="text-[max(1.125rem,3.4vmin)] font-semibold leading-snug">
+          {/* Geschützte Leerzeichen: kein Umbruch mitten im Namen. */}
+          {winners.map((w) => w.name.replaceAll(" ", "\u00a0")).join(" · ")}
+        </p>
+        <p className="text-[max(1rem,2.6vmin)] opacity-60">{winners[0].label}</p>
+      </div>
+    );
+  }
+
+  const large = winners.length <= 2;
   return (
-    <ul className="flex w-full max-w-[min(100%,180vmin)] flex-wrap items-start justify-center gap-x-[7vmin] gap-y-[3vmin]">
-      {entries.map((e, i) => (
-        <li
-          key={`${e.playerId}:${e.label}`}
-          className="flex flex-col items-center gap-[0.5vmin] motion-safe:animate-reveal"
-          style={{ animationDelay: `${300 + i * step}ms` }}
-        >
-          <span className={`${size} font-semibold leading-tight text-amber-300`}>{e.name}</span>
+    <ul className="flex flex-col gap-[1vmin]">
+      {winners.map((w) => (
+        <li key={`${w.playerId}:${w.label}`} className="flex flex-col">
           <span
-            className={`tabular-nums opacity-70 ${
-              many ? "text-[max(1rem,2.2vmin)]" : "text-[max(1.125rem,3.2vmin)]"
+            className={`font-semibold leading-tight ${
+              large ? "text-[max(1.5rem,6vmin)]" : "text-[max(1.25rem,4.4vmin)]"
             }`}
           >
-            {e.label}
+            {w.name}
           </span>
+          <span className="text-[max(1rem,2.6vmin)] opacity-60">{w.label}</span>
         </li>
       ))}
     </ul>
   );
 }
 
-function SlideView({ slide, season, facts, total }: {
-  slide: Slide;
-  season: number;
-  facts: SeasonFact[];
-  total: number;
-}) {
-  if (slide.kind === "intro") {
-    return (
-      <div className="flex flex-col items-center gap-[2vmin] text-center motion-safe:animate-reveal">
-        <p className="text-[max(1.125rem,3.5vmin)] uppercase tracking-[0.3em] opacity-60">
-          Commander-Liga {season}
-        </p>
-        <h1 className="text-[max(3rem,14vmin)] font-semibold leading-none">Ehrungen</h1>
-        <p className="text-[max(1rem,2.5vmin)] opacity-50">
-          {total === 1 ? "1 Ehrung" : `${total} Ehrungen`}
-        </p>
-      </div>
-    );
-  }
-
-  if (slide.kind === "facts") {
-    return (
-      <div className="flex w-full flex-col items-center gap-[5vmin]">
-        <h1 className="text-[max(1.75rem,6vmin)] font-semibold motion-safe:animate-reveal">
-          Die Saison in Zahlen
-        </h1>
-        <dl className="grid w-full max-w-[min(100%,170vmin)] grid-cols-2 gap-[3vmin] md:grid-cols-3">
-          {facts.map((f, i) => (
-            <div
-              key={f.label}
-              className="flex flex-col items-center gap-[1vmin] text-center motion-safe:animate-reveal"
-              style={{ animationDelay: `${200 + i * 200}ms` }}
-            >
-              <dd className="text-[max(2rem,10vmin)] font-semibold leading-none tabular-nums text-amber-300">
-                {f.value}
-              </dd>
-              <dt className="order-2 text-[max(1rem,2.6vmin)] opacity-70">{f.label}</dt>
-            </div>
-          ))}
-        </dl>
-      </div>
-    );
-  }
-
-  if (slide.kind === "outro") {
-    return (
-      <div className="flex flex-col items-center gap-[2vmin] text-center motion-safe:animate-reveal">
-        <h1 className="text-[max(2.5rem,11vmin)] font-semibold leading-none">Gratulation!</h1>
-        <p className="text-[max(1.125rem,3.5vmin)] opacity-60">Und jetzt: die Rangliste.</p>
-      </div>
-    );
-  }
-
-  const { honor, number, revealed } = slide;
+function StartSlide({ season, facts }: { season: number; facts: SeasonFact[] }) {
   return (
-    <div className="flex w-full flex-col items-center gap-[4vmin] text-center">
-      <div className="flex flex-col items-center gap-[1.5vmin]">
-        <p className="text-[max(1rem,2.4vmin)] uppercase tracking-[0.3em] opacity-50">
-          Ehrung {number} von {total}
-        </p>
-        <h1
-          className={`font-semibold leading-none transition-[font-size] duration-500 ${
-            revealed ? "text-[max(2rem,7vmin)]" : "text-[max(2.75rem,12vmin)]"
-          }`}
-        >
-          {honor.title}
-        </h1>
-        <p className="max-w-[min(100%,150vmin)] text-[max(1.125rem,3.6vmin)] opacity-70">
-          {honor.description}
-        </p>
-      </div>
-      {revealed ? (
-        <>
-          <Winners entries={honor.winners} />
-          {honor.runnersUp.length > 0 && (
-            <p
-              className="text-[max(1rem,2.4vmin)] opacity-50 motion-safe:animate-reveal"
-              style={{ animationDelay: `${600 + Math.min(1000, honor.winners.length * 150)}ms` }}
-            >
-              Dahinter: {honor.runnersUp.map((r) => `${r.name} (${r.label})`).join(" · ")}
-            </p>
-          )}
-        </>
-      ) : (
-        <p className="text-[max(3rem,14vmin)] font-semibold leading-none opacity-20 motion-safe:animate-pulse">
-          ?
-        </p>
-      )}
+    <div className="flex w-full max-w-[min(100%,160vmin)] flex-col gap-[6vmin]">
+      <h1 className="text-[max(2.5rem,11vmin)] font-semibold leading-none">
+        Ehrungen {season}
+      </h1>
+      <dl className="grid grid-cols-2 gap-x-[4vmin] gap-y-[3vmin] md:grid-cols-3">
+        {facts.map((f) => (
+          <div key={f.label} className="flex flex-col gap-[0.5vmin] border-t border-white/15 pt-[1.5vmin]">
+            <dd className="text-[max(1.75rem,8vmin)] font-semibold leading-none tabular-nums">
+              {f.value}
+            </dd>
+            <dt className="order-2 text-[max(1rem,2.8vmin)] opacity-60">{f.label}</dt>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function GroupSlide({ group, instant }: { group: HonorGroup; instant: boolean }) {
+  return (
+    <div className="flex w-full max-w-[min(100%,180vmin)] flex-col gap-[5vmin]">
+      <h1 className="text-[max(2rem,8vmin)] font-semibold leading-none">{group.title}</h1>
+      <ol className={`grid grid-cols-1 gap-x-[4vmin] gap-y-[4vmin] ${COLUMNS[group.honors.length] ?? COLUMNS[3]}`}>
+        {group.honors.map((honor, i) => (
+          <li
+            key={honor.id}
+            style={fade(i * STEP_MS, instant).style}
+            className={`flex flex-col gap-[2vmin] border-t border-white/15 pt-[2vmin] ${
+              fade(i * STEP_MS, instant).className
+            }`}
+          >
+            <div className="flex flex-col gap-[0.5vmin]">
+              <h2 className="text-[max(1.125rem,3.8vmin)] font-medium leading-snug">{honor.title}</h2>
+              <p className="text-[max(1rem,2.6vmin)] opacity-60">{honor.description}</p>
+            </div>
+            <div {...fade(i * STEP_MS + WINNERS_DELAY_MS, instant)}>
+              <Winners honor={honor} />
+            </div>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
 
 /**
- * Präsentation der Ehrungen: zuerst der Titel, beim nächsten Schritt die
- * Geehrten. Weiter mit Pfeiltaste, Leertaste, Klick oder Presenter
- * (Bild ab); zurück mit Pfeil links. «F» schaltet Vollbild. Der Stand
- * steht in der Adresse (#5), damit ein Neuladen nicht von vorne beginnt.
+ * Präsentation der Ehrungen: eine Folie mit der Saison in Zahlen, dann
+ * eine Folie pro Thema. Die Ehrungen einer Folie erscheinen von selbst
+ * nacheinander, die Geehrten jeweils kurz nach dem Titel. Ein Klick
+ * während des Einblendens zeigt sofort alles, der nächste geht weiter.
+ * Tasten: Pfeile, Leertaste, Presenter (Bild ab/auf), «F» für Vollbild.
+ * Der Stand steht in der Adresse (#3), ein Neuladen beginnt nicht von vorne.
  */
 export default function HonorsShow({
   season,
   facts,
-  honors,
+  groups,
 }: {
   season: number;
   facts: SeasonFact[];
-  honors: Honor[];
+  groups: HonorGroup[];
 }) {
-  const slides: Slide[] = [
-    { kind: "intro" },
-    { kind: "facts" },
-    ...honors.flatMap((honor, i): Slide[] => [
-      { kind: "honor", honor, number: i + 1, revealed: false },
-      { kind: "honor", honor, number: i + 1, revealed: true },
-    ]),
-    { kind: "outro" },
-  ];
-  const last = slides.length - 1;
+  const last = groups.length; // Folie 0 ist der Start
   const [index, setIndex] = useState(0);
+  const [settled, setSettled] = useState<number | null>(null);
 
   useEffect(() => {
     const fromHash = () => {
@@ -175,7 +139,7 @@ export default function HonorsShow({
     const initial = fromHash();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- einmalig nach dem Laden
     if (initial !== null) setIndex(initial);
-    // Von Hand in der Adresse geändert (z.B. #15): dorthin springen.
+    // Von Hand in der Adresse geändert (z.B. #4): dorthin springen.
     const onHashChange = () => {
       const n = fromHash();
       if (n !== null) setIndex(n);
@@ -183,6 +147,14 @@ export default function HonorsShow({
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, [last]);
+
+  // Wann die aktuelle Folie fertig eingeblendet ist.
+  useEffect(() => {
+    if (index === 0) return;
+    const count = groups[index - 1].honors.length;
+    const timer = setTimeout(() => setSettled(index), (count - 1) * STEP_MS + WINNERS_DELAY_MS + 700);
+    return () => clearTimeout(timer);
+  }, [index, groups]);
 
   const go = useCallback(
     (to: number) => {
@@ -192,6 +164,12 @@ export default function HonorsShow({
     },
     [last],
   );
+
+  // Weiter: läuft das Einblenden noch, erst alles zeigen.
+  const forward = useCallback(() => {
+    if (index > 0 && settled !== index) setSettled(index);
+    else go(index + 1);
+  }, [index, settled, go]);
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -203,7 +181,7 @@ export default function HonorsShow({
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (["ArrowRight", "ArrowDown", "PageDown", " ", "Enter"].includes(e.key)) {
         e.preventDefault();
-        go(index + 1);
+        forward();
       } else if (["ArrowLeft", "ArrowUp", "PageUp", "Backspace"].includes(e.key)) {
         e.preventDefault();
         go(index - 1);
@@ -213,9 +191,7 @@ export default function HonorsShow({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go, index, last, toggleFullscreen]);
-
-  const slide = slides[index];
+  }, [forward, go, index, last, toggleFullscreen]);
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
@@ -229,17 +205,17 @@ export default function HonorsShow({
       </div>
 
       <main
-        onClick={() => go(index + 1)}
-        className="flex min-h-0 flex-1 cursor-pointer items-center justify-center overflow-y-auto px-[max(1rem,5vmin)] py-[2vmin]"
-        aria-live="polite"
+        onClick={forward}
+        className="flex min-h-0 flex-1 cursor-pointer justify-center overflow-y-auto px-[max(1rem,6vmin)] py-[3vmin]"
       >
-        <SlideView
-          key={index}
-          slide={slide}
-          season={season}
-          facts={facts}
-          total={honors.length}
-        />
+        {/* my-auto zentriert senkrecht, lässt aber scrollen, wenn es nicht passt. */}
+        <div key={index} className="my-auto flex w-full justify-center">
+          {index === 0 ? (
+            <StartSlide season={season} facts={facts} />
+          ) : (
+            <GroupSlide group={groups[index - 1]} instant={settled === index} />
+          )}
+        </div>
       </main>
 
       <div className="flex items-center justify-between gap-2 p-2">
@@ -253,12 +229,12 @@ export default function HonorsShow({
           ‹
         </button>
         <span className="text-base tabular-nums opacity-30">
-          {index + 1} / {slides.length}
+          {index + 1} / {last + 1}
         </span>
         <button
           type="button"
-          onClick={() => go(index + 1)}
-          disabled={index === last}
+          onClick={forward}
+          disabled={index === last && settled === index}
           aria-label="Weiter"
           className={`${CONTROL} disabled:invisible`}
         >

@@ -1145,12 +1145,18 @@ nichts zusätzlich einzutragen.
 - **Herr des Rings** zählt nur Runden, in denen der Spieler selbst etwas
   erfasst hat — ohne Markierung lässt sich nicht sagen, ob «No Sol Ring»
   fehlt oder nur nichts eingetragen wurde.
-- **Übersicht** im Reiter «Ehrungen» der Ligaverwaltung zur Vorbereitung,
-  **Präsentation** unter `/admin/ehrungen` für den Beamer: ohne
-  Navigation, zuerst Titel und Beschreibung, beim nächsten Schritt die
-  Geehrten. Weiter mit Pfeiltaste, Leertaste, Klick oder Presenter,
-  zurück mit Pfeil links, «F» für Vollbild. Der Stand steht in der
-  Adresse (`#5`), ein Neuladen beginnt nicht von vorne. Beides nur für
-  den Organisator, damit nichts vor der Verkündigung bekannt wird.
+- **Themen**: Mulligans, Eliminierungen, Decks, Achievements, Runden,
+  Siege. Die Übersicht im Reiter «Ehrungen» der Ligaverwaltung zeigt sie
+  zur Vorbereitung, samt den Nächsten dahinter.
+- **Präsentation** unter `/admin/ehrungen` für den Beamer, schlicht und
+  kurz (Entscheid des Organisators vom 20.10.2026): eine Folie mit der
+  Saison in Zahlen, dann **eine Folie pro Thema** — sieben Klicks statt
+  einem pro Ehrung. Die Ehrungen einer Folie erscheinen von selbst
+  nacheinander, die Geehrten jeweils kurz nach dem Titel. Ein Klick
+  während des Einblendens zeigt sofort alles, der nächste geht weiter.
+  Pfeiltasten, Leertaste, Klick oder Presenter; «F» für Vollbild. Der
+  Stand steht in der Adresse (`#3`), ein Neuladen beginnt nicht von
+  vorne. Ohne Navigation und nur für den Organisator, damit nichts vor
+  der Verkündigung bekannt wird.
 - Die Berechnung liegt in `src/lib/honors.ts` (mit Tests), das Laden in
   `src/lib/honorsData.ts`.

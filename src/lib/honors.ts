@@ -58,12 +58,34 @@ export interface SeasonFact {
   label: string;
 }
 
+/** Ehrungen eines Themas — in der Präsentation eine Folie. */
+export interface HonorGroup {
+  title: string;
+  honors: Honor[];
+}
+
 export interface Honors {
   /** Gezählte Runden (R1–R6), aufsteigend. */
   rounds: number[];
   facts: SeasonFact[];
-  honors: Honor[];
+  groups: HonorGroup[];
 }
+
+/**
+ * Themen und Reihenfolge der Ehrungen. Pro Thema eine Folie, damit die
+ * Verkündigung mit wenigen Klicks auskommt.
+ */
+const GROUPS: { title: string; ids: string[] }[] = [
+  { title: "Mulligans", ids: ["mulligan", "mulligan-sieg", "mulligan-raus"] },
+  {
+    title: "Eliminierungen",
+    ids: ["zuerst-raus", "eliminierungen", "eliminiert-ohne-sieg", "neutral"],
+  },
+  { title: "Decks", ids: ["sol-ring", "deckbau", "alternativ"] },
+  { title: "Achievements", ids: ["rotierend", "verschiedene", "einzigartig"] },
+  { title: "Runden", ids: ["immer-dabei", "schwankung", "beste-runde"] },
+  { title: "Siege", ids: ["beide-gewonnen", "farbe", "siege"] },
+];
 
 /** Titel vergleichen, ohne an Gross-/Kleinschreibung oder Apostroph-Varianten zu scheitern. */
 const norm = (title: string) => title.toLowerCase().replace(/[’`´]/g, "'").trim();
@@ -423,9 +445,10 @@ export function computeHonors(
     },
   ];
 
+  const byId = new Map(honors.map((h) => [h.id, h]));
   return {
     rounds: evenings.map((e) => e.round).sort((a, b) => a - b),
     facts,
-    honors,
+    groups: GROUPS.map((g) => ({ title: g.title, honors: g.ids.map((id) => byId.get(id)!) })),
   };
 }

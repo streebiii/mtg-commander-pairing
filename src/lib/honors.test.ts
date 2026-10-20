@@ -55,7 +55,7 @@ function evening(
 }
 
 const honor = (result: ReturnType<typeof computeHonors>, id: string) =>
-  result.honors.find((h) => h.id === id)!;
+  result.groups.flatMap((g) => g.honors).find((h) => h.id === id)!;
 const names = (entries: { name: string }[]) => entries.map((e) => e.name);
 
 describe("computeHonors", () => {
@@ -201,5 +201,11 @@ describe("computeHonors", () => {
     expect(color.winners.map((w) => w.name)).toEqual(["Grün", "Weiss"]);
     expect(color.winners[0].label).toBe("50 % (2 von 4)");
     expect(names(color.runnersUp)).toEqual(["Rot"]);
+  });
+
+  it("ordnet jede Ehrung genau einem Thema zu", () => {
+    const ids = computeHonors(players, []).groups.flatMap((g) => g.honors.map((h) => h.id));
+    expect(ids).toHaveLength(19);
+    expect(new Set(ids).size).toBe(19);
   });
 });

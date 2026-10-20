@@ -12,12 +12,10 @@ export const metadata: Metadata = { title: "Ehrungen" };
 // mitprojiziert wird. Liegt unter /admin und ist damit nur für den
 // Organisator erreichbar (src/proxy.ts).
 export default async function HonorsShowPage() {
-  const { facts, honors } = await loadHonors();
-  return (
-    <HonorsShow
-      season={SEASON_YEAR}
-      facts={facts}
-      honors={honors.filter((h) => h.winners.length > 0)}
-    />
-  );
+  const { facts, groups } = await loadHonors();
+  // Ehrungen ohne Geehrte fallen weg, Themen ohne Ehrung ebenso.
+  const shown = groups
+    .map((g) => ({ ...g, honors: g.honors.filter((h) => h.winners.length > 0) }))
+    .filter((g) => g.honors.length > 0);
+  return <HonorsShow season={SEASON_YEAR} facts={facts} groups={shown} />;
 }
