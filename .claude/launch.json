@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "pairing-app-test",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "SMTP_HOST= SMTP_USER= SMTP_PASSWORD= npm run dev -- -p 3001"],
+      "port": 3001
     }
   ]
 }

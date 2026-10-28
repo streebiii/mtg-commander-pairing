@@ -3,8 +3,9 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 /**
- * Drei Basis-Buttons für die ganze App: Primary (Haupt-Aktion), Secondary
- * (neutrale Aktion/Abbrechen), Danger (destruktive Aktion). Decken
+ * Basis-Buttons für die ganze App: Primary (Haupt-Aktion), Secondary
+ * (neutrale Aktion/Abbrechen), Highlight (nächster Schritt, der auffallen
+ * soll), Danger (destruktive Aktion). Decken
  * durchgehend dieselben Zustände ab — default, hover, pressed (`:active`),
  * loading, disabled — damit kein Knopf mehr "vergessen" wird, wie zuletzt
  * bei "Alle auswählen" und "Abend starten" passiert.
@@ -82,6 +83,14 @@ export const PrimaryButton = makeButton(
 /** Neutrale/Abbrechen-Aktion — dezenter Rahmen, z. B. "Alle auswählen". */
 export const SecondaryButton = makeButton(
   "border border-white/20 hover:bg-white/5 active:bg-white/10",
+);
+
+/**
+ * Nächster Schritt, der nicht übersehen werden soll — blau abgesetzt von
+ * der normalen Haupt-Aktion, z. B. "Live schalten" im Warteraum.
+ */
+export const HighlightButton = makeButton(
+  "bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700",
 );
 
 /** Destruktive Aktion — durchgehend rot, egal ob Ausloeser oder finale Bestaetigung. */
