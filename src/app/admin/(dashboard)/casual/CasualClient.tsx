@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DangerButton, PrimaryButton, SecondaryButton } from "@/components/Button";
+import {
+  DangerButton,
+  HighlightButton,
+  PrimaryButton,
+  SecondaryButton,
+} from "@/components/Button";
 import {
   PlayerSearchField,
   PlayerTile,
@@ -505,6 +510,16 @@ export default function CasualClient({
     void resetCasual();
   }
 
+  function selectAll() {
+    setSelected(new Set(players.map((p) => p.id)));
+  }
+
+  /** Ohne Anwesende bleibt auch keine Gruppe bestehen. */
+  function deselectAll() {
+    setSelected(new Set());
+    setGroups([]);
+  }
+
   /** «Live schalten»: ab jetzt zeigt die öffentliche Seite die Tische. */
   async function handlePublish() {
     setError(null);
@@ -660,11 +675,6 @@ export default function CasualClient({
             <h2 className="text-lg font-medium">
               Tischzuteilung — {published ? "live" : "Warteraum"}
             </h2>
-            {!published && (
-              <PrimaryButton loading={publishing} onClick={handlePublish}>
-                {publishing ? "Schalte live…" : "Live schalten"}
-              </PrimaryButton>
-            )}
           </div>
           {/* Wie man nachbessert, stand bisher nur im i-Text. */}
           <p className="text-base opacity-70">
@@ -865,6 +875,23 @@ export default function CasualClient({
           )}
           {addError && <p className="text-base text-red-600">{addError}</p>}
 
+          {/* Im Gruppen-Modus gesperrt: dort wählt ein Tap Gruppenmitglieder,
+              nicht Anwesende. */}
+          <div className="flex flex-wrap gap-2">
+            <SecondaryButton
+              disabled={groupModeActive || selectedCount === players.length}
+              onClick={selectAll}
+            >
+              Alle auswählen
+            </SecondaryButton>
+            <SecondaryButton
+              disabled={groupModeActive || selectedCount === 0}
+              onClick={deselectAll}
+            >
+              Alle abwählen
+            </SecondaryButton>
+          </div>
+
           {/* Eine einzige Liste: Antippen ändert nur den Zustand des
               Eintrags an seiner Position, nichts springt (siehe
               Grill-Notizen Q2). Im Gruppen-Modus nimmt ein Tap den Spieler
@@ -1023,16 +1050,34 @@ export default function CasualClient({
           </div>
 
           <div className="flex flex-col gap-2">
-            {/* Auf dem Handy steht «Tische berechnen» in der Leiste unten. */}
-            <div className="hidden lg:block">
-              <PrimaryButton
-                className="w-full"
-                disabled={selectedCount < 3 || !!groupConflict}
-                loading={loading}
-                onClick={computePairing}
-              >
-                {loading ? "Berechne…" : "Tische berechnen"}
-              </PrimaryButton>
+            {/* Auf dem Handy stehen diese Knöpfe in der Leiste unten — hier
+                dieselbe Reihenfolge: steht eine Zuteilung im Warteraum, ist
+                «Live schalten» der nächste Schritt und blau abgesetzt. */}
+            <div className="hidden flex-col gap-2 lg:flex">
+              {tables && !published ? (
+                <>
+                  <HighlightButton className="w-full" loading={publishing} onClick={handlePublish}>
+                    {publishing ? "Schalte live…" : "Live schalten"}
+                  </HighlightButton>
+                  <SecondaryButton
+                    className="w-full"
+                    disabled={selectedCount < 3 || !!groupConflict}
+                    loading={loading}
+                    onClick={computePairing}
+                  >
+                    {loading ? "Berechne…" : "Neu berechnen"}
+                  </SecondaryButton>
+                </>
+              ) : (
+                <PrimaryButton
+                  className="w-full"
+                  disabled={selectedCount < 3 || !!groupConflict}
+                  loading={loading}
+                  onClick={computePairing}
+                >
+                  {loading ? "Berechne…" : "Tische berechnen"}
+                </PrimaryButton>
+              )}
             </div>
             {tables && (
               <DangerButton className="w-full" onClick={handleReset}>
@@ -1058,9 +1103,9 @@ export default function CasualClient({
               nächste Schritt; neu berechnen bleibt daneben möglich. */}
           <div className="flex gap-2">
             {tables && !published && (
-              <PrimaryButton className="flex-1" loading={publishing} onClick={handlePublish}>
+              <HighlightButton className="flex-1" loading={publishing} onClick={handlePublish}>
                 {publishing ? "Schalte live…" : "Live schalten"}
-              </PrimaryButton>
+              </HighlightButton>
             )}
             {tables && !published ? (
               <SecondaryButton
