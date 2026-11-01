@@ -618,7 +618,7 @@ Matches.
 - **Match 1**: nach der Rangfolge aus Abschnitt 5.1, ohne Hälften und
   Zufall: Platz 1–4 an Tisch 1 usw., kleinere Tische zuunterst.
 - **Eintragen**: die Spieler tragen ein wie immer, sobald ein Match live
-  ist. Unter Match 1 steht zusätzlich «Match 1 fertig». Das ist nur ein
+  ist. «Match 1 bestätigen» in der Übersicht (Abschnitt 12.2) ist nur ein
   Hinweis für den Organisator, die Punkte hängen nicht daran.
 - **Auslosen**: «Match 2 aus Punkten auslosen» verlangt wie immer alle
   Tisch-Ergebnisse. Fehlen Meldungen, nennt eine Rückfrage die Namen;
@@ -895,13 +895,19 @@ und der Organisator erfasst für ihn.
   Runde»). «1x am Ende der Liga» (Evergreen) erscheint nur in der letzten
   Runde der Saison.
 - **In Schritten** auf dem Handy des Spielers: **Deckbau** (alles für die
-  ganze Runde) → **Match 1** → **Match 2** → **Abgeben**. Ein Match lässt
-  sich erfassen, sobald es live ist; vorher zeigt der Schritt einen
-  Hinweis, und wer ein Match nicht gespielt hat (Drop, Nachzügler), sieht
-  genau das. Die Schritte oben sind jederzeit antippbar, unten
-  führen «← / →» weiter. Der Browser merkt sich den zuletzt offenen
-  Schritt; ohne Speicher beginnt das Blatt bei Deckbau. «Abgeben» zeigt
-  eine Übersicht je Match und warnt, solange ein Match noch aussteht.
+  ganze Runde) → **Match 1** → **Übersicht** (Entscheid des Organisators vom
+  01.11.2026). **Match 2** erscheint erst, wenn es live ist und der Spieler
+  daran sitzt, vorher gibt es dafür keinen Knopf. Die Schritte oben sind
+  jederzeit antippbar, unten führen «← / →» weiter. Der Browser merkt sich den
+  zuletzt offenen Schritt; ohne Speicher beginnt das Blatt bei Deckbau.
+- **Übersicht** statt «Abgeben»: sie zeigt die Punkte je Schritt, mit
+  Korrigieren-Link, solange das Match änderbar ist. Nach Match 1 steht dort
+  «Match 1 bestätigen», nach Match 2 «Match 2 bestätigen». Das zweite gilt als
+  Abgabe; wer Match 2 nicht spielt, bestätigt mit Match 1 alles.
+- **Evergreen** («1x am Ende der Liga») steht am letzten Abend der Saison nicht
+  unter Deckbau, sondern zum Schluss in der Übersicht, sobald kein Match mehr
+  kommt: «Hast du dasselbe Deck durchgängig gespielt?». Auf dem Blatt des
+  Organisators bleibt es in der Spalte «Runde».
 - Der Organisator (Papierzettel, Korrekturen in der Ligaverwaltung) sieht
   das ganze Blatt auf einer Seite, als **Liste mit Spalten** (Entscheid des
   Organisators vom 17.10.2026): jedes Achievement nur einmal, mit Titel,
@@ -933,21 +939,19 @@ und der Organisator erfasst für ihn.
   - Kennung `systemKey = "winner"` (Migration
     `20261015090000_winner_system_key`), Logik in `src/lib/winner.ts`. Die
     Korrektur durch den Organisator in der Ligaverwaltung bleibt frei.
-- Wurde die Runde nach Match 1 beendet, zeigt das Blatt bei Match 2 «Match
-  2 wurde in dieser Runde nicht gespielt» und warnt beim Abgeben nicht
-  mehr, es stehe noch aus. Ein offenes Blatt lädt neu, sobald sich daran
+- Ein offenes Blatt lädt neu, sobald sich daran
   etwas ändert (z.B. der Sieger), wie die Pairing-Seite.
-- Oben steht, auch beim Scrollen, **an welchem Tisch** der Spieler im
-  neuesten Live-Match sitzt («Tisch 3 · Match 2»). Schaltet der Organisator
-  ein neues Match live, wechselt die Anzeige ohne Neuladen.
-- Darunter steht die laufende Summe mit Teilsummen **Core / Deckbau /
-  Rotate**, wie auf dem Punkteblatt. Jede Änderung speichert sofort.
+- Oben stehen, auch beim Scrollen, der Name, rechts daneben **der Tisch** im
+  neuesten Live-Match und darunter das **Total**. Schaltet der Organisator ein
+  neues Match live, wechselt der Tisch ohne Neuladen. Teilsummen Core /
+  Deckbau / Rotate gibt es nur noch auf dem Blatt des Organisators. Jede
+  Änderung speichert sofort.
 - Grundlage sind die eingefrorenen Achievements des Abends (Abschnitt
   11.2). Der Server prüft jede Änderung: Das Achievement muss zum Abend
   gehören, das Spiel muss gespielt sein, und die Anzahl muss erlaubt sein.
 - **Die Spieler ändern ihr Blatt selbst, bis die Erfassung geschlossen
-  wird** — auch nach **Abgeben** (mit Rückfrage), das nur noch «ich bin
-  fertig» meldet und in der Übersicht als «Abgegeben» erscheint. Danach
+  wird** — auch nach dem Bestätigen, das nur noch «ich bin fertig» meldet und
+  beim Organisator als «Abgegeben» erscheint. Danach
   korrigiert nur noch der Organisator (Abschnitt 12.3).
 
 ### 12.3 Organisator
@@ -1096,6 +1100,22 @@ sie wieder auf. Solange rechts noch
 Spalten folgen, läuft der Rand in einem Verlauf aus. Die Seite selbst
 scrollt nie seitlich.
 
+### 13.5 Abschluss der Saison
+
+- **Rangliste**: es bleibt bei Total mit Streichresultat (Abschnitt 13.1). Bei
+  gleichem Total teilen sich Spieler den Rang (Entscheid des Organisators vom
+  01.11.2026), auch um Platz 1.
+- **Reihenfolge am Final-Abend**: «Runde beenden», dann in der Ligaverwaltung
+  «Erfassung schliessen» mit Spalte R6, wie an jedem Abend.
+- **Zurückhalten**: ein Abend im Final-Ablauf erscheint nach dem Schliessen
+  nicht in der öffentlichen Rangliste, damit nichts vor der Verkündigung bekannt
+  wird. Der Organisator sieht ihn sofort im Reiter **Endstand** und gibt ihn dort
+  mit «Endrangliste veröffentlichen» frei (`Evening.rankingPublishedAt`). Das
+  lässt sich nicht zurücknehmen. Alle anderen Abende werden wie bisher mit dem
+  Schliessen öffentlich.
+- **Endstand** ist die Seite zum Vorlesen: Top 3, die übrige Rangliste und
+  darunter die Ehrungen (Abschnitt 15). Vor dem Finale heisst sie «Zwischenstand».
+
 ## 14. Ligaverwaltung
 
 Alles, was die Liga ausserhalb des Spielabends braucht, unter
@@ -1123,7 +1143,8 @@ Achievement-Katalog):
   Abschnitt 7).
 - **Achievements** — der Katalog (Abschnitt 11).
 - **Tischkarten** — die Druckvorlage (Abschnitt 12.1).
-- **Ehrungen** — die Statistiken für die Rangverkündigung (Abschnitt 15).
+- **Endstand** — Top 3, Rangliste und Ehrungen für die Rangverkündigung
+  (Abschnitte 13.5 und 15).
 
 Die früheren Adressen `/admin/erfassung` und `/admin/achievements` leiten
 hierher um (`next.config.ts`). Im Spieler-Tab zeigt die Seite eines
@@ -1165,7 +1186,7 @@ nichts zusätzlich einzutragen.
 - **Herr des Rings** zählt nur Runden, in denen der Spieler selbst etwas
   erfasst hat — ohne Markierung lässt sich nicht sagen, ob «No Sol Ring»
   fehlt oder nur nichts eingetragen wurde.
-- **Anzeige**: eine schlichte Liste im Reiter «Ehrungen» der
+- **Anzeige**: eine schlichte Liste im Reiter «Endstand» der
   Ligaverwaltung, nach Themen (Mulligans, Eliminierungen, Decks,
   Achievements, Runden, Siege): Titel, Beschreibung, Geehrte mit Wert.
   Sie ist nur für den Organisator sichtbar, damit nichts vor der

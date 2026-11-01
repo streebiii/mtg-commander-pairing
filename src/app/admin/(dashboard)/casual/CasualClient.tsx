@@ -1052,7 +1052,7 @@ export default function CasualClient({
           <div className="flex flex-col gap-2">
             {/* Auf dem Handy stehen diese Knöpfe in der Leiste unten — hier
                 dieselbe Reihenfolge: steht eine Zuteilung im Warteraum, ist
-                «Live schalten» der nächste Schritt und blau abgesetzt. */}
+                «Live schalten» der nächste Schritt und gelb abgesetzt. */}
             <div className="hidden flex-col gap-2 lg:flex">
               {tables && !published ? (
                 <>

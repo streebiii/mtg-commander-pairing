@@ -144,18 +144,17 @@ function MatrixList({
 }
 
 /** Die Schritte des Spieler-Blatts (SPEC.md Abschnitt 12.2). */
-type Step = "deckbau" | number | "abgeben";
+type Step = "deckbau" | number | "uebersicht";
 const GAMES = Array.from({ length: MAX_ROUNDS }, (_, i) => i + 1);
-const STEPS: Step[] = ["deckbau", ...GAMES, "abgeben"];
 
 function stepLabel(step: Step): string {
   if (step === "deckbau") return "Deckbau";
-  if (step === "abgeben") return "Abgeben";
+  if (step === "uebersicht") return "Übersicht";
   return `Match ${step}`;
 }
 
 function parseStep(raw: string | null): Step | null {
-  if (raw === "deckbau" || raw === "abgeben") return raw;
+  if (raw === "deckbau" || raw === "uebersicht") return raw;
   const n = Number(raw);
   return GAMES.includes(n) ? n : null;
 }
@@ -166,9 +165,9 @@ function parseStep(raw: string | null): Step | null {
  * zählt (Deckbau). Oben die laufende Summe wie auf dem Punkteblatt.
  *
  * Mit `stepped` (das Blatt des Spielers auf dem Handy) geht es Schritt für
- * Schritt: zuerst Deckbau, dann Spiel 1, sobald Runde 1 live ist, dann
- * Spiel 2, sobald Runde 2 live ist, zum Schluss eine Übersicht mit
- * «Abgeben». Ohne `stepped` (Organisator, Papierzettel abtippen) steht
+ * Schritt: Deckbau, die Matches, die er spielt und die live sind, zum
+ * Schluss eine Übersicht zum Korrigieren und Bestätigen. Ein Match erscheint
+ * erst, wenn es live ist. Ohne `stepped` (Organisator, Papierzettel abtippen) steht
  * alles auf einer Seite, als Liste mit einer Spalte pro Match
  * (MatrixList).
  *
@@ -184,7 +183,9 @@ export default function EntrySheet({
   stepped = false,
   storageKey,
   submitSlot,
-  match1Slot,
+  ending = false,
+  title,
+  subtitle,
   winnerNotes,
 }: {
   sheet: EntrySheetData;
@@ -197,10 +198,14 @@ export default function EntrySheet({
   stepped?: boolean;
   /** Merkt sich den offenen Schritt pro Erfassung im Browser. */
   storageKey?: string;
-  /** Der «Abgeben»-Knopf — erscheint im letzten Schritt. */
+  /** Das Bestätigen — erscheint in der Übersicht. */
   submitSlot?: ReactNode;
-  /** Der Knopf «Match 1 fertig» im Final-Ablauf — erscheint unter Match 1. */
-  match1Slot?: ReactNode;
+  /** Letztes Match des Spielers: jetzt kommt, was am Ende der Liga zählt. */
+  ending?: boolean;
+  /** Name des Spielers, steht oben im Blatt (nur mit `stepped`). */
+  title?: string;
+  /** Darunter, z.B. die Runde (nur mit `stepped`). */
+  subtitle?: string;
   /**
    * Nur auf dem Blatt des Spielers: warum «Winner winner» je Match gesperrt
    * ist (z.B. «Sieger: Anna S.»), null, wenn er es selbst setzen darf. Es
@@ -284,6 +289,9 @@ export default function EntrySheet({
 
   const perGame = sheet.achievements.filter((a) => isPerGame(a.scope));
   const perEvening = sheet.achievements.filter((a) => !isPerGame(a.scope));
+  // Evergreen fragt das Blatt des Spielers erst zum Schluss ab.
+  const endOfSeason = perEvening.filter((a) => a.scope === "SEASON");
+  const deckbau = perEvening.filter((a) => a.scope !== "SEASON");
 
   function row(a: SheetAchievement, game: number) {
     const participation = isParticipation(a);
@@ -431,14 +439,18 @@ export default function EntrySheet({
       ));
   }
 
+  const status = (
+    <div className="text-base" aria-live="polite">
+      {error ? (
+        <span className="text-red-400">{error}</span>
+      ) : isPending ? (
+        <span className="opacity-50">Speichere…</span>
+      ) : null}
+    </div>
+  );
+
   const summary = (
     <div className="sticky top-0 z-10 -mx-4 border-b border-white/10 bg-background px-4 py-3">
-      {stepped && !locked && sheet.seat && (
-        <p className="text-lg font-semibold">
-          Tisch {sheet.seat.table}{" "}
-          <span className="text-base font-normal opacity-70">· Match {sheet.seat.game}</span>
-        </p>
-      )}
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
         <span className="text-base font-medium">
           Total <span className="text-xl font-semibold tabular-nums">{totals.total}</span>
@@ -447,13 +459,7 @@ export default function EntrySheet({
           Core {totals.core} · Deckbau {totals.deckbau} · Rotate {totals.rotate}
         </span>
       </div>
-      <div className="min-h-6 text-base" aria-live="polite">
-        {error ? (
-          <span className="text-red-400">{error}</span>
-        ) : isPending ? (
-          <span className="opacity-50">Speichere…</span>
-        ) : null}
-      </div>
+      {status}
     </div>
   );
 
@@ -501,117 +507,129 @@ export default function EntrySheet({
     );
   }
 
-  const live = sheet.liveRounds ?? sheet.gamesPlayed;
-  const stepIndex = STEPS.indexOf(step);
-  const previous = STEPS[stepIndex - 1];
-  const next = STEPS[stepIndex + 1];
-
-  function gameState(game: number): "offen" | "nicht-gespielt" | "ausgefallen" | "gesperrt" {
-    if (sheet.gamesPlayed.includes(game)) return "offen";
-    if (live.includes(game)) return "nicht-gespielt";
-    // Runde nach Match 1 beendet: Match 2 kommt nicht mehr, also steht es
-    // auch nicht mehr aus.
-    return sheet.finished ? "ausgefallen" : "gesperrt";
-  }
+  const steps: Step[] = ["deckbau", ...GAMES.filter((g) => sheet.gamesPlayed.includes(g)), "uebersicht"];
+  // Ein gemerkter Schritt kann weggefallen sein, z.B. nach einem Drop.
+  const current = steps.includes(step) ? step : "deckbau";
+  const stepIndex = steps.indexOf(current);
+  const previous = steps[stepIndex - 1];
+  const next = steps[stepIndex + 1];
 
   let content: ReactNode;
-  if (step === "deckbau") {
+  if (current === "deckbau") {
     content =
-      perEvening.length > 0 ? (
-        groups(perEvening, 0)
+      deckbau.length > 0 ? (
+        groups(deckbau, 0)
       ) : (
         <p className="text-base opacity-70">In dieser Runde gibt es keine Deckbau-Achievements.</p>
       );
-  } else if (step === "abgeben") {
+  } else if (current === "uebersicht") {
     const breakdown = computeBreakdown(
       sheet.achievements,
       marks,
       sheet.gamesPlayed,
       sheet.lastEvening,
     );
-    const outstanding = GAMES.filter((g) => gameState(g) === "gesperrt");
     content = (
       <>
-        {breakdown.sections.map((section) => (
-          <div key={section.label} className="flex flex-col gap-1">
-            <h3 className="flex justify-between text-base font-medium">
-              <span>{section.label}</span>
-              <span className="tabular-nums">{section.total}</span>
+        {steps
+          .filter((s) => s !== "uebersicht")
+          .map((s) => {
+            const label = s === "deckbau" ? "Ganze Runde" : stepLabel(s);
+            const section = breakdown.sections.find((x) => x.label === label);
+            const changeable = !locked && !(typeof s === "number" && sheet.lockedGames?.includes(s));
+            return (
+              <div key={String(s)} className="flex flex-col gap-1">
+                <h3 className="flex items-center justify-between gap-3 text-base font-medium">
+                  <span>{stepLabel(s)}</span>
+                  <span className="tabular-nums">{section?.total ?? 0}</span>
+                </h3>
+                <ul className="flex flex-col gap-1 text-base opacity-80">
+                  {section?.items.map((item) => (
+                    <li key={item.title} className="flex justify-between gap-3">
+                      <span>
+                        {item.title}
+                        {item.count > 1 && <span className="opacity-60"> ×{item.count}</span>}
+                      </span>
+                      <span className="tabular-nums">{item.points * item.count}</span>
+                    </li>
+                  ))}
+                </ul>
+                {changeable && (
+                  <button
+                    type="button"
+                    onClick={() => goTo(s)}
+                    className="flex min-h-11 items-center self-start text-base underline underline-offset-2 opacity-70"
+                  >
+                    {stepLabel(s)} korrigieren
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        {ending && !locked && endOfSeason.length > 0 && (
+          <div key="zum-schluss" className="flex flex-col gap-2">
+            <h3 className="text-base font-medium">
+              Zum Schluss: Hast du dasselbe Deck durchgängig gespielt?
             </h3>
-            <ul className="flex flex-col gap-1 text-base opacity-80">
-              {section.items.map((item) => (
-                <li key={item.title} className="flex justify-between gap-3">
-                  <span>
-                    {item.title}
-                    {item.count > 1 && <span className="opacity-60"> ×{item.count}</span>}
-                  </span>
-                  <span className="tabular-nums">{item.points * item.count}</span>
-                </li>
-              ))}
-            </ul>
+            <ul className="flex flex-col gap-2">{endOfSeason.map((a) => row(a, 0))}</ul>
           </div>
-        ))}
-        {outstanding.length > 0 && !locked && (
-          <p className="rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-base">
-            {outstanding.map((g) => `Match ${g}`).join(" und ")} steht noch aus. Gib
-            erst ab, wenn du alles erfasst hast.
-          </p>
         )}
-        {submitSlot}
+        <div key="bestaetigen">{submitSlot}</div>
       </>
     );
   } else {
-    const state = gameState(step);
-    content =
-      state === "offen" ? (
-        <>
-          {sheet.lockedGames?.includes(step) && !locked && (
-            <p className="rounded border border-white/20 px-3 py-2 text-base">
-              Match 2 ist ausgelost, Match {step} ist damit abgeschlossen.
-            </p>
-          )}
-          {groups(perGame, step)}
-          {step === 1 && match1Slot}
-        </>
-      ) : state === "nicht-gespielt" ? (
-        <p className="text-base opacity-70">Du hast Match {step} nicht gespielt.</p>
-      ) : state === "ausgefallen" ? (
-        <p className="text-base opacity-70">Match {step} wurde in dieser Runde nicht gespielt.</p>
-      ) : (
-        <p className="text-base opacity-70">
-          Match {step} lässt sich erfassen, sobald es live ist.
-        </p>
-      );
+    content = (
+      <>
+        {sheet.lockedGames?.includes(current) && !locked && (
+          <p className="rounded border border-white/20 px-3 py-2 text-base">
+            Match 2 ist ausgelost, Match {current} ist damit abgeschlossen.
+          </p>
+        )}
+        {groups(perGame, current)}
+      </>
+    );
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {summary}
+    <div className="flex flex-col gap-4">
+      <div className="sticky top-0 z-10 -mx-4 border-b border-white/10 bg-background px-4 py-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="min-w-0 truncate text-lg font-semibold">{title}</span>
+          {!locked && sheet.seat && (
+            <span className="shrink-0 text-lg font-semibold">Tisch {sheet.seat.table}</span>
+          )}
+        </div>
+        <div className="flex items-baseline justify-between gap-3 text-base">
+          <span className="min-w-0 truncate opacity-70">{subtitle}</span>
+          <span className="shrink-0">
+            Total <span className="font-semibold tabular-nums">{totals.total}</span>
+          </span>
+        </div>
+        {status}
+      </div>
 
-      <nav aria-label="Schritte" className="grid grid-cols-4 gap-1">
-        {STEPS.map((s) => {
-          const current = s === step;
-          const waiting = typeof s === "number" && gameState(s) === "gesperrt";
-          return (
-            <button
-              key={String(s)}
-              type="button"
-              onClick={() => goTo(s)}
-              aria-current={current ? "step" : undefined}
-              className={`min-h-11 rounded border px-1 py-2 text-center text-base transition-colors ${
-                current
-                  ? "border-blue-500 bg-blue-500/10 font-medium"
-                  : "border-white/20 hover:bg-white/5"
-              } ${waiting && !current ? "opacity-50" : ""}`}
-            >
-              {stepLabel(s)}
-            </button>
-          );
-        })}
+      <nav
+        aria-label="Schritte"
+        className={`grid gap-1 ${steps.length === 3 ? "grid-cols-3" : "grid-cols-4"}`}
+      >
+        {steps.map((s) => (
+          <button
+            key={String(s)}
+            type="button"
+            onClick={() => goTo(s)}
+            aria-current={s === current ? "step" : undefined}
+            className={`min-h-11 rounded border px-1 py-2 text-center text-base transition-colors ${
+              s === current
+                ? "border-blue-500 bg-blue-500/10 font-medium"
+                : "border-white/20 hover:bg-white/5"
+            }`}
+          >
+            {stepLabel(s)}
+          </button>
+        ))}
       </nav>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">{stepLabel(step)}</h2>
         {content}
       </section>
 

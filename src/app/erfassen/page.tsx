@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import EntrySheet from "@/components/EntrySheet";
 import { loadPublicNames } from "@/lib/publicRoster";
 import AutoRefresh from "@/components/AutoRefresh";
@@ -5,9 +6,8 @@ import { getDeviceEntry, loadSheet } from "@/lib/entries";
 import { winnerNotes } from "@/lib/winner";
 import { deviceSheetVersion } from "./version";
 import { eveningLabel } from "@/lib/season";
-import { setMyMark } from "./actions";
-import Match1DoneButton from "./Match1DoneButton";
-import SubmitEntryButton from "./SubmitEntryButton";
+import { markGame1Done, setMyMark, submitMine } from "./actions";
+import ConfirmButton from "./ConfirmButton";
 
 export const dynamic = "force-dynamic";
 
@@ -34,32 +34,37 @@ export default async function MyEntryPage() {
   ]);
   const notes = await winnerNotes(entry.eveningId, entry.playerId, sheet.gamesPlayed, names);
   const closed = entry.evening.entryClosedAt !== null;
-  const submitted = entry.submittedAt !== null;
-  const locked = closed;
+  const lastGame = sheet.gamesPlayed.at(-1);
+  // Nach Match 1 kommt noch Match 2, ausser der Abend ist vorbei oder es
+  // läuft schon ohne diesen Spieler.
+  const match2Ahead = lastGame === 1 && !sheet.finished && !sheet.liveRounds.includes(2);
+
+  function confirmSlot() {
+    if (closed || lastGame === undefined) return null;
+    if (match2Ahead) {
+      if (sheet.lockedGames.includes(1)) {
+        return <Note>Match 2 ist ausgelost. Sobald es live ist, erscheint es hier.</Note>;
+      }
+      return entry!.game1DoneAt ? (
+        <Note>Match 1 bestätigt. Sobald Match 2 live ist, erscheint es hier.</Note>
+      ) : (
+        <ConfirmButton label="Match 1 bestätigen" action={markGame1Done} />
+      );
+    }
+    return entry!.submittedAt ? (
+      <Note>Bestätigt. Bis die Erfassung geschlossen wird, kannst du noch korrigieren.</Note>
+    ) : (
+      <ConfirmButton label={`Match ${lastGame} bestätigen`} action={submitMine} />
+    );
+  }
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
-      <div>
-        <h1 className="text-xl font-semibold">
-          {names.get(entry.playerId) ?? entry.player.firstName}
-        </h1>
-        <p className="text-base opacity-70">
-          {eveningLabel(entry.evening.date)} ·{" "}
-          {entry.evening.date.toLocaleDateString("de-CH", {
-            timeZone: "Europe/Zurich",
-          })}
-        </p>
-      </div>
-
-      {closed ? (
-        <p className="rounded border border-white/20 px-3 py-2 text-base">
+    <div className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pb-6">
+      {closed && (
+        <p className="mt-4 rounded border border-white/20 px-3 py-2 text-base">
           Die Erfassung für diese Runde ist geschlossen.
         </p>
-      ) : submitted ? (
-        <p className="rounded border border-green-600/40 bg-green-600/10 px-3 py-2 text-base">
-          Abgegeben. Bis die Erfassung geschlossen wird, kannst du noch ändern.
-        </p>
-      ) : null}
+      )}
 
       {!closed && (
         <AutoRefresh src="/erfassen/stand" version={deviceSheetVersion(sheet, notes)} />
@@ -68,17 +73,23 @@ export default async function MyEntryPage() {
       <EntrySheet
         sheet={sheet}
         winnerNotes={notes}
-        locked={locked}
+        locked={closed}
         onSetMark={setMyMark}
         stepped
         storageKey={entry.id}
-        submitSlot={!locked && !submitted && <SubmitEntryButton />}
-        match1Slot={
-          !locked &&
-          sheet.pairByPoints &&
-          sheet.lockedGames.length === 0 && <Match1DoneButton done={entry.game1DoneAt !== null} />
-        }
+        title={names.get(entry.playerId) ?? entry.player.firstName}
+        subtitle={eveningLabel(entry.evening.date)}
+        submitSlot={confirmSlot()}
+        ending={!match2Ahead}
       />
     </div>
+  );
+}
+
+function Note({ children }: { children: ReactNode }) {
+  return (
+    <p className="rounded border border-green-600/40 bg-green-600/10 px-3 py-2 text-base">
+      {children}
+    </p>
   );
 }

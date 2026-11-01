@@ -18,7 +18,7 @@ const LEAGUE_LINKS = [
 export const metadata: Metadata = { title: "Rangliste · Commander" };
 
 export default async function RankingPage() {
-  const ranking = await loadRanking();
+  const ranking = await loadRanking({ publicOnly: true });
 
   const appDates = Object.fromEntries(
     [...ranking.appDates].map(([round, date]) => [

@@ -81,6 +81,10 @@ model Evening {
   /// Final-Ablauf: Match 2 entsteht aus den Punkten von Match 1 (siehe
   /// SPEC.md Abschnitt 5.4). Beim Start festgelegt.
   pairByPoints  Boolean @default(false)
+  /// Im Final-Ablauf bleibt der Abend nach dem Schliessen aus der
+  /// öffentlichen Rangliste, bis der Organisator sie hier freigibt (siehe
+  /// SPEC.md Abschnitt 13.5).
+  rankingPublishedAt DateTime?
 
   rounds       Round[]
   achievements EveningAchievement[]

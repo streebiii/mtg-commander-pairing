@@ -86,11 +86,11 @@ export const SecondaryButton = makeButton(
 );
 
 /**
- * Nächster Schritt, der nicht übersehen werden soll — blau abgesetzt von
+ * Nächster Schritt, der nicht übersehen werden soll — gelb abgesetzt von
  * der normalen Haupt-Aktion, z. B. "Live schalten" im Warteraum.
  */
 export const HighlightButton = makeButton(
-  "bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700",
+  "bg-yellow-400 text-black hover:bg-yellow-300 active:bg-yellow-500",
 );
 
 /** Destruktive Aktion — durchgehend rot, egal ob Ausloeser oder finale Bestaetigung. */
