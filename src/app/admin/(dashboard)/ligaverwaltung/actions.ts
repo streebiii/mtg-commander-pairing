@@ -86,6 +86,16 @@ export async function closeEntry(
   revalidatePath("/rangliste");
 }
 
+/** Gibt die zurückgehaltene Endrangliste frei (SPEC.md Abschnitt 13.5). */
+export async function publishRanking(eveningId: string) {
+  await requireAdmin();
+  await prisma.evening.updateMany({
+    where: { id: eveningId, entryClosedAt: { not: null }, rankingPublishedAt: null },
+    data: { rankingPublishedAt: new Date() },
+  });
+  revalidateEntryViews();
+}
+
 /**
  * Löscht eine Runde endgültig, mit allem, was daran hängt (Matches,
  * Tische, Erfassungen, Nachzügler; per Cascade) — auch eine gezählte oder

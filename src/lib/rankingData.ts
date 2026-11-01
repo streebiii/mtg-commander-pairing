@@ -35,10 +35,20 @@ export interface SeasonEvening {
  * Ehrungen (Abschnitt 15). Mit einer festen Zahl von Abfragen statt einer
  * pro Abend oder Spieler, weil Neon von Vercel aus jede Abfrage einzeln
  * kostet.
+ *
+ * @param publicOnly lässt das Finale weg, solange der Organisator die
+ *   Endrangliste nicht freigegeben hat (Abschnitt 13.5). Nur für öffentliche
+ *   Seiten; der Organisator sieht immer alles.
  */
-export async function loadSeasonEvenings(): Promise<SeasonEvening[]> {
+export async function loadSeasonEvenings({ publicOnly = false } = {}): Promise<SeasonEvening[]> {
   const evenings = await prisma.evening.findMany({
-    where: { entryClosedAt: { not: null }, seasonRound: { not: null } },
+    where: {
+      entryClosedAt: { not: null },
+      seasonRound: { not: null },
+      ...(publicOnly
+        ? { OR: [{ pairByPoints: false }, { rankingPublishedAt: { not: null } }] }
+        : {}),
+    },
     select: { id: true, date: true, seasonRound: true },
     orderBy: { date: "asc" },
   });
@@ -106,7 +116,7 @@ export async function loadSeasonEvenings(): Promise<SeasonEvening[]> {
  * Liga-Teilnehmenden, ihre importierten Abende und die gezählten Abende
  * aus der App.
  */
-export async function loadRanking() {
+export async function loadRanking({ publicOnly = false } = {}) {
   const [players, imported, evenings, names] = await Promise.all([
     prisma.player.findMany({
       where: { leagueActive: true },
@@ -122,7 +132,7 @@ export async function loadRanking() {
       where: { player: { leagueActive: true } },
       select: { playerId: true, round: true, points: true },
     }),
-    loadSeasonEvenings(),
+    loadSeasonEvenings({ publicOnly }),
     loadPublicNames(),
   ]);
 

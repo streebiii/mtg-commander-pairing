@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { PrimaryButton } from "@/components/Button";
+import { HighlightButton } from "@/components/Button";
 import { publishRound } from "./actions";
 
 /**
@@ -26,8 +26,8 @@ export default function PublishRoundButton({
   }
 
   return (
-    <PrimaryButton className={className} onClick={submit} loading={isPending}>
+    <HighlightButton className={className} onClick={submit} loading={isPending}>
       {isPending ? "Schalte live…" : "Live schalten"}
-    </PrimaryButton>
+    </HighlightButton>
   );
 }

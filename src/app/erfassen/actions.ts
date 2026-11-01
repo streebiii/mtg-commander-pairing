@@ -7,8 +7,8 @@ import { applyPlayerMark, getDeviceEntry } from "@/lib/entries";
 
 /**
  * Die Erfassung dieses Geräts, solange der Spieler noch ändern darf: bis
- * der Organisator die Erfassung schliesst — auch nach «Abgeben», das nur
- * noch «ich bin fertig» heisst (SPEC.md Abschnitt 12.2).
+ * der Organisator die Erfassung schliesst — auch nach dem Bestätigen, das
+ * nur noch «ich bin fertig» heisst (SPEC.md Abschnitt 12.2).
  */
 async function editableEntry() {
   const entry = await getDeviceEntry();
@@ -32,7 +32,7 @@ export async function setMyMark(
   return ok;
 }
 
-/** «Match 1 fertig» im Final-Ablauf: nur ein Hinweis für den Organisator. */
+/** Match 1 bestätigt: nur ein Hinweis für den Organisator, die Punkte hängen nicht daran. */
 export async function markGame1Done() {
   const entry = await editableEntry();
   if (entry && !entry.game1DoneAt) {
@@ -45,7 +45,7 @@ export async function markGame1Done() {
   redirect("/erfassen");
 }
 
-/** «Abgeben»: der Spieler ist fertig. Ändern kann er bis zum Schliessen weiterhin. */
+/** Alles bestätigt: der Spieler ist fertig. Ändern kann er bis zum Schliessen weiterhin. */
 export async function submitMine() {
   const entry = await editableEntry();
   if (entry && !entry.submittedAt) {
