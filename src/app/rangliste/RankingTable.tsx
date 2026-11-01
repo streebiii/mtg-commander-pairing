@@ -262,19 +262,18 @@ function RoundValue({
   onShow: (target: HTMLElement, via: "hover" | "tap") => void;
   onHide: () => void;
 }) {
-  const struck = cell.struck ? "line-through opacity-50" : "";
   if (cell.points === null) {
-    return <span className={`opacity-40 ${struck}`}>–</span>;
+    return <span className={cell.struck ? STRUCK : "opacity-40"}>–</span>;
   }
-  if (!cell.breakdown) return <span className={struck}>{cell.points}</span>;
+  if (!cell.breakdown) return <span className={cell.struck ? STRUCK : ""}>{cell.points}</span>;
 
   return (
     <button
       type="button"
       aria-label={`${label}: ${cell.points} Punkte, Details anzeigen`}
       aria-haspopup="dialog"
-      className={`-my-1 min-h-9 min-w-9 rounded px-1 text-right decoration-dotted underline-offset-4 hover:bg-white/5 ${
-        cell.struck ? struck : "underline"
+      className={`-my-1 min-h-9 min-w-9 rounded px-1 text-right underline-offset-4 hover:bg-white/5 ${
+        cell.struck ? "" : "underline decoration-dotted"
       }`}
       onMouseEnter={(e) => canHover && onShow(e.currentTarget, "hover")}
       onMouseLeave={() => canHover && onHide()}
@@ -282,10 +281,14 @@ function RoundValue({
       onBlur={() => canHover && onHide()}
       onClick={(e) => !canHover && onShow(e.currentTarget, "tap")}
     >
-      {cell.points}
+      <span className={cell.struck ? STRUCK : ""}>{cell.points}</span>
     </button>
   );
 }
+
+/** Das Streichresultat (SPEC.md Abschnitt 13.1) springt in der Spalte ins Auge. */
+export const STRUCK =
+  "rounded bg-amber-400/15 px-1.5 py-0.5 text-amber-400 line-through decoration-amber-100/40 decoration-1";
 
 function formatPoints(points: number): string {
   return points > 0 ? `+${points}` : String(points);
@@ -313,7 +316,7 @@ function DetailView({ detail, date }: { detail: Detail; date: string | undefined
           )}
         </div>
         <div className="shrink-0 text-right">
-          <div className={`text-2xl leading-none font-semibold tabular-nums ${cell.struck ? "line-through opacity-50" : ""}`}>
+          <div className={`text-2xl leading-none font-semibold tabular-nums ${cell.struck ? "text-amber-400 line-through" : ""}`}>
             {cell.breakdown.total}
           </div>
           <div className="mt-1 text-base opacity-70">Punkte</div>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PublicHeader from "@/components/PublicHeader";
 import { loadRanking } from "@/lib/rankingData";
 import { SEASON_YEAR } from "@/lib/season";
-import RankingTable from "./RankingTable";
+import RankingTable, { STRUCK } from "./RankingTable";
 
 // Öffentliche Rangliste der Saison (siehe SPEC.md Abschnitt 13), ohne
 // Login. Ein Abend aus der App erscheint erst, wenn der Organisator die
@@ -54,7 +54,15 @@ export default async function RankingPage() {
       {ranking.rows.length === 0 ? (
         <p className="text-base opacity-70">Noch keine Liga-Teilnehmenden.</p>
       ) : (
-        <RankingTable rows={ranking.rows} appDates={appDates} />
+        <>
+          <RankingTable rows={ranking.rows} appDates={appDates} />
+          {ranking.rows.some((r) => r.rounds.some((c) => c.struck)) && (
+            <p className="text-base opacity-70">
+              <span className={STRUCK}>12</span> Streichresultat: das schlechteste Resultat
+              zählt nicht zum Total.
+            </p>
+          )}
+        </>
       )}
     </div>
   );

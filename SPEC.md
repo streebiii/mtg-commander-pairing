@@ -1037,9 +1037,11 @@ vom 17.10.2026).
   eines Rangs alphabetisch.
 - **Streichresultat**: während der Saison zählt die Summe aller Abende.
   Sobald R6 Punkte hat, wird je Spieler das schlechteste Resultat
-  gestrichen und durchgestrichen angezeigt. Ein verpasster Abend zählt als
+  gestrichen. Ein verpasster Abend zählt als
   0 und ist damit das schlechteste; bei mehreren gleich schlechten trifft
-  es den letzten.
+  es den letzten. In der Tabelle ist es amber hinterlegt und fein durchgestrichen,
+  darunter erklärt eine Zeile das Zeichen. Auch der Endstand (Abschnitt 13.5)
+  rechnet damit.
 - **Δ**: Veränderung gegenüber dem Stand vor dem letzten Abend (höchste
   Spalte mit Punkten), nach denselben Regeln gerechnet. Gezeigt werden
   **nur Aufstiege** (▲ grün); Abstiege und gleicher Rang bleiben leer
