@@ -6,7 +6,7 @@ import { loadSeasonEvenings } from "@/lib/rankingData";
 /**
  * Die Ehrungen der laufenden Saison (SPEC.md Abschnitt 15) aus denselben
  * Runden wie die Rangliste: nur geschlossene, einer Spalte zugeordnete.
- * Namen wie in der Rangliste, weil sie an die Wand projiziert werden.
+ * Namen wie in der Rangliste.
  */
 export async function loadHonors() {
   const [players, evenings, names, open] = await Promise.all([

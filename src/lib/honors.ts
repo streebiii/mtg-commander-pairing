@@ -49,16 +49,9 @@ export interface Honor {
   description: string;
   /** Geehrt werden alle mit dem Höchstwert (bei Gleichstand mehrere). */
   winners: HonorEntry[];
-  /** Die Nächsten dahinter, höchstens drei — für die Übersicht und das Aufdecken. */
-  runnersUp: HonorEntry[];
 }
 
-export interface SeasonFact {
-  value: number;
-  label: string;
-}
-
-/** Ehrungen eines Themas — in der Präsentation eine Folie. */
+/** Ehrungen eines Themas. */
 export interface HonorGroup {
   title: string;
   honors: Honor[];
@@ -67,14 +60,10 @@ export interface HonorGroup {
 export interface Honors {
   /** Gezählte Runden (R1–R6), aufsteigend. */
   rounds: number[];
-  facts: SeasonFact[];
   groups: HonorGroup[];
 }
 
-/**
- * Themen und Reihenfolge der Ehrungen. Pro Thema eine Folie, damit die
- * Verkündigung mit wenigen Klicks auskommt.
- */
+/** Themen und Reihenfolge der Ehrungen. */
 const GROUPS: { title: string; ids: string[] }[] = [
   { title: "Mulligans", ids: ["mulligan", "mulligan-sieg", "mulligan-raus"] },
   {
@@ -125,25 +114,19 @@ interface PlayerStats {
 const times = (n: number) => `${n}-mal`;
 const matches = (n: number) => (n === 1 ? "1 Match" : `${n} Matches`);
 
-/**
- * Höchstwert-Ehrung: alle mit dem höchsten Wert über 0 gewinnen, die
- * Nächsten (bis zu drei) stehen dahinter. Gleichstand alphabetisch.
- */
+/** Höchstwert-Ehrung: alle mit dem höchsten Wert über 0 gewinnen, alphabetisch. */
 function most(
   candidates: readonly { id: string; name: string }[],
   value: (id: string) => number,
   label: (v: number, id: string) => string,
-): Pick<Honor, "winners" | "runnersUp"> {
+): Pick<Honor, "winners"> {
   const entries = candidates
     .map((p) => ({ playerId: p.id, name: p.name, value: value(p.id) }))
     .filter((e) => e.value > 0)
     .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name, "de-CH"))
     .map((e) => ({ ...e, label: label(e.value, e.playerId) }));
   const top = entries[0]?.value;
-  return {
-    winners: entries.filter((e) => e.value === top),
-    runnersUp: entries.filter((e) => e.value !== top).slice(0, 3),
-  };
+  return { winners: entries.filter((e) => e.value === top) };
 }
 
 export function computeHonors(
@@ -314,7 +297,6 @@ export function computeHonors(
           const n = of(p.id).solRingKnown;
           return { playerId: p.id, name: p.name, value: n, label: n === 1 ? "1 Runde" : `${n} Runden` };
         }),
-      runnersUp: [],
     },
     {
       id: "eliminiert-ohne-sieg",
@@ -351,7 +333,6 @@ export function computeHonors(
       title: "Nur einmal geschafft",
       description: "Achievements, die in der ganzen Saison nur eine Person erreicht hat",
       winners: unique,
-      runnersUp: [],
     },
     {
       id: "verschiedene",
@@ -381,7 +362,6 @@ export function computeHonors(
                 value: of(p.id).games,
                 label: matches(of(p.id).games),
               })),
-      runnersUp: [],
     },
     {
       id: "schwankung",
@@ -430,25 +410,9 @@ export function computeHonors(
     },
   ];
 
-  const sum = (f: (s: PlayerStats) => number) =>
-    players.reduce((n, p) => n + f(of(p.id)), 0);
-
-  const facts: SeasonFact[] = [
-    { value: players.filter((p) => of(p.id).games > 0).length, label: "Spielerinnen und Spieler" },
-    { value: sum((s) => s.wins), label: "gewonnene Matches" },
-    { value: sum((s) => s.counts.get(ELIMINATE) ?? 0), label: "Matches mit Eliminierung" },
-    { value: sum((s) => s.counts.get(HARDCORE) ?? 0), label: "Starts mit 5 oder weniger Karten" },
-    { value: sum((s) => s.counts.get(ALTERNATIVE) ?? 0), label: "Siege mit alternativer Win-Con" },
-    {
-      value: sum((s) => s.wins + [...s.counts.values()].reduce((n, c) => n + c, 0)),
-      label: "erfüllte Achievements",
-    },
-  ];
-
   const byId = new Map(honors.map((h) => [h.id, h]));
   return {
     rounds: evenings.map((e) => e.round).sort((a, b) => a - b),
-    facts,
     groups: GROUPS.map((g) => ({ title: g.title, honors: g.ids.map((id) => byId.get(id)!) })),
   };
 }

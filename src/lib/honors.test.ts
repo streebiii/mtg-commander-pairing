@@ -70,7 +70,6 @@ describe("computeHonors", () => {
     const firstOut = honor(result, "zuerst-raus");
     expect(names(firstOut.winners)).toEqual(["Anna", "Ben"]);
     expect(firstOut.winners[0].label).toBe("2-mal");
-    expect(names(firstOut.runnersUp)).toEqual(["Cara"]);
     expect(result.rounds).toEqual([1, 2]);
   });
 
@@ -137,7 +136,6 @@ describe("computeHonors", () => {
       evening(1, { dora: { marks: { "hard:1": 1 } }, anna: { marks: { "flush:1": 1 } } }),
     ]);
     expect(honor(result, "mulligan").winners).toEqual([]);
-    expect(result.facts[0]).toEqual({ value: 1, label: "Spielerinnen und Spieler" });
   });
 
   it("kombiniert Achievements im selben Match", () => {
@@ -164,7 +162,6 @@ describe("computeHonors", () => {
     ]);
     const neutral = honor(result, "neutral");
     expect(neutral.winners).toMatchObject([{ name: "Anna", value: 2, label: "2 Matches" }]);
-    expect(names(neutral.runnersUp)).toEqual(["Ben"]);
   });
 
   it("beide Matches gewonnen zählt Runden", () => {
@@ -185,7 +182,6 @@ describe("computeHonors", () => {
     // stärksten, hat aber nur zwei Runden.
     const swing = honor(result, "schwankung");
     expect(swing.winners).toMatchObject([{ name: "Anna", value: 2, label: "2 bis 4 Punkte" }]);
-    expect(names(swing.runnersUp)).toEqual(["Ben"]);
   });
 
   it("Farbe mit den meisten Siegen pro Match", () => {
@@ -200,7 +196,6 @@ describe("computeHonors", () => {
     // Grün: 2 Siege in 4 Matches (Ben, Cara), Weiss: 1 in 2, Rot: 1 in 4.
     expect(color.winners.map((w) => w.name)).toEqual(["Grün", "Weiss"]);
     expect(color.winners[0].label).toBe("50 % (2 von 4)");
-    expect(names(color.runnersUp)).toEqual(["Rot"]);
   });
 
   it("ordnet jede Ehrung genau einem Thema zu", () => {
