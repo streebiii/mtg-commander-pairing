@@ -33,7 +33,7 @@ export interface OpenEntryInfo {
   label: string;
   /** Aus dem Datum abgeleitete Spalte, null ausserhalb der Saison. */
   suggestedRound: number | null;
-  /** Wie viele noch nicht abgegeben haben. */
+  /** Wie viele noch nicht bestätigt haben. */
   openCount: number;
 }
 
@@ -137,7 +137,7 @@ export default function PlayerSelectionList({
         <div className="flex flex-col gap-3 rounded border border-white/20 bg-background p-4">
           <p className="text-base">
             Die Achievement-Erfassung von {openEntry.label} ist noch offen
-            {openEntry.openCount > 0 && ` — ${openEntry.openCount} haben nicht abgegeben`}.
+            {openEntry.openCount > 0 && ` — ${openEntry.openCount} haben nicht bestätigt`}.
             Mit dem Start wird sie geschlossen, danach können die Spieler
             nichts mehr ändern.
           </p>

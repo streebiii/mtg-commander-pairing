@@ -155,7 +155,7 @@ export default async function LeaguePage() {
   const attendanceOpen = !(lastRound.number >= MAX_ROUNDS && lastRoundPublished);
   const firstRoundAssignments = evening.rounds[0].tables.flatMap((t) => t.assignments);
   // Final-Ablauf (SPEC.md Abschnitt 5.4): wer Match 1 noch nicht gemeldet
-  // hat; ein vom Organisator abgegebener Zettel zählt als gemeldet.
+  // hat; ein vom Organisator bestätigter Zettel zählt als gemeldet.
   const reported = evening.pairByPoints
     ? await prisma.playerEntry.findMany({
         where: {

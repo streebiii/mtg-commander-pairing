@@ -80,7 +80,6 @@ export default async function MyEntryPage() {
         title={names.get(entry.playerId) ?? entry.player.firstName}
         subtitle={eveningLabel(entry.evening.date)}
         submitSlot={confirmSlot()}
-        ending={!match2Ahead}
       />
     </div>
   );

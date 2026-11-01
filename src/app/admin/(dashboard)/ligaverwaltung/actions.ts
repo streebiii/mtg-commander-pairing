@@ -22,7 +22,7 @@ function revalidateEntryViews() {
 /**
  * Erfasst für einen Spieler — z.B. von seinem Papierzettel. Legt die
  * Erfassung bei Bedarf an; ändern darf der Organisator auch nach der
- * Abgabe und nach dem Schliessen.
+ * Bestätigung und nach dem Schliessen.
  */
 export async function setMarkAsOrganizer(
   eveningId: string,
@@ -52,7 +52,7 @@ export async function releaseDevice(entryId: string) {
   revalidateEntryViews();
 }
 
-/** Bestätigt eine Erfassung als abgegeben, z.B. nach dem Abtippen eines Zettels. */
+/** Bestätigt eine Erfassung, z.B. nach dem Abtippen eines Zettels. */
 export async function confirmEntry(eveningId: string, playerId: string) {
   await requireAdmin();
   await prisma.playerEntry.upsert({

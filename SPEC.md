@@ -623,7 +623,7 @@ Matches.
 - **Auslosen**: «Match 2 aus Punkten auslosen» verlangt wie immer alle
   Tisch-Ergebnisse. Fehlen Meldungen, nennt eine Rückfrage die Namen;
   ausgelost werden kann trotzdem, es zählt der aktuelle Stand. Ein vom
-  Organisator abgegebener Zettel gilt als gemeldet.
+  Organisator bestätigter Zettel gilt als gemeldet.
 - **Reihenfolge für Match 2**: der gedämpfte **Schnitt pro Abend** aus
   Abschnitt 5.1 **plus die Punkte aus Match 1** (mit Participation und Sieg,
   ohne Deckbau und Evergreen, damit die Deckwahl niemanden an einen höheren
@@ -902,12 +902,10 @@ und der Organisator erfasst für ihn.
   zuletzt offenen Schritt; ohne Speicher beginnt das Blatt bei Deckbau.
 - **Übersicht** statt «Abgeben»: sie zeigt die Punkte je Schritt, mit
   Korrigieren-Link, solange das Match änderbar ist. Nach Match 1 steht dort
-  «Match 1 bestätigen», nach Match 2 «Match 2 bestätigen». Das zweite gilt als
-  Abgabe; wer Match 2 nicht spielt, bestätigt mit Match 1 alles.
-- **Evergreen** («1x am Ende der Liga») steht am letzten Abend der Saison nicht
-  unter Deckbau, sondern zum Schluss in der Übersicht, sobald kein Match mehr
-  kommt: «Hast du dasselbe Deck durchgängig gespielt?». Auf dem Blatt des
-  Organisators bleibt es in der Spalte «Runde».
+  «Match 1 bestätigen», nach Match 2 «Match 2 bestätigen». Erst das zweite
+  schliesst das Blatt ab; wer Match 2 nicht spielt, bestätigt mit Match 1 alles.
+- **Evergreen** («1x am Ende der Liga») steht am letzten Abend der Saison im
+  Schritt Deckbau und ist grün hinterlegt, damit es auffällt.
 - Der Organisator (Papierzettel, Korrekturen in der Ligaverwaltung) sieht
   das ganze Blatt auf einer Seite, als **Liste mit Spalten** (Entscheid des
   Organisators vom 17.10.2026): jedes Achievement nur einmal, mit Titel,
@@ -951,23 +949,23 @@ und der Organisator erfasst für ihn.
   gehören, das Spiel muss gespielt sein, und die Anzahl muss erlaubt sein.
 - **Die Spieler ändern ihr Blatt selbst, bis die Erfassung geschlossen
   wird** — auch nach dem Bestätigen, das nur noch «ich bin fertig» meldet und
-  beim Organisator als «Abgegeben» erscheint. Danach
+  beim Organisator als «Bestätigt» erscheint. Danach
   korrigiert nur noch der Organisator (Abschnitt 12.3).
 
 ### 12.3 Organisator
 
 - Der Liga-Tab zeigt, solange eine Erfassung offen ist, den Hinweis
-  «Achievement-Erfassung offen» mit Anzahl der Abgaben. Er bleibt auch
+  «Achievement-Erfassung offen» mit Anzahl der Bestätigungen. Er bleibt auch
   nach «Runde beenden» stehen. Solange noch kein Match live ist, steht
   statt «0 von 0» «Sobald Match 1 live ist, melden sich die Spieler über
   die Tischkarten an.» Der offene Liga-Tab lädt neu, sobald sich am Abend
-  etwas ändert (Sieger von einem Spieler, Abgaben), sonst nie.
+  etwas ändert (Sieger von einem Spieler, Bestätigungen), sonst nie.
 - In der Ligaverwaltung unter **Aktuelle Runde** stehen alle Anwesenden
-  mit Status (nicht angemeldet / erfasst gerade / abgegeben) und Total,
+  mit Status (nicht angemeldet / erfasst gerade / bestätigt) und Total,
   sortiert in dieser Reihenfolge — wer noch etwas braucht, steht oben —,
   innerhalb alphabetisch. «Erfassung schliessen» steht über der Tabelle.
   Pro Spieler gibt es «Korrigieren» (dasselbe Blatt, für Korrekturen und
-  Papierzettel, mit «Als abgegeben markieren») und «Handy freigeben».
+  Papierzettel, mit «Als bestätigt markieren») und «Handy freigeben».
   «Wieder öffnen» ist entfallen — Spieler können bis zum Schliessen
   ohnehin ändern.
 - **Nur der Organisator korrigiert nach dem Schliessen**: unter «Runden»

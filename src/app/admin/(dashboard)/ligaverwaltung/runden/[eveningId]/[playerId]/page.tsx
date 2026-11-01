@@ -50,7 +50,7 @@ export default async function CorrectEntryPage({
           {!open
             ? "Erfassung geschlossen — Änderungen wirken sofort auf die Rangliste."
             : entry?.submittedAt
-              ? "Abgegeben."
+              ? "Bestätigt."
               : entry?.deviceTokenHash
                 ? "Erfasst gerade selbst auf dem Handy."
                 : "Nicht angemeldet — hier z.B. einen Papierzettel erfassen."}
@@ -69,7 +69,7 @@ export default async function CorrectEntryPage({
             type="submit"
             className="inline-flex min-h-11 w-full items-center justify-center rounded bg-foreground px-4 py-2 text-base font-medium text-background hover:opacity-90 sm:w-fit"
           >
-            Als abgegeben markieren
+            Als bestätigt markieren
           </button>
         </form>
       )}

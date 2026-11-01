@@ -183,7 +183,6 @@ export default function EntrySheet({
   stepped = false,
   storageKey,
   submitSlot,
-  ending = false,
   title,
   subtitle,
   winnerNotes,
@@ -200,8 +199,6 @@ export default function EntrySheet({
   storageKey?: string;
   /** Das Bestätigen — erscheint in der Übersicht. */
   submitSlot?: ReactNode;
-  /** Letztes Match des Spielers: jetzt kommt, was am Ende der Liga zählt. */
-  ending?: boolean;
   /** Name des Spielers, steht oben im Blatt (nur mit `stepped`). */
   title?: string;
   /** Darunter, z.B. die Runde (nur mit `stepped`). */
@@ -289,9 +286,6 @@ export default function EntrySheet({
 
   const perGame = sheet.achievements.filter((a) => isPerGame(a.scope));
   const perEvening = sheet.achievements.filter((a) => !isPerGame(a.scope));
-  // Evergreen fragt das Blatt des Spielers erst zum Schluss ab.
-  const endOfSeason = perEvening.filter((a) => a.scope === "SEASON");
-  const deckbau = perEvening.filter((a) => a.scope !== "SEASON");
 
   function row(a: SheetAchievement, game: number) {
     const participation = isParticipation(a);
@@ -322,9 +316,15 @@ export default function EntrySheet({
       </span>
     );
 
+    // Evergreen gibt es nur einmal im Jahr und soll auffallen.
+    const season = a.scope === "SEASON";
     const tile = `flex min-h-11 items-center gap-3 rounded border px-3 py-2.5 text-base transition-colors ${
-      active ? "border-blue-500 bg-blue-500/10" : "border-white/20"
-    } ${disabled ? "" : active ? "hover:bg-blue-500/20" : "hover:bg-white/5"}`;
+      season
+        ? `border-green-500 ${active ? "bg-green-500/25" : "bg-green-500/10"}`
+        : active
+          ? "border-blue-500 bg-blue-500/10"
+          : "border-white/20"
+    } ${disabled ? "" : season ? "hover:bg-green-500/20" : active ? "hover:bg-blue-500/20" : "hover:bg-white/5"}`;
 
     if (repeatable && !participation) {
       return (
@@ -517,8 +517,8 @@ export default function EntrySheet({
   let content: ReactNode;
   if (current === "deckbau") {
     content =
-      deckbau.length > 0 ? (
-        groups(deckbau, 0)
+      perEvening.length > 0 ? (
+        groups(perEvening, 0)
       ) : (
         <p className="text-base opacity-70">In dieser Runde gibt es keine Deckbau-Achievements.</p>
       );
@@ -566,14 +566,6 @@ export default function EntrySheet({
               </div>
             );
           })}
-        {ending && !locked && endOfSeason.length > 0 && (
-          <div key="zum-schluss" className="flex flex-col gap-2">
-            <h3 className="text-base font-medium">
-              Zum Schluss: Hast du dasselbe Deck durchgängig gespielt?
-            </h3>
-            <ul className="flex flex-col gap-2">{endOfSeason.map((a) => row(a, 0))}</ul>
-          </div>
-        )}
         <div key="bestaetigen">{submitSlot}</div>
       </>
     );

@@ -28,7 +28,7 @@ export default async function EntryBanner() {
     <section className="flex flex-col gap-2 rounded border border-white/20 p-4">
       <h3 className="text-base font-medium">Achievement-Erfassung offen</h3>
       {/* Solange noch kein Match live ist, sitzt niemand am Tisch — «0 von
-          0 haben abgegeben» sagte dann nichts. */}
+          0 haben bestätigt» sagte dann nichts. */}
       {attendees.length === 0 ? (
         <p className="text-base opacity-70">
           Sobald Match 1 live ist, melden sich die Spieler über die Tischkarten an.
@@ -38,8 +38,8 @@ export default async function EntryBanner() {
           <span className="font-medium tabular-nums opacity-100">
             {submitted} von {attendees.length}
           </span>{" "}
-          haben abgegeben.
-          {evening.finishedAt && " Die Runde ist beendet — schliesse die Erfassung, wenn alle abgegeben haben."}
+          haben bestätigt.
+          {evening.finishedAt && " Die Runde ist beendet — schliesse die Erfassung, wenn alle bestätigt haben."}
         </p>
       )}
       <div className="flex flex-wrap gap-2">

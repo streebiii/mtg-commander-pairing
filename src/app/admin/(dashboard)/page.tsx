@@ -113,7 +113,7 @@ export default async function AdminDashboard() {
             <span className="font-medium tabular-nums">
               {submitted} von {attendees.length}
             </span>{" "}
-            haben abgegeben
+            haben bestätigt
             {openEntry.finishedAt && " · Runde beendet, Erfassung noch offen"}
           </Card>
         )}
