@@ -56,8 +56,10 @@ DNS-Einträge setzen.
 
 ## Updates einspielen
 
-Jeder Push auf `main` deployt automatisch neu. Bei Schema-Änderungen
-vorher wie in Schritt 3 `prisma migrate deploy` laufen lassen.
+Jeder Push auf `main` deployt automatisch neu. Ausstehende Migrationen
+laufen dabei von selbst (`scripts/migrate-on-deploy.mjs`), aber nur beim
+Live-Deployment, nicht in Vorschauen. Schlägt eine fehl, bricht der Build ab
+und die bisherige Version bleibt online.
 
 ## Backup
 
