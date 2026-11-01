@@ -239,11 +239,13 @@ export async function loadSheet(
     prisma.evening.findUniqueOrThrow({ where: { id: eveningId } }),
     prisma.eveningAchievement.findMany({
       where: { eveningId },
-      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+      orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { id: "asc" }],
     }),
+    // Feste Reihenfolge: das Blatt lädt neu, sobald sich sein Fingerabdruck
+    // ändert (AutoRefresh), und die Datenbank garantiert sonst keine.
     prisma.playerEntry.findUnique({
       where: { eveningId_playerId: { eveningId, playerId } },
-      include: { marks: true },
+      include: { marks: { orderBy: { id: "asc" } } },
     }),
     gamesPlayed(eveningId, playerId),
     liveRounds(eveningId),
