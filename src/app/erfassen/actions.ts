@@ -32,6 +32,19 @@ export async function setMyMark(
   return ok;
 }
 
+/** «Match 1 fertig» im Final-Ablauf: nur ein Hinweis für den Organisator. */
+export async function markGame1Done() {
+  const entry = await editableEntry();
+  if (entry && !entry.game1DoneAt) {
+    await prisma.playerEntry.update({
+      where: { id: entry.id },
+      data: { game1DoneAt: new Date() },
+    });
+    revalidatePath("/admin/league");
+  }
+  redirect("/erfassen");
+}
+
 /** «Abgeben»: der Spieler ist fertig. Ändern kann er bis zum Schliessen weiterhin. */
 export async function submitMine() {
   const entry = await editableEntry();

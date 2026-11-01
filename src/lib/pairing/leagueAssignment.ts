@@ -248,6 +248,96 @@ export function assignLeagueRound(
 }
 
 /**
+ * Wie viele Paare pro Tisch im Final-Ablauf schon zusammen gespielt haben
+ * dürfen. Eines ist in Ordnung: ganz ohne rutschten zu viele Spieler weit
+ * von ihrem Platz weg.
+ */
+const MAX_REMATCHES_PRO_TISCH = 1;
+
+/**
+ * Setzt die Spieler in der gegebenen Reihenfolge an die Tische: Platz 1–4
+ * an Tisch 1 usw., kleinere Tische zuunterst (Final-Ablauf, SPEC.md
+ * Abschnitt 5.4). Wer einen Tisch über `MAX_REMATCHES_PRO_TISCH` bringen
+ * würde, wird übersprungen und rückt an den nächsten; bleibt am Ende ein Tisch
+ * darüber, löst `loeseRematches` das auf.
+ */
+export function assignByPlace(
+  ids: readonly string[],
+  previousPairings: ReadonlySet<string> = new Set(),
+): string[][] {
+  const rest = [...ids];
+  const sizes = [...computeTableSizes(ids.length)].sort((a, b) => b - a);
+  const tables = sizes.map((size) => {
+    const table: string[] = [];
+    while (table.length < size) {
+      const frei = rest.findIndex(
+        (id) => countRematches([...table, id], previousPairings) <= MAX_REMATCHES_PRO_TISCH,
+      );
+      table.push(rest.splice(Math.max(frei, 0), 1)[0]);
+    }
+    return table;
+  });
+  loeseRematches(tables, previousPairings, new Map(ids.map((id, i) => [id, i])));
+  return tables;
+}
+
+/**
+ * Tauscht Spieler zwischen beliebigen Tischen, bis kein Tausch mehr etwas
+ * bringt: zuerst kommen alle Tische auf `MAX_REMATCHES_PRO_TISCH`, danach
+ * rücken alle so nah wie möglich an ihren Platz in der Reihenfolge. Die
+ * Abstände zählen im Quadrat, damit nicht einer sehr weit rutscht, nur damit
+ * viele ein wenig näher sitzen. Geht es gar nicht (sehr kleines Feld), bleibt
+ * die Lösung mit den wenigsten überzähligen Rematches.
+ */
+function loeseRematches(
+  tables: string[][],
+  previousPairings: ReadonlySet<string>,
+  rang: ReadonlyMap<string, number>,
+): void {
+  const GEWICHT_REMATCH_FINAL = 1e6;
+
+  const ersterPlatz: number[] = [];
+  tables.reduce((platz, table, i) => {
+    ersterPlatz[i] = platz;
+    return platz + table.length;
+  }, 0);
+
+  const kostenTisch = (t: number) => {
+    const table = tables[t];
+    const von = ersterPlatz[t];
+    const bis = von + table.length - 1;
+    const abstand = table.reduce((summe, id) => {
+      const platz = rang.get(id)!;
+      const weg = platz < von ? von - platz : platz > bis ? platz - bis : 0;
+      return summe + weg * weg;
+    }, 0);
+    const zuViele = countRematches(table, previousPairings) - MAX_REMATCHES_PRO_TISCH;
+    return GEWICHT_REMATCH_FINAL * Math.max(0, zuViele) + abstand;
+  };
+
+  for (let pass = 0; pass < 500; pass++) {
+    let best: { t: number; u: number; i: number; j: number; gain: number } | null = null;
+    for (let t = 0; t < tables.length; t++) {
+      for (let u = t + 1; u < tables.length; u++) {
+        const [a, b] = [tables[t], tables[u]];
+        const vorher = kostenTisch(t) + kostenTisch(u);
+        for (let i = 0; i < a.length; i++) {
+          for (let j = 0; j < b.length; j++) {
+            [a[i], b[j]] = [b[j], a[i]];
+            const gain = vorher - kostenTisch(t) - kostenTisch(u);
+            [a[i], b[j]] = [b[j], a[i]];
+            if (gain > 0 && (!best || gain > best.gain)) best = { t, u, i, j, gain };
+          }
+        }
+      }
+    }
+    if (!best) return;
+    const [a, b] = [tables[best.t], tables[best.u]];
+    [a[best.i], b[best.j]] = [b[best.j], a[best.i]];
+  }
+}
+
+/**
  * Tauscht Spieler zwischen dem untersten Tisch der oberen und dem obersten
  * Tisch der unteren Hälfte, solange das die Rematches an den beiden
  * Tischen senkt. Unter gleich guten Tauschen gewinnt der mit dem kleinsten

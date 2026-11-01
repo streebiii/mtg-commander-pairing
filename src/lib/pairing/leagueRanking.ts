@@ -95,3 +95,20 @@ export function rankValues(
     points: -position + (sieger.has(p.id) ? SIEG_BONUS_RAENGE : 0),
   }));
 }
+
+/**
+ * Reihenfolge für Match 2 im Final-Ablauf (SPEC.md Abschnitt 5.4): der
+ * gedämpfte Schnitt pro Abend plus die Punkte aus Match 1. So zählen beide,
+ * die Saison und wie Match 1 lief: ein Abend bringt meist rund 8 Punkte, ein
+ * Match 3, ein gutes 6. Wer das Match nicht gespielt hat, behält seinen
+ * Schnitt. Gleichstand bleibt in der Reihenfolge von `players`.
+ */
+export function orderByMatchPoints(
+  players: readonly LeaguePlayerStanding[],
+  matchPunkte: ReadonlyMap<string, number>,
+): string[] {
+  const ligaSchnitt = leagueAverage(players);
+  const wert = (p: LeaguePlayerStanding) =>
+    dampedAverage(p, ligaSchnitt) + (matchPunkte.get(p.id) ?? 0);
+  return [...players].sort((a, b) => wert(b) - wert(a)).map((p) => p.id);
+}

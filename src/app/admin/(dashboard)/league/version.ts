@@ -38,5 +38,10 @@ export async function leagueVersion(): Promise<string> {
         where: { eveningId: evening.id, submittedAt: { not: null } },
       })
     : 0;
-  return fingerprint({ evening, submitted });
+  const game1Done = evening
+    ? await prisma.playerEntry.count({
+        where: { eveningId: evening.id, game1DoneAt: { not: null } },
+      })
+    : 0;
+  return fingerprint({ evening, submitted, game1Done });
 }

@@ -2,10 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { formatPlayerName } from "@/lib/players";
 import TableCard from "@/components/TableCard";
 import { MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
-import { rankValues } from "@/lib/pairing/leagueRanking";
+import { orderByMatchPoints, rankValues } from "@/lib/pairing/leagueRanking";
 import { loadPairingStandings } from "@/lib/rankingData";
-import { eveningLabel, eveningNumber } from "@/lib/season";
-import { findOpenEvening } from "@/lib/entries";
+import { eveningLabel, eveningNumber, isLastEvening } from "@/lib/season";
+import { findOpenEvening, loadMatchPoints } from "@/lib/entries";
 import { getCasualPairing } from "@/lib/casualPairing";
 import AutoRefresh from "@/components/AutoRefresh";
 import AttendancePanel from "./AttendancePanel";
@@ -134,6 +134,7 @@ export default async function LeaguePage() {
             }))}
             openEntry={openEntry}
             casualPairing={casual ? (casual.published ? "live" : "warteraum") : null}
+            defaultPairByPoints={isLastEvening(new Date())}
             sidebarExtra={<EntryBanner />}
           />
         )}
@@ -153,6 +154,27 @@ export default async function LeaguePage() {
   // etwas.
   const attendanceOpen = !(lastRound.number >= MAX_ROUNDS && lastRoundPublished);
   const firstRoundAssignments = evening.rounds[0].tables.flatMap((t) => t.assignments);
+  // Final-Ablauf (SPEC.md Abschnitt 5.4): wer Match 1 noch nicht gemeldet
+  // hat; ein vom Organisator abgegebener Zettel zählt als gemeldet.
+  const reported = evening.pairByPoints
+    ? await prisma.playerEntry.findMany({
+        where: {
+          eveningId: evening.id,
+          OR: [{ game1DoneAt: { not: null } }, { submittedAt: { not: null } }],
+        },
+        select: { playerId: true },
+      })
+    : [];
+  const reportedIds = new Set(reported.map((e) => e.playerId));
+  const match1Players = firstRoundAssignments.filter((a) => a.droppedAt === null);
+  const missingMatch1 = evening.pairByPoints
+    ? match1Players.filter((a) => !reportedIds.has(a.playerId)).map((a) => formatPlayerName(a.player))
+    : [];
+  // Zwischenstand für die Vorschau im Warteraum — nur für den Organisator.
+  const matchPoints =
+    evening.pairByPoints && lastRound.number > 1
+      ? await loadMatchPoints(evening.id, lastRound.number - 1)
+      : null;
   const droppedPlayers = firstRoundAssignments
     .filter((a) => a.droppedAt !== null)
     .map((a) => ({ id: a.playerId, name: formatPlayerName(a.player) }));
@@ -195,7 +217,12 @@ export default async function LeaguePage() {
   const nextStep = !lastRoundPublished ? (
     <PublishRoundButton roundId={lastRound.id} className="w-full" />
   ) : lastRound.number < MAX_ROUNDS ? (
-    <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
+    <NextRoundButton
+      eveningId={evening.id}
+      disabled={!lastRoundComplete}
+      pairByPoints={evening.pairByPoints}
+      missing={missingMatch1}
+    />
   ) : (
     finishButton
   );
@@ -234,7 +261,11 @@ export default async function LeaguePage() {
                   t.assignments.filter((a) => a.isWinner).map((a) => a.playerId),
                 ) ?? [],
               );
-              const ranked = rankValues(standings, sieger);
+              const ranked = matchPoints
+                ? orderByMatchPoints(standings, matchPoints)
+                : evening.pairByPoints
+                  ? rankValues(standings).map((r) => r.id)
+                  : rankValues(standings, sieger).map((r) => r.id);
 
               return (
                 <section key={round.id} className="flex flex-col gap-3">
@@ -251,12 +282,17 @@ export default async function LeaguePage() {
                   />
                   <details className="text-base opacity-70">
                     <summary className="cursor-pointer">
-                      Rangfolge zur Kontrolle (Basis der Teilung in eine obere und eine untere Hälfte)
+                      {matchPoints
+                        ? "Reihenfolge zur Kontrolle (Schnitt pro Abend plus Punkte aus Match 1)"
+                        : evening.pairByPoints
+                          ? "Rangfolge zur Kontrolle"
+                          : "Rangfolge zur Kontrolle (Basis der Teilung in eine obere und eine untere Hälfte)"}
                     </summary>
                     <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
-                      {ranked.map((r, i) => (
-                        <li key={r.id}>
-                          {i + 1}. {nameById.get(r.id) ?? "?"}
+                      {ranked.map((id, i) => (
+                        <li key={id}>
+                          {i + 1}. {nameById.get(id) ?? "?"}
+                          {matchPoints?.has(id) && ` · M1: ${matchPoints.get(id)}`}
                         </li>
                       ))}
                     </ol>
@@ -309,16 +345,31 @@ export default async function LeaguePage() {
         <Sidebar>
           <h2 className="text-lg font-medium">{eveningLabel(evening.date)}</h2>
           <p className="text-base">{status}</p>
+          {evening.pairByPoints && lastRound.number === 1 && lastRoundPublished && (
+            <p className="text-base opacity-70">
+              Final-Ablauf · Match 1 gemeldet:{" "}
+              {match1Players.length - missingMatch1.length} von {match1Players.length}
+            </p>
+          )}
 
           <div className="flex flex-col gap-2">
             {!lastRoundPublished && (
-              <RegenerateButton roundId={lastRound.id} roundNumber={lastRound.number} />
+              <RegenerateButton
+                roundId={lastRound.id}
+                roundNumber={lastRound.number}
+                recalculate={evening.pairByPoints}
+              />
             )}
             {/* Was in der Leiste unten steht (nextStep), auf dem Handy hier
                 nicht noch einmal. */}
             {lastRoundPublished && lastRound.number < MAX_ROUNDS && (
               <div className="hidden lg:block">
-                <NextRoundButton eveningId={evening.id} disabled={!lastRoundComplete} />
+                <NextRoundButton
+                  eveningId={evening.id}
+                  disabled={!lastRoundComplete}
+                  pairByPoints={evening.pairByPoints}
+                  missing={missingMatch1}
+                />
               </div>
             )}
             {/* Bewusst nie durch fehlende Ergebnisse gesperrt: der Abend

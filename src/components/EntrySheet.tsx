@@ -27,6 +27,10 @@ export interface EntrySheetData {
   lastEvening: boolean;
   /** Die Runde ist beendet — ein nicht gestartetes Match kommt nicht mehr. */
   finished?: boolean;
+  /** Matches, die der Spieler nicht mehr ändern darf (SPEC.md Abschnitt 5.4). */
+  lockedGames?: number[];
+  /** Wo der Spieler gerade sitzt — steht auf seinem Blatt immer sichtbar oben. */
+  seat?: { game: number; table: number } | null;
 }
 
 const GROUP_LABELS: Record<AchievementCategory, string> = {
@@ -180,6 +184,7 @@ export default function EntrySheet({
   stepped = false,
   storageKey,
   submitSlot,
+  match1Slot,
   winnerNotes,
 }: {
   sheet: EntrySheetData;
@@ -194,6 +199,8 @@ export default function EntrySheet({
   storageKey?: string;
   /** Der «Abgeben»-Knopf — erscheint im letzten Schritt. */
   submitSlot?: ReactNode;
+  /** Der Knopf «Match 1 fertig» im Final-Ablauf — erscheint unter Match 1. */
+  match1Slot?: ReactNode;
   /**
    * Nur auf dem Blatt des Spielers: warum «Winner winner» je Match gesperrt
    * ist (z.B. «Sieger: Anna S.»), null, wenn er es selbst setzen darf. Es
@@ -284,7 +291,11 @@ export default function EntrySheet({
     const repeatable = isRepeatable(a.scope);
     const active = count > 0;
     const winnerNote = isWinnerAchievement(a) ? (winnerNotes?.[game] ?? null) : null;
-    const disabled = locked || participation || winnerNote !== null;
+    const disabled =
+      locked ||
+      participation ||
+      winnerNote !== null ||
+      (sheet.lockedGames?.includes(game) ?? false);
 
     const label = (
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -422,6 +433,12 @@ export default function EntrySheet({
 
   const summary = (
     <div className="sticky top-0 z-10 -mx-4 border-b border-white/10 bg-background px-4 py-3">
+      {stepped && !locked && sheet.seat && (
+        <p className="text-lg font-semibold">
+          Tisch {sheet.seat.table}{" "}
+          <span className="text-base font-normal opacity-70">· Match {sheet.seat.game}</span>
+        </p>
+      )}
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
         <span className="text-base font-medium">
           Total <span className="text-xl font-semibold tabular-nums">{totals.total}</span>
@@ -547,7 +564,15 @@ export default function EntrySheet({
     const state = gameState(step);
     content =
       state === "offen" ? (
-        groups(perGame, step)
+        <>
+          {sheet.lockedGames?.includes(step) && !locked && (
+            <p className="rounded border border-white/20 px-3 py-2 text-base">
+              Match 2 ist ausgelost, Match {step} ist damit abgeschlossen.
+            </p>
+          )}
+          {groups(perGame, step)}
+          {step === 1 && match1Slot}
+        </>
       ) : state === "nicht-gespielt" ? (
         <p className="text-base opacity-70">Du hast Match {step} nicht gespielt.</p>
       ) : state === "ausgefallen" ? (

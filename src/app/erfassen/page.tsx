@@ -6,6 +6,7 @@ import { winnerNotes } from "@/lib/winner";
 import { deviceSheetVersion } from "./version";
 import { eveningLabel } from "@/lib/season";
 import { setMyMark } from "./actions";
+import Match1DoneButton from "./Match1DoneButton";
 import SubmitEntryButton from "./SubmitEntryButton";
 
 export const dynamic = "force-dynamic";
@@ -72,6 +73,11 @@ export default async function MyEntryPage() {
         stepped
         storageKey={entry.id}
         submitSlot={!locked && !submitted && <SubmitEntryButton />}
+        match1Slot={
+          !locked &&
+          sheet.pairByPoints &&
+          sheet.lockedGames.length === 0 && <Match1DoneButton done={entry.game1DoneAt !== null} />
+        }
       />
     </div>
   );

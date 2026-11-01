@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assignByPlace,
   assignLeagueRound,
   pairKey,
   tablePairKeys,
@@ -394,5 +395,58 @@ describe("Sieger spielen in Runde 2 innerhalb ihrer Hälfte gegeneinander (SPEC.
       expect(siegerTisch).toHaveLength(4);
       expect(tischeMit(tables, [...sieger])).toBe(1);
     }
+  });
+});
+
+describe("assignByPlace (Final-Ablauf, SPEC.md Abschnitt 5.4)", () => {
+  it("setzt die Plätze der Reihe nach an die Tische", () => {
+    const ids = ["1", "2", "3", "4", "5", "6", "7", "8"];
+    expect(assignByPlace(ids)).toEqual([
+      ["1", "2", "3", "4"],
+      ["5", "6", "7", "8"],
+    ]);
+  });
+
+  it("legt kleinere Tische nach unten", () => {
+    const tables = assignByPlace(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"]);
+    expect(tables.map((t) => t.length)).toEqual([4, 4, 3]);
+    expect(tables[0]).toEqual(["1", "2", "3", "4"]);
+  });
+
+  const maxRematches = (tables: string[][], vorher: ReadonlySet<string>) =>
+    Math.max(...tables.map((t) => countRematches(t, vorher)));
+
+  it("erlaubt ein Rematch pro Tisch, das zweite rückt an den nächsten Tisch", () => {
+    const vorher = new Set([pairKey("1", "2"), pairKey("1", "3")]);
+    const tables = assignByPlace(["1", "2", "3", "4", "5", "6", "7", "8"], vorher);
+    expect(tables[0]).toEqual(["1", "2", "4", "5"]);
+    expect(tables[1]).toEqual(["3", "6", "7", "8"]);
+  });
+
+  it("hält auch im schlimmsten Fall jeden Tisch bei einem Rematch", () => {
+    const ids = Array.from({ length: 22 }, (_, i) => String(i));
+    const match1 = assignByPlace(ids);
+    const vorher = new Set(match1.flatMap(tablePairKeys));
+    // Schlimmster Fall: Match 2 in derselben Reihenfolge wie Match 1.
+    const match2 = assignByPlace(ids, vorher);
+    expect(match2.map((t) => t.length)).toEqual(match1.map((t) => t.length));
+    expect(maxRematches(match2, vorher)).toBeLessThanOrEqual(1);
+    expect(new Set(match2.flat()).size).toBe(22);
+  });
+
+  it("nimmt in sehr kleinen Feldern möglichst wenige Rematches", () => {
+    const ids = ["1", "2", "3", "4", "5", "6", "7", "8"];
+    const vorher = new Set(assignByPlace(ids).flatMap(tablePairKeys));
+    const match2 = assignByPlace(ids, vorher);
+    expect(match2.reduce((n, t) => n + countRematches(t, vorher), 0)).toBe(4);
+  });
+
+  it("lässt die 3er-Tische unten und die Spitze oben", () => {
+    const ids = Array.from({ length: 18 }, (_, i) => String(i));
+    const vorher = new Set(assignByPlace(ids).flatMap(tablePairKeys));
+    const match2 = assignByPlace(ids, vorher);
+    expect(match2.map((t) => t.length)).toEqual([4, 4, 4, 3, 3]);
+    expect(match2[0]).toContain("0");
+    expect(maxRematches(match2, vorher)).toBeLessThanOrEqual(1);
   });
 });

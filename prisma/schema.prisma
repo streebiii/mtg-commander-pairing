@@ -78,6 +78,9 @@ model Evening {
   /// zählt nicht (Testabend oder Abend vor der Selbsterfassung). Siehe
   /// SPEC.md Abschnitt 13.
   seasonRound   Int?
+  /// Final-Ablauf: Match 2 entsteht aus den Punkten von Match 1 (siehe
+  /// SPEC.md Abschnitt 5.4). Beim Start festgelegt.
+  pairByPoints  Boolean @default(false)
 
   rounds       Round[]
   achievements EveningAchievement[]
@@ -300,6 +303,9 @@ model PlayerEntry {
   claimedAt       DateTime?
   /// Gesetzt mit «Abgeben»; danach kann der Spieler nichts mehr ändern.
   submittedAt     DateTime?
+  /// Gesetzt mit «Match 1 fertig» im Final-Ablauf. Nur ein Hinweis für den
+  /// Organisator, die Punkte hängen nicht daran (SPEC.md Abschnitt 5.4).
+  game1DoneAt     DateTime?
   /// Gespielte Spiele (1, 2) bei nachgetragenen Abenden, die keine
   /// Tischzuteilung in der App haben (Abende vor der App, aus den
   /// Punkteblättern übernommen). Leer = aus den Tischen abgeleitet.

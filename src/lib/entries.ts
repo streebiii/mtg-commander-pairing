@@ -7,6 +7,7 @@ import {
   type SheetAchievement,
   type SheetMark,
   computeTotals,
+  gamePoints,
   isParticipation,
   isWinnerAchievement,
   marksToMap,
@@ -137,6 +138,67 @@ export async function liveRounds(eveningId: string) {
   return rounds.map((r) => r.number);
 }
 
+/**
+ * Matches, die Spieler nicht mehr ändern dürfen: im Final-Ablauf Match 1,
+ * sobald Match 2 ausgelost ist — die Paarung beruht auf diesen Punkten
+ * (SPEC.md Abschnitt 5.4). Der Organisator korrigiert weiterhin.
+ */
+export async function lockedGames(eveningId: string): Promise<number[]> {
+  const drawn = await prisma.round.count({
+    where: { number: 2, evening: { id: eveningId, pairByPoints: true } },
+  });
+  return drawn > 0 ? [1] : [];
+}
+
+/**
+ * Punkte je Spieler aus einem Match, für alle, die daran sassen — auch ohne
+ * eigene Erfassung (dann nur Participation).
+ */
+export async function loadMatchPoints(
+  eveningId: string,
+  game: number,
+): Promise<Map<string, number>> {
+  const [achievements, assignments, entries] = await Promise.all([
+    prisma.eveningAchievement.findMany({ where: { eveningId } }),
+    prisma.tableAssignment.findMany({
+      where: { table: { round: { eveningId, number: game, publishedAt: { not: null } } } },
+      select: { playerId: true },
+    }),
+    prisma.playerEntry.findMany({
+      where: { eveningId },
+      select: { playerId: true, marks: true },
+    }),
+  ]);
+  const sheetAchievements = achievements.map(toSheetAchievement);
+  const marksByPlayer = new Map(entries.map((e) => [e.playerId, e.marks]));
+  return new Map(
+    assignments.map((a) => [
+      a.playerId,
+      gamePoints(sheetAchievements, marksToMap(marksByPlayer.get(a.playerId) ?? []), game),
+    ]),
+  );
+}
+
+/**
+ * Wo der Spieler gerade sitzt: sein Tisch im neuesten Match, das live ist.
+ * Null, wenn er darin nicht sitzt — etwa nach einem Drop.
+ */
+export async function currentSeat(eveningId: string, playerId: string) {
+  const round = await prisma.round.findFirst({
+    where: { eveningId, publishedAt: { not: null } },
+    orderBy: { number: "desc" },
+    select: {
+      number: true,
+      tables: {
+        where: { assignments: { some: { playerId } } },
+        select: { tableNumber: true },
+      },
+    },
+  });
+  const table = round?.tables[0]?.tableNumber;
+  return round && table !== undefined ? { game: round.number, table } : null;
+}
+
 /** Ein Abend-Achievement, wie das Erfassungsblatt es braucht. */
 export function toSheetAchievement(a: SheetAchievement): SheetAchievement {
   return {
@@ -160,6 +222,12 @@ export interface SheetData {
   lastEvening: boolean;
   /** Die Runde ist beendet — ein nicht gestartetes Match kommt nicht mehr. */
   finished: boolean;
+  /** Läuft der Abend im Final-Ablauf (SPEC.md Abschnitt 5.4)? */
+  pairByPoints: boolean;
+  /** Matches, die Spieler nicht mehr ändern dürfen (siehe `lockedGames`). */
+  lockedGames: number[];
+  /** Tisch im neuesten Match, das live ist (siehe `currentSeat`). */
+  seat: { game: number; table: number } | null;
 }
 
 /** Alles, was das Erfassungsblatt eines Spielers an einem Abend braucht. */
@@ -167,7 +235,7 @@ export async function loadSheet(
   eveningId: string,
   playerId: string,
 ): Promise<SheetData> {
-  const [evening, achievements, entry, games, live] = await Promise.all([
+  const [evening, achievements, entry, games, live, locked, seat] = await Promise.all([
     prisma.evening.findUniqueOrThrow({ where: { id: eveningId } }),
     prisma.eveningAchievement.findMany({
       where: { eveningId },
@@ -179,6 +247,8 @@ export async function loadSheet(
     }),
     gamesPlayed(eveningId, playerId),
     liveRounds(eveningId),
+    lockedGames(eveningId),
+    currentSeat(eveningId, playerId),
   ]);
   const lastEvening = isLastEvening(evening.date);
   return {
@@ -196,6 +266,9 @@ export async function loadSheet(
     liveRounds: live,
     lastEvening,
     finished: evening.finishedAt !== null,
+    pairByPoints: evening.pairByPoints,
+    lockedGames: locked,
+    seat,
   };
 }
 
@@ -256,7 +329,7 @@ export async function applyMark(
 /**
  * Eine Änderung durch den Spieler selbst. Wie `applyMark`, nur dass
  * «Winner winner» über das Tisch-Ergebnis läuft (lib/winner.ts) — der
- * Organisator korrigiert dagegen frei.
+ * Organisator korrigiert dagegen frei. Gesperrte Matches lehnt sie ab.
  */
 export async function applyPlayerMark(
   entry: { id: string; eveningId: string; playerId: string },
@@ -264,6 +337,8 @@ export async function applyPlayerMark(
   game: number,
   count: number,
 ): Promise<boolean> {
+  if ((await lockedGames(entry.eveningId)).includes(game)) return false;
+
   const achievement = await prisma.eveningAchievement.findUnique({
     where: { id: eveningAchievementId },
     select: { eveningId: true, systemKey: true },

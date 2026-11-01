@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-11-01 (Organisator-Login mit festem Passwort statt Email-Code; Ehrungen als schlichte Liste; davor: Ehrungen für die Rangverkündigung; Korrekturblatt als Tabelle mit einer Spalte pro Match, Rangliste auf dem Handy kompakter, Δ nur noch Aufstiege, Organisator-Bereich auf grossen Bildschirmen zentriert und geboxt, Auslosung der rotierenden Achievements in der App; «Winner winner» folgt dem Tisch-Ergebnis, Navigation zeigt die aktive Seite, Schrift Geist, Liga-Auswahl bleibt gespeichert, Aktuelle Runde sortiert nach Status; Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
+Stand: 2026-11-01 (Final-Ablauf: Match 1 nach Rang, Match 2 aus Schnitt plus Punkten von Match 1, höchstens ein Rematch pro Tisch; Organisator-Login mit festem Passwort statt Email-Code; Ehrungen als schlichte Liste; davor: Ehrungen für die Rangverkündigung; Korrekturblatt als Tabelle mit einer Spalte pro Match, Rangliste auf dem Handy kompakter, Δ nur noch Aufstiege, Organisator-Bereich auf grossen Bildschirmen zentriert und geboxt, Auslosung der rotierenden Achievements in der App; «Winner winner» folgt dem Tisch-Ergebnis, Navigation zeigt die aktive Seite, Schrift Geist, Liga-Auswahl bleibt gespeichert, Aktuelle Runde sortiert nach Status; Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
 
 ## 1. Zweck
 
@@ -414,7 +414,8 @@ nur für einen gewonnenen Match. Gehen *alle* Tische unentschieden aus, ist
 der Sortierschlüssel für jeden gleich und Match 2 wird schlicht wieder
 zufällig.
 
-**Keine Punkteerfassung pro Runde.** Die App führt den Punktestand eines
+**Keine Punkteerfassung pro Runde** (Ausnahme: Final-Ablauf, Abschnitt
+5.4). Die App führt den Punktestand eines
 Abends nicht während des Abends fort. Die Achievement-Punkte erfassen die
 Spieler (Abschnitt 12); mit dem Schliessen der Erfassung zählen sie in der
 Rangliste (Abschnitt 13) und damit für die Paarung von Match 1 am nächsten
@@ -605,6 +606,52 @@ etwas.
 - Neu gemischt wird immer nach denselben Regeln wie beim ersten Berechnen
   (Hälften, Sieg-Bonus, Rematch-Vermeidung). Manuelle Tausche in der
   betroffenen Runde gehen dabei verloren.
+
+### 5.4 Final-Ablauf
+
+Am Final-Abend sitzen alle direkt nach Platz: Match 1 nach dem Rang, Match 2
+nach Saison und Match 1 zusammen (Entscheide des Organisators vom 01.11.2026). Beim
+Abendstart gibt es dafür einen Schalter, am letzten Termin der Saison
+vorbelegt, an anderen Abenden für Testrunden zuschaltbar. Es bleibt bei zwei
+Matches.
+
+- **Match 1**: nach der Rangfolge aus Abschnitt 5.1, ohne Hälften und
+  Zufall: Platz 1–4 an Tisch 1 usw., kleinere Tische zuunterst.
+- **Eintragen**: die Spieler tragen ein wie immer, sobald ein Match live
+  ist. Unter Match 1 steht zusätzlich «Match 1 fertig». Das ist nur ein
+  Hinweis für den Organisator, die Punkte hängen nicht daran.
+- **Auslosen**: «Match 2 aus Punkten auslosen» verlangt wie immer alle
+  Tisch-Ergebnisse. Fehlen Meldungen, nennt eine Rückfrage die Namen;
+  ausgelost werden kann trotzdem, es zählt der aktuelle Stand. Ein vom
+  Organisator abgegebener Zettel gilt als gemeldet.
+- **Reihenfolge für Match 2**: der gedämpfte **Schnitt pro Abend** aus
+  Abschnitt 5.1 **plus die Punkte aus Match 1** (mit Participation und Sieg,
+  ohne Deckbau und Evergreen, damit die Deckwahl niemanden an einen höheren
+  Tisch setzt). Der Sieg-Bonus entfällt, der Sieg steckt in den Punkten. Ein
+  Abend bringt im Schnitt rund 8 Punkte, ein Match meist 3, ein gutes 6;
+  Spieler wechseln dadurch im Mittel rund 4 Plätze. Den Vergleich mit nur
+  Match 1 (zu stark) und Match 1 als halbem Abend (rund 1 Platz) lieferte eine
+  Simulation mit den Punkten der Saison. Wer Match 1 nicht gespielt hat,
+  behält seinen Schnitt. Gleichstand ist zufällig.
+- **Höchstens ein Rematch pro Tisch**: wieder nach Platz, aber pro Tisch
+  dürfen höchstens 2 Spieler sitzen, die schon in Match 1 zusammensassen
+  (Entscheid des Organisators vom 01.11.2026; ganz ohne Rematches rutschten
+  Spieler zu weit von ihrem Platz weg). Wer mehr ergäbe, rückt an den nächsten
+  Tisch. Bleibt am Ende ein Tisch darüber, löst ein Tausch über alle Tische es
+  auf. Danach sitzen alle so nah wie möglich an ihrem Platz. Nur in sehr
+  kleinen Feldern geht es nicht; dann bleibt die Lösung mit den wenigsten
+  überzähligen Rematches.
+- **3er-Tische** stehen in beiden Matches ganz unten, bei den wenigsten
+  Punkten. Dass die Schwächsten dadurch zweimal an einem 3er-Tisch sitzen, ist
+  gewollt (Entscheid des Organisators vom 01.11.2026): die Regel gegen
+  wiederholte Nicht-4er-Tische aus Abschnitt 5.2 gilt hier nicht.
+- **Sperre**: mit dem Auslosen ist Match 1 für die Spieler zu, Deckbau und
+  Match 2 bleiben offen. Der Organisator korrigiert weiter. Vor dem Live
+  Schalten rechnet «Neu berechnen» die Tische neu; danach bleiben sie, auch
+  wenn eine Korrektur die Reihenfolge ändern würde.
+- **Sichtbarkeit**: die Punkte sieht nur der Organisator, im Warteraum von
+  Match 2. Die öffentliche Rangliste ändert sich erst mit dem Schliessen der
+  Erfassung.
 
 ## 6. Spielerverwaltung
 
@@ -890,7 +937,10 @@ und der Organisator erfasst für ihn.
   2 wurde in dieser Runde nicht gespielt» und warnt beim Abgeben nicht
   mehr, es stehe noch aus. Ein offenes Blatt lädt neu, sobald sich daran
   etwas ändert (z.B. der Sieger), wie die Pairing-Seite.
-- Oben steht die laufende Summe mit Teilsummen **Core / Deckbau /
+- Oben steht, auch beim Scrollen, **an welchem Tisch** der Spieler im
+  neuesten Live-Match sitzt («Tisch 3 · Match 2»). Schaltet der Organisator
+  ein neues Match live, wechselt die Anzeige ohne Neuladen.
+- Darunter steht die laufende Summe mit Teilsummen **Core / Deckbau /
   Rotate**, wie auf dem Punkteblatt. Jede Änderung speichert sofort.
 - Grundlage sind die eingefrorenen Achievements des Abends (Abschnitt
   11.2). Der Server prüft jede Änderung: Das Achievement muss zum Abend
