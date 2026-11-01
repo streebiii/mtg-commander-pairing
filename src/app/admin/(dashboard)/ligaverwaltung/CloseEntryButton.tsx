@@ -49,7 +49,7 @@ export default function CloseEntryButton({
     <div className="flex max-w-md flex-col gap-3 rounded border border-white/20 p-4">
       <p className="text-base">
         {openCount > 0
-          ? `${openCount} Spieler haben noch nicht abgegeben. `
+          ? `${openCount} Spieler haben noch nicht bestätigt. `
           : ""}
         Danach können die Spieler nichts mehr ändern.
       </p>

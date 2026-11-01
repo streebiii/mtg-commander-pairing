@@ -350,7 +350,7 @@ export async function applyPlayerMark(
   return applyMark(entry, eveningAchievementId, game, count);
 }
 
-export type EntryStatus = "offen" | "angemeldet" | "abgegeben";
+export type EntryStatus = "offen" | "angemeldet" | "bestaetigt";
 
 export interface OverviewRow {
   playerId: string;
@@ -423,7 +423,7 @@ export async function loadEveningOverview(eveningId: string) {
       name: p.name,
       entryId: entry?.id ?? null,
       status: entry?.submittedAt
-        ? "abgegeben"
+        ? "bestaetigt"
         : entry?.deviceTokenHash
           ? "angemeldet"
           : "offen",

@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 const STATUS: Record<EntryStatus, { label: string; dot: string }> = {
   offen: { label: "Nicht angemeldet", dot: "bg-white/40" },
   angemeldet: { label: "Erfasst gerade", dot: "bg-amber-400" },
-  abgegeben: { label: "Abgegeben", dot: "bg-green-500" },
+  bestaetigt: { label: "Bestätigt", dot: "bg-green-500" },
 };
 
 /**
@@ -19,7 +19,7 @@ const STATUS: Record<EntryStatus, { label: string; dot: string }> = {
  * (Papierzettel, nachfragen), dann wer gerade erfasst, zuletzt wer fertig
  * ist. Innerhalb davon alphabetisch.
  */
-const STATUS_ORDER: Record<EntryStatus, number> = { offen: 0, angemeldet: 1, abgegeben: 2 };
+const STATUS_ORDER: Record<EntryStatus, number> = { offen: 0, angemeldet: 1, bestaetigt: 2 };
 
 const ACTION =
   "inline-flex min-h-11 items-center rounded px-2 text-base underline-offset-2 hover:underline";
@@ -29,7 +29,7 @@ function dayOf(date: Date) {
 }
 
 // Reiter «Aktuelle Runde» der Ligaverwaltung (SPEC.md Abschnitt 14): die
-// Achievement-Erfassung der laufenden Runde — wer abgegeben hat, Totals,
+// Achievement-Erfassung der laufenden Runde — wer bestätigt hat, Totals,
 // Korrekturen und das Schliessen. Bleibt nach «Runde beenden» stehen, bis
 // die Erfassung geschlossen ist. Ohne offene Erfassung: Vorbereitung der
 // nächsten Runde.
@@ -43,7 +43,7 @@ export default async function CurrentRoundPage() {
       STATUS_ORDER[a.status] - STATUS_ORDER[b.status] ||
       formatPlayerName(a.name).localeCompare(formatPlayerName(b.name), "de-CH"),
   );
-  const submitted = rows.filter((r) => r.status === "abgegeben").length;
+  const submitted = rows.filter((r) => r.status === "bestaetigt").length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,7 +54,7 @@ export default async function CurrentRoundPage() {
         <p className="text-base">
           {evening.finishedAt ? "Runde beendet" : "Runde läuft"} ·{" "}
           <span className="font-medium tabular-nums">
-            {submitted} von {rows.length} abgegeben
+            {submitted} von {rows.length} bestätigt
           </span>
         </p>
       </div>
