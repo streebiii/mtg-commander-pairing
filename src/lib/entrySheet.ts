@@ -100,6 +100,24 @@ export function countsByGame(
 }
 
 /**
+ * Punkte aus einem einzelnen Match, ohne Deckbau und was sonst für den
+ * ganzen Abend zählt. Participation ist dabei.
+ */
+export function gamePoints(
+  achievements: SheetAchievement[],
+  marks: Map<string, number>,
+  game: number,
+): number {
+  return achievements
+    .filter((a) => isParticipation(a) || isPerGame(a.scope))
+    .reduce(
+      (sum, a) =>
+        sum + a.points * countsByGame(a, marks, [game]).reduce((n, c) => n + c.count, 0),
+      0,
+    );
+}
+
+/**
  * Summen wie auf dem Punkteblatt: Core (fix), Deckbau, Rotate.
  * Ausgeblendete Achievements (Evergreen ausser am letzten Abend) zählen nicht.
  */

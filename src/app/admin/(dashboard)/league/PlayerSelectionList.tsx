@@ -58,12 +58,15 @@ export default function PlayerSelectionList({
   players,
   openEntry,
   casualPairing,
+  defaultPairByPoints,
   sidebarExtra,
 }: {
   players: PlayerOption[];
   openEntry: OpenEntryInfo | null;
   /** Steht gerade eine Casual-Zuteilung, die der Start verwirft? */
   casualPairing: "live" | "warteraum" | null;
+  /** Final-Ablauf vorbelegt: am letzten Termin der Saison. */
+  defaultPairByPoints: boolean;
   /** Zusätzliches in der Seitenleiste, z.B. der Hinweis auf eine offene Erfassung. */
   sidebarExtra?: ReactNode;
 }) {
@@ -193,6 +196,16 @@ export default function PlayerSelectionList({
         <h2 className="text-lg font-medium">
           Anwesende Spieler auswählen ({selected.size})
         </h2>
+        <label className="flex min-h-11 items-center gap-3 text-base">
+          <input
+            type="checkbox"
+            name="pairByPoints"
+            defaultChecked={defaultPairByPoints}
+            disabled={pending}
+            className="h-5 w-5 shrink-0"
+          />
+          Final-Ablauf: Match 1 nach Rang, Match 2 aus Schnitt und Punkten von Match 1
+        </label>
         <PlayerSearchField value={search} onChange={setSearch} onEnter={handleEnter} />
         <PlayerTileGrid totalCount={players.length}>
           {filtered.map((p) => (

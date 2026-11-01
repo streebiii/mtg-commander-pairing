@@ -13,9 +13,12 @@ import { regenerateRound } from "./actions";
 export default function RegenerateButton({
   roundId,
   roundNumber,
+  recalculate = false,
 }: {
   roundId: string;
   roundNumber: number;
+  /** Final-Ablauf: nichts wird gemischt, die Tische folgen dem Punktestand. */
+  recalculate?: boolean;
 }) {
   const [confirming, setConfirming] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -40,7 +43,7 @@ export default function RegenerateButton({
         disabled={isPending}
         className="w-full"
       >
-        🎲 Neu mischen
+        {recalculate ? "Neu berechnen" : "🎲 Neu mischen"}
       </SecondaryButton>
     );
   }
@@ -48,11 +51,11 @@ export default function RegenerateButton({
   return (
     <span className="flex flex-wrap items-center gap-2 text-base">
       <span className="opacity-70">
-        Match {roundNumber} neu auswürfeln? Die aktuelle Tischzuteilung geht
-        dabei verloren.
+        Match {roundNumber} {recalculate ? "neu berechnen" : "neu auswürfeln"}? Die aktuelle
+        Tischzuteilung geht dabei verloren.
       </span>
       <PrimaryButton onClick={regenerate} loading={isPending}>
-        {isPending ? "Würfle neu…" : "Ja, neu mischen"}
+        {isPending ? "Rechne…" : recalculate ? "Ja, neu berechnen" : "Ja, neu mischen"}
       </PrimaryButton>
       <SecondaryButton onClick={() => setConfirming(false)} disabled={isPending}>
         Abbrechen

@@ -4,13 +4,18 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/adminGuard";
-import { assignLeagueRound, MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
-import { rankValues } from "@/lib/pairing/leagueRanking";
+import { assignByPlace, assignLeagueRound, MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
+import {
+  type LeaguePlayerStanding,
+  orderByMatchPoints,
+  rankValues,
+} from "@/lib/pairing/leagueRanking";
+import { shuffle } from "@/lib/pairing/shuffle";
 import { loadEveningHistory } from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
 import { adoptAchievementsForEvening } from "@/lib/achievements";
 import { loadPairingStandings } from "@/lib/rankingData";
-import { findOpenEvening, seasonRoundError } from "@/lib/entries";
+import { findOpenEvening, loadMatchPoints, seasonRoundError } from "@/lib/entries";
 import { syncWinnerMarks } from "@/lib/winner";
 import { parseSeasonRound } from "@/components/SeasonRoundSelect";
 
@@ -75,12 +80,22 @@ async function attendeesAfterRound(
   ];
 }
 
+/** Match 1 im Final-Ablauf: Platz 1–4 an Tisch 1 usw. */
+function pairFirstByPlace(players: LeaguePlayerStanding[]): string[][] {
+  return assignByPlace(rankValues(shuffle(players)).map((r) => r.id));
+}
+
 /**
  * Paart eine Runde. Runde 1 nach der Rangfolge allein; ab Runde 2 rücken
  * die Sieger der Vorrunde um SIEG_BONUS_RAENGE nach oben — das entscheidet
  * vor allem an der Grenze zwischen oberer und unterer Hälfte (siehe
  * assignLeagueRound in leagueAssignment.ts). Ging ein Tisch unentschieden
  * aus, zählen alle dort als ohne Sieg.
+ *
+ * Im Final-Ablauf sitzen alle direkt nach Platz (SPEC.md Abschnitt 5.4):
+ * Match 1 nach dem Rang, Match 2 nach Schnitt plus Punkten aus Match 1, mit
+ * höchstens einem Rematch pro Tisch. Gemischt wird nur, damit Gleichstand
+ * zufällig ausgeht.
  */
 async function pairRound(
   eveningId: string,
@@ -88,6 +103,18 @@ async function pairRound(
   attendeeIds: string[],
 ): Promise<string[][]> {
   const players = await loadPairingStandings(attendeeIds);
+  const evening = await prisma.evening.findUnique({
+    where: { id: eveningId },
+    select: { pairByPoints: true },
+  });
+  if (evening?.pairByPoints) {
+    if (roundNumber === 1) return pairFirstByPlace(players);
+    const [matchPunkte, { previousPairings }] = await Promise.all([
+      loadMatchPoints(eveningId, roundNumber - 1),
+      loadEveningHistory(eveningId, roundNumber),
+    ]);
+    return assignByPlace(orderByMatchPoints(shuffle(players), matchPunkte), previousPairings);
+  }
   if (roundNumber === 1) return assignLeagueRound(rankValues(players));
 
   const vorrunde = await prisma.tableAssignment.findMany({
@@ -207,7 +234,11 @@ export async function startEvening(
   }
 
   // Runde 1: nach der Rangfolge, keine Historie, noch keine Sieger.
-  const tables = assignLeagueRound(rankValues(await loadPairingStandings(playerIds)));
+  const pairByPoints = formData.get("pairByPoints") === "on";
+  const standings = await loadPairingStandings(playerIds);
+  const tables = pairByPoints
+    ? pairFirstByPlace(standings)
+    : assignLeagueRound(rankValues(standings));
 
   // Abend + Runde 1 atomar anlegen (siehe createRoundInDb) — sonst bliebe
   // bei einem Fehler zwischen den beiden Schritten ein Abend ohne jede
@@ -223,7 +254,9 @@ export async function startEvening(
       where: { entryClosedAt: null },
       data: { entryClosedAt: new Date() },
     });
-    const evening = await tx.evening.create({ data: {} });
+    const evening = await tx.evening.create({
+      data: { pairByPoints },
+    });
     await createRoundInDb(tx, evening.id, 1, tables);
     await adoptAchievementsForEvening(tx, evening.id);
   });

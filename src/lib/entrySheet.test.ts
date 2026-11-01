@@ -3,6 +3,7 @@ import {
   type SheetAchievement,
   computeBreakdown,
   computeTotals,
+  gamePoints,
   markKey,
   maxCount,
   validGame,
@@ -148,5 +149,26 @@ describe("eveningNumber", () => {
     expect(eveningNumber(new Date("2026-11-07T00:30:00+01:00"))).toBe(6);
     expect(eveningNumber(new Date("2026-11-08T19:00:00+01:00"))).toBeNull();
     expect(isLastEvening(new Date("2027-03-12T19:00:00+01:00"))).toBe(false);
+  });
+});
+
+describe("gamePoints", () => {
+  const deckbau = a("deckbau", { category: "DECKBUILDING", scope: "EVENING", points: 4 });
+  const evergreen = a("evergreen", { scope: "SEASON", points: 7 });
+  const sieg = a("sieg", { points: 3 });
+  const list = [participation, deckbau, evergreen, sieg];
+  const marks = new Map([
+    [markKey("deckbau", 0), 1],
+    [markKey("evergreen", 0), 1],
+    [markKey("sieg", 1), 1],
+    [markKey("sieg", 2), 1],
+  ]);
+
+  it("zählt nur dieses Match, mit Participation, ohne Deckbau und Evergreen", () => {
+    expect(gamePoints(list, marks, 1)).toBe(4);
+  });
+
+  it("gibt ohne Erfassung nur Participation", () => {
+    expect(gamePoints(list, new Map(), 1)).toBe(1);
   });
 });

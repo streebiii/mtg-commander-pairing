@@ -4,6 +4,7 @@ import {
   SIEG_BONUS_RAENGE,
   dampedAverage,
   leagueAverage,
+  orderByMatchPoints,
   rankValues,
 } from "./leagueRanking";
 
@@ -142,5 +143,40 @@ describe("rankValues", () => {
       .sort((a, b) => b.points - a.points)
       .map((p) => p.id);
     expect(reihenfolge).toEqual(nachPunkten);
+  });
+});
+
+describe("orderByMatchPoints (Final-Ablauf, SPEC.md Abschnitt 5.4)", () => {
+  // Schnitt ohne Dämpfung nah beieinander: 15, 10, 5 und 2,5 Punkte pro Abend.
+  const players = [
+    { id: "a", points: 60, attendedEvenings: 4 },
+    { id: "b", points: 40, attendedEvenings: 4 },
+    { id: "c", points: 20, attendedEvenings: 4 },
+    { id: "d", points: 10, attendedEvenings: 4 },
+  ];
+  const liga = leagueAverage(players);
+
+  it("zählt den Schnitt und die Punkte aus dem Match", () => {
+    const abstand = dampedAverage(players[0], liga) - dampedAverage(players[1], liga);
+    const punkte = new Map([["b", Math.ceil(abstand)]]);
+    expect(orderByMatchPoints(players, punkte)[0]).toBe("b");
+  });
+
+  it("lässt die Saison zählen: ein kleiner Vorsprung im Match reicht nicht", () => {
+    const punkte = new Map([["a", 1], ["b", 1], ["c", 2], ["d", 1]]);
+    expect(orderByMatchPoints(players, punkte)[0]).toBe("a");
+  });
+
+  it("belässt Spieler ohne Match bei ihrem Schnitt", () => {
+    const punkte = new Map([["b", 1], ["c", 1], ["d", 1]]);
+    expect(orderByMatchPoints(players, punkte)[0]).toBe("a");
+  });
+
+  it("lässt Gleichstand in der gegebenen Reihenfolge", () => {
+    const gleich = [
+      { id: "x", points: 10, attendedEvenings: 2 },
+      { id: "y", points: 10, attendedEvenings: 2 },
+    ];
+    expect(orderByMatchPoints(gleich, new Map())).toEqual(["x", "y"]);
   });
 });
