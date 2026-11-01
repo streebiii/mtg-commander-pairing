@@ -904,8 +904,11 @@ und der Organisator erfasst für ihn.
   Korrigieren-Link, solange das Match änderbar ist. Nach Match 1 steht dort
   «Match 1 bestätigen», nach Match 2 «Match 2 bestätigen». Erst das zweite
   schliesst das Blatt ab; wer Match 2 nicht spielt, bestätigt mit Match 1 alles.
-- **Evergreen** («1x am Ende der Liga») steht am letzten Abend der Saison im
-  Schritt Deckbau und ist grün hinterlegt, damit es auffällt.
+- **Evergreen** («1x am Ende der Liga») steht am letzten Abend der Saison
+  zuoberst im Schritt Deckbau und ist grün hinterlegt, damit es auffällt.
+- **Verbindung weg**: schlägt das Speichern fehl, nimmt das Blatt die Änderung
+  zurück und sagt es oben an; die Seite bleibt offen. Für alles andere gibt es
+  eine Fehlerseite mit «Neu laden» (`src/app/error.tsx`).
 - Der Organisator (Papierzettel, Korrekturen in der Ligaverwaltung) sieht
   das ganze Blatt auf einer Seite, als **Liste mit Spalten** (Entscheid des
   Organisators vom 17.10.2026): jedes Achievement nur einmal, mit Titel,

@@ -269,17 +269,27 @@ export default function EntrySheet({
       return m;
     });
     startTransition(async () => {
-      const ok = await onSetMark(a.id, game, next);
-      if (!ok) {
+      // Am Handy bricht die Verbindung auch mal ab. Ohne das try riss so ein
+      // Fehler die ganze Seite mit, bis man sie neu lud.
+      let problem: string | null = null;
+      try {
+        const ok = await onSetMark(a.id, game, next);
+        if (!ok) {
+          problem =
+            "Konnte nicht gespeichert werden — die Erfassung ist vermutlich geschlossen. Lade die Seite neu.";
+        }
+      } catch {
+        problem =
+          "Nicht gespeichert: Verbindung prüfen und nochmals antippen. Hilft das nicht, lade die Seite neu.";
+      }
+      if (problem) {
         setMarks((prev) => {
           const m = new Map(prev);
           if (previous === 0) m.delete(key);
           else m.set(key, previous);
           return m;
         });
-        setError(
-          "Konnte nicht gespeichert werden — die Erfassung ist vermutlich geschlossen. Lade die Seite neu.",
-        );
+        setError(problem);
       }
     });
   }
@@ -518,7 +528,13 @@ export default function EntrySheet({
   if (current === "deckbau") {
     content =
       perEvening.length > 0 ? (
-        groups(perEvening, 0)
+        // Evergreen zuoberst, damit es niemand übersieht.
+        groups(
+          [...perEvening].sort(
+            (x, y) => Number(y.scope === "SEASON") - Number(x.scope === "SEASON"),
+          ),
+          0,
+        )
       ) : (
         <p className="text-base opacity-70">In dieser Runde gibt es keine Deckbau-Achievements.</p>
       );
