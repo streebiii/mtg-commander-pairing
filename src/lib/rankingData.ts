@@ -1,42 +1,47 @@
 import { prisma } from "@/lib/prisma";
 import { toSheetAchievement } from "@/lib/entries";
-import { computeBreakdown, marksToMap, type Breakdown } from "@/lib/entrySheet";
+import {
+  computeBreakdown,
+  marksToMap,
+  type Breakdown,
+  type SheetAchievement,
+} from "@/lib/entrySheet";
 import { loadPublicNames } from "@/lib/publicRoster";
 import { buildRanking, type AppEvening } from "@/lib/ranking";
 import type { LeaguePlayerStanding } from "@/lib/pairing/leagueRanking";
 import { isInSeason, isLastEvening } from "@/lib/season";
 
+/** Ein Abend, der in der Rangliste zählt, mit den Erfassungen aller, die dort gespielt haben. */
+export interface SeasonEvening {
+  round: number;
+  date: Date;
+  lastEvening: boolean;
+  achievements: SheetAchievement[];
+  players: {
+    playerId: string;
+    games: number[];
+    marks: Map<string, number>;
+    /**
+     * Hat selbst etwas erfasst. Ohne Markierung lässt sich nicht sagen, ob
+     * ein Achievement fehlt oder nur nichts eingetragen wurde.
+     */
+    hasMarks: boolean;
+  }[];
+}
+
 /**
- * Lädt alles für die Rangliste (siehe SPEC.md Abschnitt 13): die
- * Liga-Teilnehmenden, ihre importierten Abende und die Abende aus der
- * App, deren Erfassung geschlossen und einer Spalte zugeordnet ist.
- *
- * Mit einer festen Zahl von Abfragen statt einer pro Abend oder Spieler,
- * weil Neon von Vercel aus jede Abfrage einzeln kostet.
+ * Die Abende aus der App, deren Erfassung geschlossen und einer Spalte
+ * zugeordnet ist — Grundlage der Rangliste (SPEC.md Abschnitt 13) und der
+ * Ehrungen (Abschnitt 15). Mit einer festen Zahl von Abfragen statt einer
+ * pro Abend oder Spieler, weil Neon von Vercel aus jede Abfrage einzeln
+ * kostet.
  */
-export async function loadRanking() {
-  const [players, imported, evenings, names] = await Promise.all([
-    prisma.player.findMany({
-      where: { leagueActive: true },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        colorIdentity: true,
-        decklistUrl: true,
-      },
-    }),
-    prisma.importedEveningScore.findMany({
-      where: { player: { leagueActive: true } },
-      select: { playerId: true, round: true, points: true },
-    }),
-    prisma.evening.findMany({
-      where: { entryClosedAt: { not: null }, seasonRound: { not: null } },
-      select: { id: true, date: true, seasonRound: true },
-      orderBy: { date: "asc" },
-    }),
-    loadPublicNames(),
-  ]);
+export async function loadSeasonEvenings(): Promise<SeasonEvening[]> {
+  const evenings = await prisma.evening.findMany({
+    where: { entryClosedAt: { not: null }, seasonRound: { not: null } },
+    select: { id: true, date: true, seasonRound: true },
+    orderBy: { date: "asc" },
+  });
 
   // Pro Spalte zählt höchstens ein Abend (beim Schliessen geprüft); falls
   // doch zwei, gilt der spätere.
@@ -61,12 +66,7 @@ export async function loadRanking() {
     }),
   ]);
 
-  const appEvenings: AppEvening[] = counted.map((evening) => {
-    const sheet = achievements
-      .filter((a) => a.eveningId === evening.id)
-      .map(toSheetAchievement);
-    const lastEvening = isLastEvening(evening.date);
-
+  return counted.map((evening) => {
     // Wer in einer veröffentlichten Runde sass, hat gespielt — auch ohne
     // eigene Erfassung (dann zählt nur Participation). Nachgetragene Abende
     // haben keine Tische; dort steht in der Erfassung, welche Spiele es waren.
@@ -81,15 +81,60 @@ export async function loadRanking() {
       }
     }
 
+    return {
+      round: evening.seasonRound!,
+      date: evening.date,
+      lastEvening: isLastEvening(evening.date),
+      achievements: achievements
+        .filter((a) => a.eveningId === evening.id)
+        .map(toSheetAchievement),
+      players: [...games].map(([playerId, played]) => {
+        const entry = entries.find((e) => e.eveningId === evening.id && e.playerId === playerId);
+        return {
+          playerId,
+          games: played,
+          marks: marksToMap(entry?.marks ?? []),
+          hasMarks: (entry?.marks.length ?? 0) > 0,
+        };
+      }),
+    };
+  });
+}
+
+/**
+ * Lädt alles für die Rangliste (siehe SPEC.md Abschnitt 13): die
+ * Liga-Teilnehmenden, ihre importierten Abende und die gezählten Abende
+ * aus der App.
+ */
+export async function loadRanking() {
+  const [players, imported, evenings, names] = await Promise.all([
+    prisma.player.findMany({
+      where: { leagueActive: true },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        colorIdentity: true,
+        decklistUrl: true,
+      },
+    }),
+    prisma.importedEveningScore.findMany({
+      where: { player: { leagueActive: true } },
+      select: { playerId: true, round: true, points: true },
+    }),
+    loadSeasonEvenings(),
+    loadPublicNames(),
+  ]);
+
+  const appEvenings: AppEvening[] = evenings.map((evening) => {
     const results = new Map<string, Breakdown>();
-    for (const [playerId, played] of games) {
-      const entry = entries.find((e) => e.eveningId === evening.id && e.playerId === playerId);
+    for (const p of evening.players) {
       results.set(
-        playerId,
-        computeBreakdown(sheet, marksToMap(entry?.marks ?? []), played, lastEvening),
+        p.playerId,
+        computeBreakdown(evening.achievements, p.marks, p.games, evening.lastEvening),
       );
     }
-    return { round: evening.seasonRound!, date: evening.date, results };
+    return { round: evening.round, date: evening.date, results };
   });
 
   return buildRanking(

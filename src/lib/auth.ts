@@ -1,9 +1,8 @@
-// Passwortloser Email-Login für den Organisator-Bereich (/admin).
-// Kein Multi-User, keine Rollen — ein Login-Code per Email genügt (siehe
-// SPEC.md Abschnitt 2). Das eigentliche Ausstellen/Einlösen des
-// Einmal-Tokens steht in src/lib/loginToken.ts; hier nur die Session
-// nach erfolgreichem Login — als signiertes Cookie, damit keine
-// zusätzliche Session-Tabelle/externe Auth-Library nötig ist.
+// Passwort-Login für den Organisator-Bereich (/admin).
+// Kein Multi-User, keine Rollen — ein festes Passwort genügt (siehe
+// SPEC.md Abschnitt 2). Die Prüfung steht in src/lib/adminLogin.ts; hier
+// nur die Session nach erfolgreichem Login — als signiertes Cookie, damit
+// keine zusätzliche Session-Tabelle/externe Auth-Library nötig ist.
 
 export const SESSION_COOKIE_NAME = "admin_session";
 /**
@@ -56,7 +55,7 @@ async function hmacSign(data: string, secret: string): Promise<string> {
   return bytesToBase64Url(new Uint8Array(signature));
 }
 
-function constantTimeEqual(a: string, b: string): boolean {
+export function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
   for (let i = 0; i < a.length; i++) {

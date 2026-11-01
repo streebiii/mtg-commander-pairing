@@ -87,7 +87,7 @@ export function validGame(
  * Participation zählt automatisch einmal je gespieltem Spiel; Markierungen
  * für Spiele, die der Spieler nicht gespielt hat, werden ignoriert.
  */
-function countsByGame(
+export function countsByGame(
   a: SheetAchievement,
   marks: Map<string, number>,
   gamesPlayed: number[],

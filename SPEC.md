@@ -1,6 +1,6 @@
 # Commander Pairing-Software — Spezifikation
 
-Stand: 2026-10-17 (Korrekturblatt als Tabelle mit einer Spalte pro Match, Rangliste auf dem Handy kompakter, Δ nur noch Aufstiege, Organisator-Bereich auf grossen Bildschirmen zentriert und geboxt, Auslosung der rotierenden Achievements in der App; «Winner winner» folgt dem Tisch-Ergebnis, Navigation zeigt die aktive Seite, Schrift Geist, Liga-Auswahl bleibt gespeichert, Aktuelle Runde sortiert nach Status; Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
+Stand: 2026-11-01 (Organisator-Login mit festem Passwort statt Email-Code; Ehrungen als schlichte Liste; davor: Ehrungen für die Rangverkündigung; Korrekturblatt als Tabelle mit einer Spalte pro Match, Rangliste auf dem Handy kompakter, Δ nur noch Aufstiege, Organisator-Bereich auf grossen Bildschirmen zentriert und geboxt, Auslosung der rotierenden Achievements in der App; «Winner winner» folgt dem Tisch-Ergebnis, Navigation zeigt die aktive Seite, Schrift Geist, Liga-Auswahl bleibt gespeichert, Aktuelle Runde sortiert nach Status; Pairing-Seite lädt bei Änderungen neu, Rückfrage zur offenen Erfassung beim Rundenstart, Bestätigung auf der Tischseite, Aktionsleiste auf dem Handy; davor: Ligaverwaltung, Begriffe Runde/Match, Liga wie Casual aufgebaut, Paarung aus eigener Rangliste statt Import, Spieler-Tab als Tabelle, Erfassung in Schritten, Schrift mindestens 16px)
 
 ## 1. Zweck
 
@@ -24,47 +24,22 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   jeweils mit Link dorthin, wo man es bearbeitet. «Liga» ist der
   Spielabend (Abschnitt 5), die **Ligaverwaltung** alles darum herum
   (Abschnitt 14).
-- **Zugriffsschutz — passwortloser Email-Login mit Zahlencode**: kein
-  Passwort. Der Organisator klickt "Login-Code anfordern" und bekommt einen
-  **sechsstelligen Zahlencode** an eine fest konfigurierte Adresse
-  (`ADMIN_EMAIL`). Den gibt er in der Eingabemaske ein, die direkt danach
-  erscheint. Der Code ist 10 Minuten gültig und nur einmal verwendbar
-  (Einlösen markiert ihn in der Datenbank als verbraucht).
+- **Zugriffsschutz — festes Passwort**: der Organisator meldet sich unter
+  `/admin/login` mit einem Passwort an (Entscheid des Organisators vom
+  01.11.2026, ersetzt den Email-Login mit Zahlencode). Das Passwort steht
+  nur in der Umgebungsvariable `ADMIN_PASSWORD`, nie im Repository, das
+  öffentlich ist. Fehlt die Variable, kann sich niemand anmelden.
 
-  Bewusst ein Code statt eines Links: ein Link öffnet sich je nach
-  Mail-Programm im dortigen In-App-Browser, wo das Session-Cookie dann
-  landet — und im eigentlichen Browser ist man weiterhin ausgeloggt. Der
-  Code wird dagegen in genau dem Browser eingegeben, in dem der Login
-  gestartet wurde.
-
-  **Schutz gegen Durchprobieren**: ein sechsstelliger Code hat nur eine
-  Million Möglichkeiten, verglichen mit den 256 Bit des früheren Links
-  verschwindend wenig. Deshalb sind pro ausgestelltem Code höchstens
-  **5 Versuche** erlaubt; danach ist er verbrannt und es braucht einen
-  neuen. Jeder Versuch belastet alle offenen Codes des Browsers, da zu
-  einem falsch geratenen Code kein Datensatz existiert, den man belasten
-  könnte. Der Versuch wird in einem einzigen Datenbank-Update verbucht,
-  bevor verglichen wird — so bleibt das Limit auch bei hunderten
-  gleichzeitigen Versuchen hart.
-
-  **Bindung an den Browser**: beim Anfordern bekommt der Browser ein
-  zufälliges Cookie, der Code ist nur mit diesem Cookie einlösbar.
-  Fehlversuche von anderswo können die Codes des Organisators so weder
-  treffen noch verbrennen.
-
-  Zusätzlich begrenzt das Rate-Limit das Anfordern selbst: max. 5 pro IP
-  und 20 insgesamt pro 10 Minuten. Ein einzelner Störer kann den
-  Organisator damit nicht mehr aussperren. Die IP wird nur pseudonymisiert
-  gespeichert (HMAC mit dem Session-Secret), Codes älter als ein Tag
-  werden gelöscht.
-
-  Der eigentliche Login-Faktor ist damit "Zugriff auf das Email-Postfach" —
-  kein zweiter Faktor im klassischen Sinn, aber ausreichend für eine
-  Single-User-Anwendung, sofern das Postfach selbst gut geschützt ist
-  (idealerweise mit eigener 2FA).
+  **Schutz gegen Durchprobieren**: höchstens **5 Fehlversuche pro IP** und
+  **20 insgesamt** pro 10 Minuten; danach zählt auch das richtige Passwort
+  nicht mehr, bis das Fenster abgelaufen ist. Eine laufende Sitzung bleibt
+  davon unberührt. Der Versuch wird verbucht, bevor verglichen wird, damit
+  das Limit auch bei vielen gleichzeitigen Versuchen hart bleibt. Die
+  Versuche stehen in der Datenbank, weil die App auf Vercel keinen
+  gemeinsamen Speicher hat. Die IP wird nur pseudonymisiert gespeichert
+  (HMAC mit dem Session-Secret), alte Versuche werden gelöscht.
 - **Bestehende Sitzung**: wer `/admin/login` mit gültigem Cookie aufruft,
-  wird direkt weitergeleitet — es wird also keine überflüssige Email
-  ausgelöst.
+  wird direkt weitergeleitet.
 - **Sitzungsdauer**: nach dem Login gilt ein signiertes Cookie mit
   **gleitender** Gültigkeit von 7 Tagen. Bei jedem Aufruf im
   Organisator-Bereich wird es frisch ausgestellt (siehe `src/proxy.ts`),
@@ -91,13 +66,11 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   Daneben, ebenfalls ohne Login, die Rangliste
   der Saison unter `/rangliste` (Abschnitt 13); eine Umschaltung
   „Pairings | Rangliste“ verbindet die beiden.
-- **Hosting — Hybrid**: die App UND die Datenbank (Vercel Postgres)
+- **Hosting**: die App UND die Datenbank (Vercel Postgres)
   laufen auf Vercel (Node.js-fähig) — cyon.ch selbst kann keine dauerhaft
   laufende Node.js-App hosten, und cyons Datenbanken lassen sich nur per
   kontoweitem IP-Whitelisting öffnen (hätte auch andere Projekte auf
-  demselben cyon-Konto betroffen). Nur der **Email-Versand (SMTP)** läuft
-  weiterhin über das bestehende cyon.ch-Hosting des Auftraggebers (siehe
-  DEPLOYMENT.md).
+  demselben cyon-Konto betroffen; siehe DEPLOYMENT.md).
 - **Schrift**: Geist (über `next/font`), Arial nur als Rückfall beim Laden.
   Die Seiten sind als Deutsch (`de-CH`) ausgezeichnet.
 - **Bildschirmgrössen**: jede Seite muss vom Handy (iPhone 13 mini,
@@ -116,7 +89,7 @@ Gathering). Kernaufgabe: Spieler fair und regelkonform auf Tische verteilen
   eine Content-Security-Policy mit Nonce pro Anfrage (`src/proxy.ts`:
   Skripte laufen nur mit dem Nonce, den Next.js beim Rendern setzt —
   deshalb müssen alle Seiten dynamisch gerendert sein, auch die eigene
-  404-Seite), Rate-Limiting auf den Login-Code-Versand, Login-Prüfung in **jeder**
+  404-Seite), Rate-Limiting auf die Login-Versuche, Login-Prüfung in **jeder**
   Organisator-Server-Action (`requireAdmin`, `src/lib/adminGuard.ts`) —
   der Proxy schützt nur die Seiten unter `/admin`, Server Actions lassen
   sich aber auch über andere Pfade auslösen —, Prisma-parametrisierte
@@ -759,8 +732,7 @@ der App erhalten.
 
 ## 10. Offene technische Fragen (vor Deployment zu klären)
 
-- Umgesetzt als Hybrid-Deployment (App + Datenbank auf Vercel, nur Email
-  über cyon.ch), siehe [DEPLOYMENT.md](./DEPLOYMENT.md). Ursprünglich war
+- Umgesetzt mit App und Datenbank auf Vercel, siehe [DEPLOYMENT.md](./DEPLOYMENT.md). Ursprünglich war
   die Datenbank ebenfalls bei cyon geplant, das scheiterte aber am
   kontoweiten IP-Whitelisting für externen DB-Zugriff (hätte auch andere
   cyon-Projekte des Auftraggebers betroffen) — Vercel Postgres braucht
@@ -1077,7 +1049,7 @@ scrollt nie seitlich.
 ## 14. Ligaverwaltung
 
 Alles, was die Liga ausserhalb des Spielabends braucht, unter
-`/admin/ligaverwaltung` mit vier Reitern (gestaltet wie die Reiter im
+`/admin/ligaverwaltung` mit fünf Reitern (gestaltet wie die Reiter im
 Achievement-Katalog):
 
 - **Aktuelle Runde** — die Achievement-Erfassung der offenen Runde
@@ -1101,8 +1073,53 @@ Achievement-Katalog):
   Abschnitt 7).
 - **Achievements** — der Katalog (Abschnitt 11).
 - **Tischkarten** — die Druckvorlage (Abschnitt 12.1).
+- **Ehrungen** — die Statistiken für die Rangverkündigung (Abschnitt 15).
 
 Die früheren Adressen `/admin/erfassung` und `/admin/achievements` leiten
 hierher um (`next.config.ts`). Im Spieler-Tab zeigt die Seite eines
 Spielers seine Achievements pro Runde nur noch an, mit einem Link zum
 Korrigieren hier.
+
+## 15. Ehrungen
+
+Für die Rangverkündigung nach dem Finale ehrt die Liga neben der
+Rangliste auch Lustiges: wer am öftesten als erstes eliminiert wurde, wer
+immer mit Sol Ring gespielt hat, wer am öftesten mit 5 oder weniger
+Karten gestartet ist usw. Alles folgt aus den Erfassungen — es gibt
+nichts zusätzlich einzutragen.
+
+- **Grundlage** sind dieselben Runden wie in der Rangliste: geschlossen
+  und einer Spalte zugeordnet (Abschnitt 13), samt den nachgetragenen
+  R1–R4. Eine offene Erfassung zählt erst nach dem Schliessen; am
+  Finale also zuerst die Erfassung schliessen, dann vorlesen.
+  Gezählt werden die Liga-Teilnehmenden, mit den Namen der Rangliste.
+- **Ehrungen** (Reihenfolge der Liste), mit sachlichen Titeln
+  (Entscheid des Organisators vom 18.10.2026):
+  Mulligan auf 5 («Hardcore Mode»), Sieg nach Mulligan, Mulligan und als
+  erstes raus, Als erstes eliminiert («I’ve seen this movie»), Immer mit
+  Sol Ring (in keiner Runde «No Sol Ring»), Eliminiert, aber nicht
+  gewonnen, Neutrale Matches, Die meisten Eliminierungen («Eliminate»),
+  Alternative Win-Con, Rotierende Achievements, Nur einmal geschafft,
+  Verschiedene Achievements, Deckbau-Punkte, Jedes Match gespielt,
+  Grösste Schwankung, Beste Runde, Beide Matches gewonnen, Farbe mit den
+  meisten Siegen, Die meisten Siege.
+- **Kombinationen** werten aus, was jemand im *selben* Match erreicht hat
+  (z.B. «Hardcore Mode» und Sieg), «Beide Matches gewonnen» Match 1 und 2
+  derselben Runde. **Neutral** ist ein Match ohne Sieg, ohne Eliminierung
+  und ohne als erstes eliminiert zu werden — gezählt nur, wo der Spieler
+  selbst etwas erfasst hat. **Schwankung** erst ab drei Runden.
+  **Farbe**: Siege pro Match aller, deren ausgeloste Farbidentität die
+  Farbe enthält (ein Spieler «WR» zählt für Weiss und Rot).
+- **Gleichstand**: alle mit dem Höchstwert werden geehrt. Wer den Wert 0
+  hat, wird nie geehrt; eine Ehrung ohne Geehrte fehlt in der Liste.
+- **Herr des Rings** zählt nur Runden, in denen der Spieler selbst etwas
+  erfasst hat — ohne Markierung lässt sich nicht sagen, ob «No Sol Ring»
+  fehlt oder nur nichts eingetragen wurde.
+- **Anzeige**: eine schlichte Liste im Reiter «Ehrungen» der
+  Ligaverwaltung, nach Themen (Mulligans, Eliminierungen, Decks,
+  Achievements, Runden, Siege): Titel, Beschreibung, Geehrte mit Wert.
+  Sie ist nur für den Organisator sichtbar, damit nichts vor der
+  Verkündigung bekannt wird. Keine Präsentation (Entscheid des
+  Organisators vom 01.11.2026, ersetzt die Beamer-Folien).
+- Die Berechnung liegt in `src/lib/honors.ts` (mit Tests), das Laden in
+  `src/lib/honorsData.ts`.

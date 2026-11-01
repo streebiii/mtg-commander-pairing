@@ -8,6 +8,7 @@ const TABS = [
   { href: "/admin/ligaverwaltung/runden", label: "Runden" },
   { href: "/admin/ligaverwaltung/achievements", label: "Achievements" },
   { href: "/admin/ligaverwaltung/tischkarten", label: "Tischkarten" },
+  { href: "/admin/ligaverwaltung/ehrungen", label: "Ehrungen" },
 ];
 
 /**

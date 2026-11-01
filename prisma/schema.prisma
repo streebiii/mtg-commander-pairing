@@ -343,46 +343,17 @@ model ImportedEveningScore {
   @@map("imported_evening_scores")
 }
 
-/// Einmal-Code für den passwortlosen Email-Login (siehe SPEC.md
-/// Abschnitt 2). Es gibt keine Benutzerkonten — jeder gültige,
-/// unverbrauchte Code innerhalb seiner Gültigkeit loggt als der eine
-/// Organisator ein.
-model LoginToken {
+/// Login-Versuch auf das Organisator-Passwort, für das Limit gegen
+/// Durchprobieren (siehe SPEC.md Abschnitt 2 und src/lib/adminLogin.ts).
+/// Nach dem Limit-Fenster werden die Einträge gelöscht.
+model LoginAttempt {
   id String @id @default(cuid())
 
-  /// SHA-256-Hash des sechsstelligen Codes. Nur der Code selbst steht in
-  /// der Email, niemals im Klartext in der Datenbank — falls die DB je
-  /// ausgelesen würde, liessen sich daraus keine gültigen Codes ableiten.
-  /// Bewusst nicht unique: zwei gleichzeitig gültige Codes könnten
-  /// theoretisch dieselben sechs Ziffern haben.
-  tokenHash String
+  /// Pseudonymisierte Herkunfts-IP (HMAC mit dem Session-Secret).
+  ipHash    String
+  createdAt DateTime @default(now())
 
-  /// Zahl der Versuche, seit dieser Code ausgestellt wurde. Ein
-  /// sechsstelliger Code hat nur eine Million Möglichkeiten — ohne diese
-  /// Bremse wäre er in Minuten durchprobiert. Jeder Versuch aus dem
-  /// anfordernden Browser erhöht den Zähler aller offenen Codes dieses
-  /// Browsers; ab MAX_CODE_ATTEMPTS gilt der Code als verbrannt (siehe
-  /// src/lib/loginToken.ts).
-  attempts Int @default(0)
-
-  /// SHA-256-Hash des Browser-Cookies, mit dem der Code angefordert wurde.
-  /// Einlösen lässt er sich nur aus diesem Browser — Fehlversuche von
-  /// anderswo können ihn so weder treffen noch verbrennen. null nur bei
-  /// Codes von vor dieser Regel; die sind nicht mehr einlösbar.
-  browserHash String?
-
-  /// Pseudonymisierte Herkunfts-IP der Anforderung (HMAC mit dem
-  /// Session-Secret), für das Anforderungs-Limit pro IP.
-  ipHash String?
-
-  expiresAt DateTime
-  /// null, solange der Code noch nicht eingelöst wurde. Ein Code ist
-  /// nach einmaligem Einlösen ungültig (Replay-Schutz).
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  @@index([tokenHash])
+  @@index([ipHash, createdAt])
   @@index([createdAt])
-  @@index([browserHash])
-  @@map("login_tokens")
+  @@map("login_attempts")
 }

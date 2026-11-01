@@ -38,7 +38,7 @@ function contentSecurityPolicy(nonce: string): string {
 
 // Zwei Aufgaben: setzt auf jeder Seite die Content-Security-Policy und
 // schützt den kompletten /admin-Bereich mit dem Session-Cookie, das nach
-// erfolgreichem Email-Login gesetzt wird. Die öffentlichen Seiten bleiben
+// erfolgreichem Login gesetzt wird. Die öffentlichen Seiten bleiben
 // bewusst ohne Login (siehe SPEC.md Abschnitt 2).
 //
 // Bei jedem gültigen Aufruf im /admin-Bereich wird das Cookie frisch
@@ -48,8 +48,8 @@ function contentSecurityPolicy(nonce: string): string {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // /admin/login ist der Login-Mechanismus selbst (Code anfordern und
-  // eingeben) — hier ist naturgemäss noch keine Session vorhanden.
+  // /admin/login ist der Login-Mechanismus selbst — hier ist naturgemäss
+  // noch keine Session vorhanden.
   const needsSession =
     (pathname === "/admin" || pathname.startsWith("/admin/")) &&
     pathname !== "/admin/login";
