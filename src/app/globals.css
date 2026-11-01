@@ -45,14 +45,6 @@
   --breakpoint-boxed: 106rem;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-
-  /* Aufdecken in der Präsentation der Ehrungen (SPEC.md Abschnitt 15). */
-  --animate-reveal: reveal 500ms ease-out both;
-  @keyframes reveal {
-    from {
-      opacity: 0;
-    }
-  }
 }
 
 /*
@@ -68,8 +60,8 @@ body {
 /*
  * iOS Safari zoomt beim Fokussieren automatisch in jedes Formularfeld mit
  * einer Schriftgröße unter 16px hinein. App-weit als Mindestwert gesetzt
- * (nicht als fixer Wert — der Login-Code-Eingabe z.B. ist bewusst deutlich
- * grösser), damit kein Feld mehr darunter zurückrutschen kann. Bewusst
+ * (nicht als fixer Wert, einzelne Felder dürfen grösser sein), damit kein
+ * Feld mehr darunter zurückrutschen kann. Bewusst
  * NICHT über user-scalable=no im Viewport gelöst — das würde auch das
  * absichtliche Pinch-Zoom sperren.
  *

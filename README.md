@@ -30,9 +30,7 @@ Die App läuft dann unter [http://localhost:3000](http://localhost:3000)
 (öffentliche Pairing-Ansicht direkt auf `/`, Organisator-Bereich unter
 `/admin`).
 
-Login lokal ohne echten SMTP-Versand: `SMTP_*`-Variablen in `.env` leer
-lassen, dann landet der Login-Code nur im Server-Log (nicht in einer
-echten Email) — siehe Konsolen-Ausgabe beim Anfordern des Codes.
+Für den Login muss `ADMIN_PASSWORD` in `.env` gesetzt sein.
 
 ## Tests
 

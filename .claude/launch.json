@@ -9,8 +9,8 @@
     },
     {
       "name": "pairing-app-test",
-      "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "SMTP_HOST= SMTP_USER= SMTP_PASSWORD= npm run dev -- -p 3001"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "-p", "3001"],
       "port": 3001
     }
   ]
