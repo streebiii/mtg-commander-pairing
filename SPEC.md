@@ -1126,6 +1126,15 @@ vom 17.10.2026).
   darunter erklärt eine Zeile das Zeichen. In den Details des Abends steht
   nur «Streichresultat» (ohne «— zählt nicht», seit 06.11.2026). Auch der
   Endstand (Abschnitt 13.5) rechnet damit.
+- **Evergreen** («1x am Ende der Liga») ist eine **Basis der Saison**, kein
+  Teil des Abends (Entscheid des Organisators vom 06.11.2026): R6 zeigt die
+  Abendpunkte ohne Evergreen, und nur diese werden fürs Streichresultat
+  verglichen. Evergreen steht in einer eigenen Spalte **EG** nach R6 und
+  zählt immer zum Total, auch wenn R6 gestrichen ist. Sonst machte es einen
+  schlechten letzten Abend zu einem guten, und gestrichen würde ein
+  besserer. Die Details zu R6 zeigen es nicht; die Spalte erscheint erst,
+  wenn jemand Evergreen hat. Auch die Paarung (Abschnitt 5.1) rechnet mit
+  den Abendpunkten ohne Evergreen.
 - **Δ**: Veränderung gegenüber dem Stand vor dem letzten Abend (höchste
   Spalte mit Punkten), nach denselben Regeln gerechnet. Gezeigt werden
   **nur Aufstiege** (▲ grün); Abstiege und gleicher Rang bleiben leer
@@ -1142,7 +1151,7 @@ vom 17.10.2026).
   keine Details und sind nicht markiert.
 - Die Details zeigen Spieler, Spalte, Datum und Punkte des Abends, darunter
   gegliedert wie das Punkteblatt: **Spiel 1**, **Spiel 2** und **Ganzer
-  Abend** (Deckbau, «mehrmals pro Abend», Evergreen), je mit Teilsumme;
+  Abend** (Deckbau, «mehrmals pro Abend»; Evergreen steht in der Spalte EG), je mit Teilsumme;
   pro Achievement Titel, Punkte und bei mehrfach zählenden die Anzahl
   (×3). Participation steht mit drin, damit die Summen aufgehen.
 - **Geräte, die hovern können** (Maus, Trackpad): ein kleines Popover

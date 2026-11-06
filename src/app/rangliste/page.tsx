@@ -62,6 +62,11 @@ export default async function RankingPage() {
               zählt nicht zum Total.
             </p>
           )}
+          {ranking.rows.some((r) => r.evergreen > 0) && (
+            <p className="text-base opacity-70">
+              EG Evergreen: zählt immer zum Total, auch wenn R6 das Streichresultat ist.
+            </p>
+          )}
         </>
       )}
     </div>

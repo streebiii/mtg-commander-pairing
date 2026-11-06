@@ -121,4 +121,75 @@ describe("buildRanking", () => {
     expect(anna).toMatchObject({ total: 50, rank: 1, delta: 0 });
     expect(ben).toMatchObject({ total: 45, rank: 2, delta: 0 });
   });
+
+  it("streicht Evergreen nicht mit: es zählt neben den Abenden, R6 wird ohne verglichen", () => {
+    // Anna: R6 nur 4 Punkte plus 7 Evergreen. Mit Evergreen wäre R6 (11)
+    // besser als R1 (8) — gestrichen wird trotzdem R6, Evergreen bleibt.
+    const evening6: AppEvening = {
+      round: 6,
+      date: new Date("2026-11-06T19:00:00+01:00"),
+      results: new Map([
+        [
+          "anna",
+          {
+            total: 11,
+            sections: [
+              { label: "Match 1", total: 4, items: [{ title: "Participation", points: 4, count: 1 }] },
+              {
+                label: "Ganze Runde",
+                total: 7,
+                items: [{ title: "Evergreen", points: 7, count: 1, season: true }],
+              },
+            ],
+          },
+        ],
+        ["ben", breakdown(9)],
+      ]),
+    };
+    const ranking = buildRanking(
+      players,
+      scores({ anna: [8, 10, 10, 10, 10], ben: [9, 9, 9, 9, 9] }),
+      [evening6],
+    );
+    const { anna, ben } = byId(ranking);
+    expect(anna.rounds[5]).toMatchObject({ points: 4, struck: true });
+    expect(anna.rounds[5].breakdown).toEqual({
+      total: 4,
+      sections: [{ label: "Match 1", total: 4, items: [{ title: "Participation", points: 4, count: 1 }] }],
+    });
+    expect(anna.rounds[0].struck).toBe(false);
+    expect(anna).toMatchObject({ evergreen: 7, total: 48 + 7 });
+    expect(ben).toMatchObject({ evergreen: 0, total: 45 });
+    // Δ vergleicht mit dem Stand nach R5, dort gab es noch kein Evergreen.
+    expect(anna.delta).toBe(0);
+  });
+
+  it("zählt Evergreen auch vor dem Streichen ins Total", () => {
+    const ranking = buildRanking(players, [], [
+      {
+        round: 2,
+        date: new Date("2026-05-22T19:00:00+02:00"),
+        results: new Map([
+          [
+            "cara",
+            {
+              total: 9,
+              sections: [
+                {
+                  label: "Ganze Runde",
+                  total: 9,
+                  items: [
+                    { title: "Pauper", points: 2, count: 1 },
+                    { title: "Evergreen", points: 7, count: 1, season: true },
+                  ],
+                },
+              ],
+            },
+          ],
+        ]),
+      },
+    ]);
+    expect(byId(ranking).cara).toMatchObject({ total: 9, evergreen: 7 });
+    expect(byId(ranking).cara.rounds[1].points).toBe(2);
+  });
 });
