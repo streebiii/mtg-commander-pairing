@@ -665,7 +665,16 @@ Matches.
   (Entscheid des Organisators vom 01.11.2026; ganz ohne Rematches rutschten
   Spieler zu weit von ihrem Platz weg). Wer mehr ergäbe, rückt an den nächsten
   Tisch. Bleibt am Ende ein Tisch darüber, löst ein Tausch über alle Tische es
-  auf. Danach sitzen alle so nah wie möglich an ihrem Platz. Nur in sehr
+  auf. **Welches Paar** wieder zusammensitzen darf, ist festgelegt
+  (Entscheid des Organisators vom 06.11.2026): massgebend ist die
+  Rangliste nach Match 1 — gewichteter Schnitt pro Abend plus die Punkte
+  aus Match 1, also dieselbe Reihenfolge, nach der Match 2 gesetzt wird.
+  Von den Spielern eines Tisches aus Match 1 dürfen danach nur Rang 1 & 3
+  oder Rang 2 & 4 wieder an einem Tisch sitzen, die zwei Besten eines
+  Tisches nie (an einem 3er-Tisch nur 1 & 3). Welches Paar das ist, hängt
+  damit vom Verlauf von Match 1 ab — nicht immer dieselben zwei. Eine
+  Rangfolge allein aus der Zeit vor dem Abend hätte am ersten Tisch immer
+  dasselbe Paar ergeben. Danach sitzen alle so nah wie möglich an ihrem Platz. Nur in sehr
   kleinen Feldern geht es nicht; dann bleibt die Lösung mit den wenigsten
   überzähligen Rematches.
 - **3er-Tische** stehen in beiden Matches ganz unten, bei den wenigsten

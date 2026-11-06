@@ -255,35 +255,87 @@ export function assignLeagueRound(
 const MAX_REMATCHES_PRO_TISCH = 1;
 
 /**
+ * Rang jedes Spielers innerhalb seines Tisches aus Match 1, gemessen an der
+ * Rangliste nach Match 1 — gewichteter Schnitt pro Abend plus die Punkte
+ * aus Match 1, also die Reihenfolge für Match 2 (0 = der Beste dieses
+ * Tisches). Die Tische aus Match 1 ergeben sich aus den Paaren: wer mit
+ * jemandem gespielt hat, sass mit ihm am Tisch.
+ */
+function rangImVortisch(
+  rangfolge: readonly string[],
+  previousPairings: ReadonlySet<string>,
+): Map<string, number> {
+  const rang = new Map<string, number>();
+  rangfolge.forEach((id, i) => {
+    const vorMir = rangfolge
+      .slice(0, i)
+      .filter((other) => previousPairings.has(pairKey(id, other))).length;
+    rang.set(id, vorMir);
+  });
+  return rang;
+}
+
+/**
+ * Wie viele Rematches an einem Tisch nicht das «richtige» Paar sind: von
+ * den Spielern eines Tisches aus Match 1 dürfen nach der Rangliste nach
+ * Match 1 nur Rang 1 und 3 bzw. Rang 2 und 4 wieder zusammensitzen
+ * (Entscheid des Organisators vom 06.11.2026). Die zwei Besten eines
+ * Tisches nie. Welches Paar das ist, hängt damit vom Verlauf von Match 1 ab.
+ */
+function falscheRematches(
+  table: readonly string[],
+  previousPairings: ReadonlySet<string>,
+  rangVortisch: ReadonlyMap<string, number>,
+): number {
+  let count = 0;
+  for (let i = 0; i < table.length; i++) {
+    for (let j = i + 1; j < table.length; j++) {
+      if (!previousPairings.has(pairKey(table[i], table[j]))) continue;
+      const abstand = Math.abs(rangVortisch.get(table[i])! - rangVortisch.get(table[j])!);
+      if (abstand !== 2) count++;
+    }
+  }
+  return count;
+}
+
+/**
  * Setzt die Spieler in der gegebenen Reihenfolge an die Tische: Platz 1–4
  * an Tisch 1 usw., kleinere Tische zuunterst (Final-Ablauf, SPEC.md
  * Abschnitt 5.4). Wer einen Tisch über `MAX_REMATCHES_PRO_TISCH` bringen
- * würde, wird übersprungen und rückt an den nächsten; bleibt am Ende ein Tisch
- * darüber, löst `loeseRematches` das auf.
+ * oder ein falsches Paar bilden würde (siehe `falscheRematches`), wird
+ * übersprungen und rückt an den nächsten; bleibt am Ende ein Tisch darüber,
+ * löst `loeseRematches` das auf. Die erlaubten Paare richten sich nach
+ * derselben Reihenfolge `ids`.
  */
 export function assignByPlace(
   ids: readonly string[],
   previousPairings: ReadonlySet<string> = new Set(),
 ): string[][] {
   const rest = [...ids];
+  const rangVortisch = rangImVortisch(ids, previousPairings);
   const sizes = [...computeTableSizes(ids.length)].sort((a, b) => b - a);
   const tables = sizes.map((size) => {
     const table: string[] = [];
     while (table.length < size) {
-      const frei = rest.findIndex(
-        (id) => countRematches([...table, id], previousPairings) <= MAX_REMATCHES_PRO_TISCH,
-      );
+      const frei = rest.findIndex((id) => {
+        const mit = [...table, id];
+        return (
+          countRematches(mit, previousPairings) <= MAX_REMATCHES_PRO_TISCH &&
+          falscheRematches(mit, previousPairings, rangVortisch) === 0
+        );
+      });
       table.push(rest.splice(Math.max(frei, 0), 1)[0]);
     }
     return table;
   });
-  loeseRematches(tables, previousPairings, new Map(ids.map((id, i) => [id, i])));
+  loeseRematches(tables, previousPairings, new Map(ids.map((id, i) => [id, i])), rangVortisch);
   return tables;
 }
 
 /**
  * Tauscht Spieler zwischen beliebigen Tischen, bis kein Tausch mehr etwas
- * bringt: zuerst kommen alle Tische auf `MAX_REMATCHES_PRO_TISCH`, danach
+ * bringt: zuerst kommen alle Tische auf `MAX_REMATCHES_PRO_TISCH` und ohne
+ * falsches Paar (siehe `falscheRematches`), danach
  * rücken alle so nah wie möglich an ihren Platz in der Reihenfolge. Die
  * Abstände zählen im Quadrat, damit nicht einer sehr weit rutscht, nur damit
  * viele ein wenig näher sitzen. Geht es gar nicht (sehr kleines Feld), bleibt
@@ -293,6 +345,7 @@ function loeseRematches(
   tables: string[][],
   previousPairings: ReadonlySet<string>,
   rang: ReadonlyMap<string, number>,
+  rangVortisch: ReadonlyMap<string, number>,
 ): void {
   const GEWICHT_REMATCH_FINAL = 1e6;
 
@@ -312,7 +365,8 @@ function loeseRematches(
       return summe + weg * weg;
     }, 0);
     const zuViele = countRematches(table, previousPairings) - MAX_REMATCHES_PRO_TISCH;
-    return GEWICHT_REMATCH_FINAL * Math.max(0, zuViele) + abstand;
+    const falsche = falscheRematches(table, previousPairings, rangVortisch);
+    return GEWICHT_REMATCH_FINAL * (Math.max(0, zuViele) + falsche) + abstand;
   };
 
   for (let pass = 0; pass < 500; pass++) {
