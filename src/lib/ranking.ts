@@ -1,4 +1,4 @@
-import type { Breakdown } from "./entrySheet";
+import { splitSeasonPoints, type Breakdown } from "./entrySheet";
 import { EVENINGS_PER_SEASON } from "./season";
 
 // Reine Logik der Rangliste (siehe SPEC.md Abschnitt 13) — ohne
@@ -21,7 +21,10 @@ export interface AppEvening {
 }
 
 export interface RoundCell {
-  /** null = an diesem Abend nicht dabei gewesen. */
+  /**
+   * Punkte des Abends ohne Evergreen (das steht in `RankingRow.evergreen`).
+   * null = an diesem Abend nicht dabei gewesen.
+   */
   points: number | null;
   /** Woher der Wert stammt; Details gibt es nur für Abende aus der App. */
   source: "app" | "import" | null;
@@ -39,6 +42,12 @@ export interface RankingRow {
   /** Ränge gewonnen (positiv) oder verloren; "neu" beim ersten Abend; null = keine Angabe. */
   delta: number | "neu" | null;
   total: number;
+  /**
+   * «1x am Ende der Liga» (Evergreen), im Total enthalten: eine Basis der
+   * Saison, die neben den Abenden zählt — auch wenn der letzte Abend das
+   * Streichresultat ist (Entscheid des Organisators vom 06.11.2026).
+   */
+  evergreen: number;
   rounds: RoundCell[];
 }
 
@@ -56,21 +65,29 @@ const ROUNDS = Array.from({ length: EVENINGS_PER_SEASON }, (_, i) => i + 1);
  * Total eines Spielers über die gegebenen Spalten. Ist der letzte Abend
  * der Saison dabei, wird das schlechteste Resultat gestrichen — ein
  * verpasster Abend zählt dabei als 0 und ist damit das schlechteste. Bei
- * mehreren gleich schlechten trifft es den letzten.
+ * mehreren gleich schlechten trifft es den letzten. Verglichen werden die
+ * Abende ohne Evergreen; Evergreen (`season`, je Spalte) kommt danach
+ * dazu, gestrichen oder nicht.
  */
 function totalOf(
   points: (number | null)[],
+  season: number[],
   rounds: readonly number[],
-): { total: number; struckRound: number | null } {
-  const total = rounds.reduce((s, r) => s + (points[r - 1] ?? 0), 0);
-  if (!rounds.includes(EVENINGS_PER_SEASON)) return { total, struckRound: null };
+): { total: number; evergreen: number; struckRound: number | null } {
+  const evergreen = rounds.reduce((s, r) => s + season[r - 1], 0);
+  const total = rounds.reduce((s, r) => s + (points[r - 1] ?? 0), 0) + evergreen;
+  if (!rounds.includes(EVENINGS_PER_SEASON)) return { total, evergreen, struckRound: null };
 
   let worst = ROUNDS[0];
   for (const r of ROUNDS) {
     if ((points[r - 1] ?? 0) <= (points[worst - 1] ?? 0)) worst = r;
   }
   const allRounds = ROUNDS.reduce((s, r) => s + (points[r - 1] ?? 0), 0);
-  return { total: allRounds - (points[worst - 1] ?? 0), struckRound: worst };
+  return {
+    total: allRounds - (points[worst - 1] ?? 0) + evergreen,
+    evergreen,
+    struckRound: worst,
+  };
 }
 
 /**
@@ -106,16 +123,21 @@ export function buildRanking(
     importedByPlayer.set(s.playerId, map);
   }
 
+  // Evergreen je Spieler und Spalte; nur Abende aus der App kennen es.
+  const seasonPoints = new Map<string, number[]>(
+    players.map((p) => [p.id, ROUNDS.map(() => 0)]),
+  );
   const cells = new Map<string, RoundCell[]>(
     players.map((p) => [
       p.id,
       ROUNDS.map((round): RoundCell => {
         const app = appByRound.get(round);
         if (app) {
-          const breakdown = app.results.get(p.id);
-          return breakdown
-            ? { points: breakdown.total, source: "app", struck: false, breakdown }
-            : { points: null, source: null, struck: false };
+          const full = app.results.get(p.id);
+          if (!full) return { points: null, source: null, struck: false };
+          const { evening, season } = splitSeasonPoints(full);
+          seasonPoints.get(p.id)![round - 1] = season;
+          return { points: evening.total, source: "app", struck: false, breakdown: evening };
         }
         const points = importedByPlayer.get(p.id)?.get(round);
         return points === undefined
@@ -138,7 +160,11 @@ export function buildRanking(
     rankBy(
       players.map((p) => {
         const points = cells.get(p.id)!.map((c) => c.points);
-        return { id: p.id, name: p.name, ...totalOf(points, rounds) };
+        return {
+          id: p.id,
+          name: p.name,
+          ...totalOf(points, seasonPoints.get(p.id)!, rounds),
+        };
       }),
     );
 
@@ -170,6 +196,7 @@ export function buildRanking(
       rank: s.rank,
       delta,
       total: s.total,
+      evergreen: s.evergreen,
       rounds: playerCells,
     };
   });

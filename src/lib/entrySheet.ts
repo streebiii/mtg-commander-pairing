@@ -144,6 +144,8 @@ export interface BreakdownItem {
   /** Punkte pro Erfüllung. */
   points: number;
   count: number;
+  /** «1x am Ende der Liga» (Evergreen): zählt in der Rangliste neben den Abenden. */
+  season?: boolean;
 }
 
 export interface BreakdownSection {
@@ -190,13 +192,41 @@ export function computeBreakdown(
     for (const { game, count } of countsByGame(a, marks, games)) {
       if (count === 0) continue;
       const section = sectionOf(game);
-      section.items.push({ title: a.title, points: a.points, count });
+      section.items.push({
+        title: a.title,
+        points: a.points,
+        count,
+        ...(a.scope === "SEASON" && { season: true }),
+      });
       section.total += a.points * count;
     }
   }
 
   const filled = sections.filter((s) => s.items.length > 0);
   return { sections: filled, total: filled.reduce((sum, s) => sum + s.total, 0) };
+}
+
+/**
+ * Trennt «1x am Ende der Liga» (Evergreen) von den Abendpunkten (SPEC.md
+ * Abschnitt 13.1, Entscheid des Organisators vom 06.11.2026): Evergreen ist
+ * eine Basis der Saison, kein Teil des Abends — sonst machte es einen
+ * schlechten letzten Abend zu einem guten, und der würde nicht mehr
+ * gestrichen. `evening` ist die Aufschlüsselung ohne Evergreen, `season`
+ * dessen Punkte.
+ */
+export function splitSeasonPoints(breakdown: Breakdown): { evening: Breakdown; season: number } {
+  let season = 0;
+  const sections = breakdown.sections.flatMap((section) => {
+    const own = section.items
+      .filter((item) => item.season)
+      .reduce((sum, item) => sum + item.points * item.count, 0);
+    if (own === 0) return [section];
+    season += own;
+    const items = section.items.filter((item) => !item.season);
+    // Ein Abschnitt, in dem nur Evergreen stand, fällt weg.
+    return items.length > 0 ? [{ ...section, items, total: section.total - own }] : [];
+  });
+  return { evening: { sections, total: breakdown.total - season }, season };
 }
 
 export function marksToMap(marks: SheetMark[]): Map<string, number> {

@@ -55,6 +55,9 @@ export default function RankingTable({
   const [popover, setPopover] = useState<(Detail & { anchor: HTMLElement }) | null>(null);
   const [sheet, setSheet] = useState<(Detail & { trigger: HTMLElement }) | null>(null);
   const roundCount = rows[0]?.rounds.length ?? 0;
+  // Evergreen bekommt eine eigene Spalte, sobald es jemand hat — es zählt
+  // neben den Abenden, nicht in R6 (SPEC.md Abschnitt 13.1).
+  const showEvergreen = rows.some((r) => r.evergreen > 0);
   // Stabil, damit das offene Sheet seinen Effect nicht neu startet.
   const closeSheet = useCallback(() => setSheet(null), []);
   const closePopover = useCallback(() => setPopover(null), []);
@@ -108,6 +111,13 @@ export default function RankingTable({
                   R{i + 1}
                 </th>
               ))}
+              {showEvergreen && (
+                <th className={`${HEAD} min-w-12 text-right`}>
+                  <abbr title="Evergreen" className="no-underline">
+                    EG
+                  </abbr>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -154,6 +164,17 @@ export default function RankingTable({
                     />
                   </td>
                 ))}
+                {showEvergreen && (
+                  <td className={`${CELL} text-right`}>
+                    {row.evergreen > 0 ? (
+                      <span aria-label={`Evergreen: ${row.evergreen} Punkte`}>
+                        {formatPoints(row.evergreen)}
+                      </span>
+                    ) : (
+                      <span className="opacity-40">–</span>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

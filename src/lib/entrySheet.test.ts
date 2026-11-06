@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   type SheetAchievement,
   computeBreakdown,
+  splitSeasonPoints,
   computeTotals,
   gamePoints,
   markKey,
@@ -127,6 +128,26 @@ describe("computeBreakdown", () => {
   it("lässt leere Abschnitte und Evergreen ausser am letzten Abend weg", () => {
     const b = computeBreakdown([participation, evergreen], marks, [1], false);
     expect(b.sections.map((s) => s.label)).toEqual(["Match 1"]);
+  });
+
+  it("trennt Evergreen von den Abendpunkten", () => {
+    const { evening, season } = splitSeasonPoints(computeBreakdown(all, marks, [1, 2], true));
+    expect(season).toBe(7);
+    expect(evening.total).toBe(12);
+    expect(evening.sections.map((s) => [s.label, s.total])).toEqual([
+      ["Match 1", 5],
+      ["Match 2", 3],
+      ["Ganze Runde", 4],
+    ]);
+    expect(evening.sections.flatMap((s) => s.items).some((i) => i.season)).toBe(false);
+  });
+
+  it("lässt einen Abschnitt nur mit Evergreen ganz weg", () => {
+    const { evening, season } = splitSeasonPoints(
+      computeBreakdown([participation, evergreen], marks, [1], true),
+    );
+    expect(season).toBe(7);
+    expect(evening.sections.map((s) => s.label)).toEqual(["Match 1"]);
   });
 });
 
