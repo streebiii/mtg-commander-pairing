@@ -31,7 +31,8 @@ export default async function EntryBanner() {
           0 haben bestätigt» sagte dann nichts. */}
       {attendees.length === 0 ? (
         <p className="text-base opacity-70">
-          Sobald Match 1 live ist, melden sich die Spieler über die Tischkarten an.
+          Sobald Match 1 live ist, tragen die Spieler über den QR-Code auf ihrem
+          Punkteblatt ein.
         </p>
       ) : (
         <p className="text-base opacity-70">
@@ -48,12 +49,6 @@ export default async function EntryBanner() {
           className="inline-flex min-h-11 items-center rounded bg-foreground px-4 py-2 text-base font-medium text-background hover:opacity-90"
         >
           Zur Erfassung
-        </Link>
-        <Link
-          href="/admin/ligaverwaltung/tischkarten"
-          className="inline-flex min-h-11 items-center rounded border border-white/20 px-4 py-2 text-base font-medium hover:bg-white/5"
-        >
-          Tischkarten drucken
         </Link>
       </div>
     </section>

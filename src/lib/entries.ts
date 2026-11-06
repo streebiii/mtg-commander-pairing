@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { EVENINGS_PER_SEASON, isInSeason, isLastEvening } from "@/lib/season";
-import { setWinnerByPlayer } from "@/lib/winner";
+import { winnerMarkToTable } from "@/lib/winner";
 import {
   type SheetAchievement,
   type SheetMark,
@@ -17,9 +17,10 @@ import {
 } from "@/lib/entrySheet";
 
 // Achievement-Erfassung durch die Spieler (siehe SPEC.md Abschnitt 12).
-// Ein Spieler meldet sich über eine Tischkarte an; sein Gerät bekommt ein
-// zufälliges Token als Cookie, in der Datenbank steht nur dessen Hash.
-// Solange ein Gerät einen Namen hält, kann kein anderes ihn wählen.
+// Ein Spieler meldet sich über den QR-Code auf seinem Punkteblatt an; sein
+// Gerät bekommt ein zufälliges Token als Cookie, in der Datenbank steht nur
+// dessen Hash. Solange ein Gerät ein Blatt hält, kann kein anderes es
+// übernehmen.
 
 export const ENTRY_COOKIE_NAME = "liga_erfassung";
 
@@ -35,6 +36,14 @@ export const ENTRY_COOKIE_OPTIONS = {
 
 export function newDeviceToken(): string {
   return randomBytes(32).toString("base64url");
+}
+
+/**
+ * Code für den QR auf einem Punkteblatt: 72 zufällige Bits, kurz genug für
+ * einen gut lesbaren QR. Er gilt nur für einen Abend.
+ */
+export function newSheetCode(): string {
+  return randomBytes(9).toString("base64url");
 }
 
 export function hashToken(token: string): string {
@@ -56,6 +65,42 @@ export async function findOpenEvening() {
     where: { entryClosedAt: null, rounds: { some: {} } },
     orderBy: { createdAt: "desc" },
   });
+}
+
+/**
+ * Der Abend, für den Punkteblätter gelten: der neueste, dessen Erfassung
+ * offen ist — auch einer, der erst vorbereitet ist und noch keine Runde
+ * hat (SPEC.md Abschnitt 12.1).
+ */
+export async function findSheetEvening() {
+  return prisma.evening.findFirst({
+    where: { entryClosedAt: null },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+/**
+ * Sorgt dafür, dass jeder Liga-Teilnehmende für den Abend eine Erfassung
+ * mit QR-Code hat — auch wer nach dem Vorbereiten dazugekommen ist. Wer
+ * schon eine hat, behält seinen Code; ein gedrucktes Blatt bleibt gültig.
+ */
+export async function ensureSheets(eveningId: string) {
+  const players = await prisma.player.findMany({
+    where: { leagueActive: true, archivedAt: null },
+    select: { id: true },
+  });
+  await prisma.playerEntry.createMany({
+    data: players.map((p) => ({ eveningId, playerId: p.id, sheetCode: newSheetCode() })),
+    skipDuplicates: true,
+  });
+  // Erfassungen, die der Organisator vorher von Hand angelegt hat.
+  const withoutCode = await prisma.playerEntry.findMany({
+    where: { eveningId, sheetCode: null },
+    select: { id: true },
+  });
+  for (const e of withoutCode) {
+    await prisma.playerEntry.update({ where: { id: e.id }, data: { sheetCode: newSheetCode() } });
+  }
 }
 
 /**
@@ -191,12 +236,25 @@ export async function currentSeat(eveningId: string, playerId: string) {
       number: true,
       tables: {
         where: { assignments: { some: { playerId } } },
-        select: { tableNumber: true },
+        select: {
+          tableNumber: true,
+          assignments: {
+            where: { playerId: { not: playerId } },
+            orderBy: { player: { firstName: "asc" } },
+            select: { playerId: true },
+          },
+        },
       },
     },
   });
-  const table = round?.tables[0]?.tableNumber;
-  return round && table !== undefined ? { game: round.number, table } : null;
+  const table = round?.tables[0];
+  return round && table
+    ? {
+        game: round.number,
+        table: table.tableNumber,
+        others: table.assignments.map((a) => a.playerId),
+      }
+    : null;
 }
 
 /** Ein Abend-Achievement, wie das Erfassungsblatt es braucht. */
@@ -226,8 +284,13 @@ export interface SheetData {
   pairByPoints: boolean;
   /** Matches, die Spieler nicht mehr ändern dürfen (siehe `lockedGames`). */
   lockedGames: number[];
-  /** Tisch im neuesten Match, das live ist (siehe `currentSeat`). */
-  seat: { game: number; table: number } | null;
+  /**
+   * Tisch im neuesten Match, das live ist, mit den IDs der Mitspieler (siehe
+   * `currentSeat`).
+   */
+  seat: { game: number; table: number; others: string[] } | null;
+  /** Vom Spieler bestätigt: 0 = Deckbau, 1 und 2 = Spiel. */
+  confirmedGames: number[];
 }
 
 /** Alles, was das Erfassungsblatt eines Spielers an einem Abend braucht. */
@@ -271,6 +334,7 @@ export async function loadSheet(
     pairByPoints: evening.pairByPoints,
     lockedGames: locked,
     seat,
+    confirmedGames: entry?.confirmedGames ?? [],
   };
 }
 
@@ -329,27 +393,80 @@ export async function applyMark(
 }
 
 /**
- * Eine Änderung durch den Spieler selbst. Wie `applyMark`, nur dass
- * «Winner winner» über das Tisch-Ergebnis läuft (lib/winner.ts) — der
- * Organisator korrigiert dagegen frei. Gesperrte Matches lehnt sie ab.
+ * Eine Änderung durch den Spieler selbst. Wie `applyMark`; «Winner winner»
+ * setzt dabei zusätzlich den Tischsieger, solange der Tisch offen ist
+ * (lib/winner.ts). Abgelehnt wird, was der Spieler
+ * schon bestätigt hat, ein Spiel vor dem bestätigten Deckbau und ein im
+ * Final-Ablauf gesperrtes Match (SPEC.md Abschnitt 12.2).
  */
 export async function applyPlayerMark(
-  entry: { id: string; eveningId: string; playerId: string },
+  entry: { id: string; eveningId: string; playerId: string; confirmedGames: number[] },
   eveningAchievementId: string,
   game: number,
   count: number,
 ): Promise<boolean> {
+  if (entry.confirmedGames.includes(game)) return false;
+  if (game !== 0 && !entry.confirmedGames.includes(0)) return false;
   if ((await lockedGames(entry.eveningId)).includes(game)) return false;
 
+  const ok = await applyMark(entry, eveningAchievementId, game, count);
+  if (!ok) return false;
   const achievement = await prisma.eveningAchievement.findUnique({
     where: { id: eveningAchievementId },
-    select: { eveningId: true, systemKey: true },
+    select: { systemKey: true },
   });
-  if (achievement?.eveningId === entry.eveningId && isWinnerAchievement(achievement)) {
-    if (count !== 0 && count !== 1) return false;
-    return setWinnerByPlayer(entry, game, count === 1);
+  if (achievement && isWinnerAchievement(achievement)) {
+    await winnerMarkToTable(entry, game, count > 0);
   }
-  return applyMark(entry, eveningAchievementId, game, count);
+  return true;
+}
+
+/**
+ * Kommt für den Spieler noch ein Match? Nach Match 1 ja, ausser der Abend
+ * ist beendet oder Match 2 läuft schon ohne ihn.
+ */
+export function moreMatchesAhead(sheet: Pick<SheetData, "gamesPlayed" | "liveRounds" | "finished">) {
+  const lastGame = sheet.gamesPlayed.at(-1);
+  return lastGame === 1 && !sheet.finished && !sheet.liveRounds.includes(2);
+}
+
+/**
+ * «Korrekt? — Ja»: der Spieler bestätigt den Deckbau (0) oder ein Spiel
+ * und kann es danach nicht mehr ändern (SPEC.md Abschnitt 12.2). Ein Spiel
+ * erst nach dem Deckbau, nur gespielte und nicht im Final-Ablauf
+ * gesperrte. Ist danach alles bestätigt und kommt kein Match mehr, gilt
+ * das Blatt als bestätigt (`submittedAt`); nach Spiel 1 steht zudem
+ * `game1DoneAt` für den Final-Ablauf.
+ */
+export async function confirmPlayerStep(
+  entry: { id: string; eveningId: string; playerId: string; confirmedGames: number[] },
+  step: number,
+): Promise<boolean> {
+  if (entry.confirmedGames.includes(step)) return true;
+  const sheet = await loadSheet(entry.eveningId, entry.playerId);
+  if (step !== 0) {
+    if (!entry.confirmedGames.includes(0)) return false;
+    if (!sheet.gamesPlayed.includes(step)) return false;
+    if (sheet.lockedGames.includes(step)) return false;
+  }
+  const confirmed = [...entry.confirmedGames, step].sort((a, b) => a - b);
+  const complete =
+    confirmed.includes(0) &&
+    sheet.gamesPlayed.length > 0 &&
+    sheet.gamesPlayed.every((g) => confirmed.includes(g) || sheet.lockedGames.includes(g)) &&
+    !moreMatchesAhead(sheet);
+  const now = new Date();
+  // Nur wenn sich seit dem Laden nichts geändert hat — zwei schnelle
+  // Bestätigungen überschreiben sich sonst gegenseitig.
+  const { count } = await prisma.playerEntry.updateMany({
+    where: { id: entry.id, confirmedGames: { equals: entry.confirmedGames } },
+    data: {
+      confirmedGames: confirmed,
+      ...(step === 1 ? { game1DoneAt: now } : {}),
+      ...(complete ? { submittedAt: now } : {}),
+    },
+  });
+  return count === 1;
 }
 
 export type EntryStatus = "offen" | "angemeldet" | "bestaetigt";
@@ -362,6 +479,8 @@ export interface OverviewRow {
   hasDevice: boolean;
   /** Gespielte Matches (1, 2). */
   games: number[];
+  /** Vom Spieler bestätigt: 0 = Deckbau, 1 und 2 = Spiel. */
+  confirmed: number[];
   total: number;
 }
 
@@ -431,6 +550,7 @@ export async function loadEveningOverview(eveningId: string) {
           : "offen",
       hasDevice: Boolean(entry?.deviceTokenHash),
       games,
+      confirmed: entry?.confirmedGames ?? [],
       total: totals.total,
     };
   });
@@ -438,4 +558,39 @@ export async function loadEveningOverview(eveningId: string) {
     a.name.firstName.localeCompare(b.name.firstName, "de-CH"),
   );
   return { evening, rows };
+}
+
+/**
+ * Warum auf dem Blatt des Spielers (noch) kein Tisch steht — oder null,
+ * wenn er einen hat oder für ihn nichts mehr kommt (SPEC.md Abschnitt
+ * 12.2). Wer erst nach dem Auslosen scannt, wartet, bis der Organisator
+ * ihn einteilt (Abschnitt 5.3).
+ */
+export async function waitingNote(
+  eveningId: string,
+  playerId: string,
+  sheet: Pick<SheetData, "seat" | "gamesPlayed" | "finished">,
+): Promise<string | null> {
+  if (sheet.seat || sheet.finished) return null;
+  const [rounds, late] = await Promise.all([
+    prisma.round.findMany({
+      where: { eveningId },
+      orderBy: { number: "desc" },
+      select: {
+        publishedAt: true,
+        tables: { where: { assignments: { some: { playerId } } }, select: { id: true } },
+      },
+    }),
+    prisma.lateArrival.count({ where: { eveningId, playerId } }),
+  ]);
+  const latest = rounds[0];
+  if (!latest) return "Du bist angemeldet. Sobald die Tische ausgelost und live sind, steht hier dein Tisch.";
+  if (latest.tables.length > 0 && !latest.publishedAt) {
+    return "Die Tische sind ausgelost. Sobald sie live sind, steht hier dein Tisch.";
+  }
+  if (late > 0) return "Du spielst ab Match 2 mit. Sobald es live ist, steht hier dein Tisch.";
+  if (sheet.gamesPlayed.length === 0) {
+    return "Du bist angemeldet. Die Tische stehen schon — der Organisator teilt dich ein.";
+  }
+  return null;
 }

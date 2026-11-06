@@ -107,6 +107,11 @@ model Round {
   /// Organisator sieht die Zuteilung, die öffentliche Seite zeigt
   /// weiterhin die zuletzt veröffentlichte Runde (siehe Grill-Notizen).
   publishedAt DateTime?
+  /// Wann die Runde zum ersten Mal live ging. Bleibt stehen, wenn der
+  /// Organisator sie zurück in den Warteraum nimmt: dann sitzen die
+  /// Spieler schon, und wer dazukommt, wird eingefügt statt neu gemischt
+  /// (SPEC.md Abschnitt 5.3).
+  firstPublishedAt DateTime?
 
   tables Table[]
 
@@ -310,6 +315,17 @@ model PlayerEntry {
   /// Gesetzt mit «Match 1 fertig» im Final-Ablauf. Nur ein Hinweis für den
   /// Organisator, die Punkte hängen nicht daran (SPEC.md Abschnitt 5.4).
   game1DoneAt     DateTime?
+  /// Code im QR des persönlichen Punkteblatts (SPEC.md Abschnitt 12.1).
+  /// Entsteht mit «Abend vorbereiten» und gilt nur für diesen Abend; wer
+  /// ihn scannt, meldet sich als dieser Spieler an.
+  sheetCode       String?   @unique
+  /// Anwesend gemeldet: beim ersten Scan des Punkteblatts oder von Hand
+  /// durch den Organisator. «Match 1 auslosen» paart genau diese Spieler.
+  checkedInAt     DateTime?
+  /// Was der Spieler mit «Korrekt?» bestätigt hat und damit selbst nicht
+  /// mehr ändern kann: 0 = Deckbau, 1 und 2 = Spiel. Der Organisator
+  /// korrigiert weiterhin.
+  confirmedGames  Int[]     @default([])
   /// Gespielte Spiele (1, 2) bei nachgetragenen Abenden, die keine
   /// Tischzuteilung in der App haben (Abende vor der App, aus den
   /// Punkteblättern übernommen). Leer = aus den Tischen abgeleitet.

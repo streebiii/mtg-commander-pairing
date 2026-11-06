@@ -1,23 +1,18 @@
-import { getDeviceEntry, loadSheet } from "@/lib/entries";
-import { loadPublicNames } from "@/lib/publicRoster";
-import { winnerNotes } from "@/lib/winner";
+import { getDeviceEntry, loadSheet, waitingNote } from "@/lib/entries";
 import { deviceSheetVersion } from "../version";
 
-// Stand des Erfassungsblatts dieses Geräts (siehe AutoRefresh). Setzt der
-// Organisator den Sieger, ändert er sich — das Blatt lädt dann neu und
-// zeigt «Winner winner».
+// Stand des Blatts dieses Geräts (siehe AutoRefresh). Schaltet der
+// Organisator ein Match live, tauscht Spieler oder teilt einen
+// Nachzügler ein, ändert er sich — das Blatt lädt dann neu.
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const entry = await getDeviceEntry();
   let version = "kein-geraet";
   if (entry) {
-    const [sheet, names] = await Promise.all([
-      loadSheet(entry.eveningId, entry.playerId),
-      loadPublicNames(),
-    ]);
-    const notes = await winnerNotes(entry.eveningId, entry.playerId, sheet.gamesPlayed, names);
-    version = deviceSheetVersion(sheet, notes);
+    const sheet = await loadSheet(entry.eveningId, entry.playerId);
+    const waiting = await waitingNote(entry.eveningId, entry.playerId, sheet);
+    version = deviceSheetVersion(sheet, waiting);
   }
   return Response.json({ version }, { headers: { "Cache-Control": "no-store" } });
 }

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 /**
  * Fingerabdruck des laufenden Liga-Abends: Matches, Tische, Sieger, Drops,
- * Nachzügler und der Stand der Erfassung. Hakt ein Spieler «Winner
+ * Nachzügler, Scans der Punkteblätter und der Stand der Erfassung. Hakt ein Spieler «Winner
  * winner» ab, ändert er sich — der offene Liga-Tab lädt dann neu und zeigt
  * den Sieger (siehe AutoRefresh, lib/winner.ts).
  */
@@ -43,5 +43,18 @@ export async function leagueVersion(): Promise<string> {
         where: { eveningId: evening.id, game1DoneAt: { not: null } },
       })
     : 0;
-  return fingerprint({ evening, submitted, game1Done });
+  // Scans der Punkteblätter: wer anwesend ist und wer ein Handy angemeldet hat.
+  const sheets = evening
+    ? await prisma.playerEntry.findMany({
+        where: { eveningId: evening.id, checkedInAt: { not: null } },
+        orderBy: { playerId: "asc" },
+        select: { playerId: true, deviceTokenHash: true },
+      })
+    : [];
+  return fingerprint({
+    evening,
+    submitted,
+    game1Done,
+    sheets: sheets.map((s) => [s.playerId, s.deviceTokenHash !== null]),
+  });
 }

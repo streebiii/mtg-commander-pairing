@@ -1,22 +1,18 @@
 "use client";
 
 import type { AchievementCategory } from "@prisma/client";
-import { type ReactNode, useEffect, useState, useTransition } from "react";
-import { PrimaryButton, SecondaryButton } from "@/components/Button";
+import type { ReactNode } from "react";
 import { formatPoints, isRepeatable, SCOPE_LABELS } from "@/lib/achievements";
 import {
   type SheetAchievement,
   type SheetMark,
-  computeBreakdown,
   computeTotals,
   isParticipation,
   isPerGame,
-  isWinnerAchievement,
   markKey,
-  marksToMap,
   maxCount,
 } from "@/lib/entrySheet";
-import { MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
+import { type SetMark, SaveStatus, useMarks } from "@/components/sheetParts";
 
 export interface EntrySheetData {
   achievements: SheetAchievement[];
@@ -27,10 +23,6 @@ export interface EntrySheetData {
   lastEvening: boolean;
   /** Die Runde ist beendet — ein nicht gestartetes Match kommt nicht mehr. */
   finished?: boolean;
-  /** Matches, die der Spieler nicht mehr ändern darf (SPEC.md Abschnitt 5.4). */
-  lockedGames?: number[];
-  /** Wo der Spieler gerade sitzt — steht auf seinem Blatt immer sichtbar oben. */
-  seat?: { game: number; table: number } | null;
 }
 
 const GROUP_LABELS: Record<AchievementCategory, string> = {
@@ -143,110 +135,24 @@ function MatrixList({
   );
 }
 
-/** Die Schritte des Spieler-Blatts (SPEC.md Abschnitt 12.2). */
-type Step = "deckbau" | number | "uebersicht";
-const GAMES = Array.from({ length: MAX_ROUNDS }, (_, i) => i + 1);
-
-function stepLabel(step: Step): string {
-  if (step === "deckbau") return "Deckbau";
-  if (step === "uebersicht") return "Übersicht";
-  return `Match ${step}`;
-}
-
-function parseStep(raw: string | null): Step | null {
-  if (raw === "deckbau" || raw === "uebersicht") return raw;
-  const n = Number(raw);
-  return GAMES.includes(n) ? n : null;
-}
-
 /**
- * Das Erfassungsblatt eines Spielers (siehe SPEC.md Abschnitt 12): je Spiel
- * die fixen und rotierenden Achievements, dazu alles, was einmal pro Abend
- * zählt (Deckbau). Oben die laufende Summe wie auf dem Punkteblatt.
- *
- * Mit `stepped` (das Blatt des Spielers auf dem Handy) geht es Schritt für
- * Schritt: Deckbau, die Matches, die er spielt und die live sind, zum
- * Schluss eine Übersicht zum Korrigieren und Bestätigen. Ein Match erscheint
- * erst, wenn es live ist. Ohne `stepped` (Organisator, Papierzettel abtippen) steht
- * alles auf einer Seite, als Liste mit einer Spalte pro Match
- * (MatrixList).
- *
- * Jede Änderung speichert sofort; die Anzeige schaltet ohne Warten um und
- * nimmt die Änderung zurück, falls der Server sie ablehnt (z.B. weil die
- * Erfassung inzwischen geschlossen wurde). Spieler und Organisator nutzen
- * dasselbe Blatt, nur mit unterschiedlicher Speicher-Aktion.
+ * Das Blatt des Organisators (siehe SPEC.md Abschnitt 12.2), für
+ * Korrekturen und abgetippte Papierzettel: jedes Achievement nur einmal,
+ * daneben je gespieltes Match eine Spalte zum Anhaken, dazu alles, was
+ * einmal pro Abend zählt (Deckbau). Oben die laufende Summe wie auf dem
+ * Punkteblatt. Der Spieler hat auf dem Handy ein eigenes Blatt
+ * (PlayerSheet), beide speichern über `useMarks`.
  */
 export default function EntrySheet({
   sheet,
   locked,
   onSetMark,
-  stepped = false,
-  storageKey,
-  submitSlot,
-  title,
-  subtitle,
-  winnerNotes,
 }: {
   sheet: EntrySheetData;
   locked: boolean;
-  onSetMark: (
-    eveningAchievementId: string,
-    game: number,
-    count: number,
-  ) => Promise<boolean>;
-  stepped?: boolean;
-  /** Merkt sich den offenen Schritt pro Erfassung im Browser. */
-  storageKey?: string;
-  /** Das Bestätigen — erscheint in der Übersicht. */
-  submitSlot?: ReactNode;
-  /** Name des Spielers, steht oben im Blatt (nur mit `stepped`). */
-  title?: string;
-  /** Darunter, z.B. die Runde (nur mit `stepped`). */
-  subtitle?: string;
-  /**
-   * Nur auf dem Blatt des Spielers: warum «Winner winner» je Match gesperrt
-   * ist (z.B. «Sieger: Anna S.»), null, wenn er es selbst setzen darf. Es
-   * folgt dem Tisch-Ergebnis (lib/winner.ts).
-   */
-  winnerNotes?: Record<number, string | null>;
+  onSetMark: SetMark;
 }) {
-  const [marks, setMarks] = useState(() => marksToMap(sheet.marks));
-  // Lädt die Seite neu (AutoRefresh, z.B. nach einem Sieger des
-  // Organisators), gelten die frischen Einträge vom Server.
-  const [loadedMarks, setLoadedMarks] = useState(sheet.marks);
-  if (loadedMarks !== sheet.marks) {
-    setLoadedMarks(sheet.marks);
-    setMarks(marksToMap(sheet.marks));
-  }
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [step, setStep] = useState<Step>("deckbau");
-
-  // Den zuletzt offenen Schritt wiederherstellen — erst nach dem Laden,
-  // damit Server- und Browser-Darstellung übereinstimmen. Ohne Speicher
-  // (privates Fenster) beginnt das Blatt einfach bei Deckbau.
-  useEffect(() => {
-    if (!stepped || !storageKey) return;
-    try {
-      const stored = parseStep(localStorage.getItem(`erfassung-schritt:${storageKey}`));
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- einmalig nach dem Laden
-      if (stored !== null) setStep(stored);
-    } catch {
-      // Kein Zugriff auf den Speicher — dann eben ab Deckbau.
-    }
-  }, [stepped, storageKey]);
-
-  function goTo(next: Step) {
-    setStep(next);
-    if (storageKey) {
-      try {
-        localStorage.setItem(`erfassung-schritt:${storageKey}`, String(next));
-      } catch {
-        // Nur eine Bequemlichkeit — ohne Speicher geht nichts verloren.
-      }
-    }
-    window.scrollTo({ top: 0 });
-  }
+  const { marks, set, error, isPending } = useMarks(sheet.marks, onSetMark);
 
   const totals = computeTotals(
     sheet.achievements,
@@ -255,133 +161,8 @@ export default function EntrySheet({
     sheet.lastEvening,
   );
 
-  function set(a: SheetAchievement, game: number, count: number) {
-    const key = markKey(a.id, game);
-    const previous = marks.get(key) ?? 0;
-    const next = Math.max(0, Math.min(maxCount(a.scope), count));
-    if (next === previous) return;
-
-    setError(null);
-    setMarks((prev) => {
-      const m = new Map(prev);
-      if (next === 0) m.delete(key);
-      else m.set(key, next);
-      return m;
-    });
-    startTransition(async () => {
-      // Am Handy bricht die Verbindung auch mal ab. Ohne das try riss so ein
-      // Fehler die ganze Seite mit, bis man sie neu lud.
-      let problem: string | null = null;
-      try {
-        const ok = await onSetMark(a.id, game, next);
-        if (!ok) {
-          problem =
-            "Konnte nicht gespeichert werden — die Erfassung ist vermutlich geschlossen. Lade die Seite neu.";
-        }
-      } catch {
-        problem =
-          "Nicht gespeichert: Verbindung prüfen und nochmals antippen. Hilft das nicht, lade die Seite neu.";
-      }
-      if (problem) {
-        setMarks((prev) => {
-          const m = new Map(prev);
-          if (previous === 0) m.delete(key);
-          else m.set(key, previous);
-          return m;
-        });
-        setError(problem);
-      }
-    });
-  }
-
   const perGame = sheet.achievements.filter((a) => isPerGame(a.scope));
   const perEvening = sheet.achievements.filter((a) => !isPerGame(a.scope));
-
-  function row(a: SheetAchievement, game: number) {
-    const participation = isParticipation(a);
-    const count = participation ? 1 : (marks.get(markKey(a.id, game)) ?? 0);
-    const repeatable = isRepeatable(a.scope);
-    const active = count > 0;
-    const winnerNote = isWinnerAchievement(a) ? (winnerNotes?.[game] ?? null) : null;
-    const disabled =
-      locked ||
-      participation ||
-      winnerNote !== null ||
-      (sheet.lockedGames?.includes(game) ?? false);
-
-    const label = (
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span>
-          <span className="font-medium">{a.title}</span>{" "}
-          <span className="opacity-60">{formatPoints(a.points)}</span>
-          {repeatable && (
-            <span className="opacity-60"> · {SCOPE_LABELS[a.scope]}</span>
-          )}
-          {participation && <span className="opacity-60"> · automatisch</span>}
-          {winnerNote && <span className="opacity-60"> · {winnerNote}</span>}
-        </span>
-        {a.description && (
-          <span className="whitespace-pre-line opacity-60">{a.description}</span>
-        )}
-      </span>
-    );
-
-    // Evergreen gibt es nur einmal im Jahr und soll auffallen.
-    const season = a.scope === "SEASON";
-    const tile = `flex min-h-11 items-center gap-3 rounded border px-3 py-2.5 text-base transition-colors ${
-      season
-        ? `border-green-500 ${active ? "bg-green-500/25" : "bg-green-500/10"}`
-        : active
-          ? "border-blue-500 bg-blue-500/10"
-          : "border-white/20"
-    } ${disabled ? "" : season ? "hover:bg-green-500/20" : active ? "hover:bg-blue-500/20" : "hover:bg-white/5"}`;
-
-    if (repeatable && !participation) {
-      return (
-        <li key={markKey(a.id, game)} className={tile}>
-          {label}
-          <span className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              disabled={disabled || count === 0}
-              onClick={() => set(a, game, count - 1)}
-              aria-label={`${a.title} weniger`}
-              className="flex h-11 w-11 items-center justify-center rounded border border-white/20 text-lg disabled:opacity-30"
-            >
-              −
-            </button>
-            <span className="w-6 text-center font-medium tabular-nums" aria-live="polite">
-              {count}
-            </span>
-            <button
-              type="button"
-              disabled={disabled || count >= maxCount(a.scope)}
-              onClick={() => set(a, game, count + 1)}
-              aria-label={`${a.title} mehr`}
-              className="flex h-11 w-11 items-center justify-center rounded border border-white/20 text-lg disabled:opacity-30"
-            >
-              +
-            </button>
-          </span>
-        </li>
-      );
-    }
-
-    return (
-      <li key={markKey(a.id, game)}>
-        <label className={`${tile} ${disabled ? "" : "cursor-pointer"}`}>
-          <input
-            type="checkbox"
-            checked={active}
-            disabled={disabled}
-            onChange={(e) => set(a, game, e.target.checked ? 1 : 0)}
-            className="h-5 w-5 shrink-0"
-          />
-          {label}
-        </label>
-      </li>
-    );
-  }
 
   /** Steuerelement einer Zelle der Organisator-Tabelle: Häkchen bzw. − n +. */
   function matrixCell(a: SheetAchievement, game: number) {
@@ -433,32 +214,6 @@ export default function EntrySheet({
     );
   }
 
-  function groups(list: SheetAchievement[], game: number) {
-    const categories: AchievementCategory[] = ["FIXED", "ROTATING", "DECKBUILDING"];
-    const present = categories
-      .map((c) => ({ c, items: list.filter((a) => a.category === c) }))
-      .filter((g) => g.items.length > 0);
-    // Eine einzige Gruppe (z.B. nur Deckbau) braucht keinen Zwischentitel.
-    return present.map((g) => (
-        <div key={g.c} className="flex flex-col gap-2">
-          {present.length > 1 && (
-            <h3 className="text-base font-medium opacity-70">{GROUP_LABELS[g.c]}</h3>
-          )}
-          <ul className="flex flex-col gap-2">{g.items.map((a) => row(a, game))}</ul>
-        </div>
-      ));
-  }
-
-  const status = (
-    <div className="text-base" aria-live="polite">
-      {error ? (
-        <span className="text-red-400">{error}</span>
-      ) : isPending ? (
-        <span className="opacity-50">Speichere…</span>
-      ) : null}
-    </div>
-  );
-
   const summary = (
     <div className="sticky top-0 z-10 -mx-4 border-b border-white/10 bg-background px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
@@ -469,186 +224,47 @@ export default function EntrySheet({
           Core {totals.core} · Deckbau {totals.deckbau} · Rotate {totals.rotate}
         </span>
       </div>
-      {status}
+      <SaveStatus error={error} isPending={isPending} />
     </div>
   );
 
-  if (!stepped) {
-    // Organisator: jedes Achievement nur einmal, daneben je Match eine
-    // Spalte zum Anhaken — wie das Punkteblatt, aber ohne die Liste pro
-    // Match zu wiederholen. Was für die ganze Runde zählt (Deckbau usw.),
-    // steht ab lg rechts daneben mit einer Spalte «Runde», schmaler
-    // darunter.
-    return (
-      <div className="flex flex-col gap-6">
-        {summary}
-
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-          {sheet.gamesPlayed.length === 0 ? (
-            <p className="text-base opacity-70">In dieser Runde noch an keinem Tisch.</p>
-          ) : (
-            <MatrixList
-              heading="Pro Match"
-              columns={sheet.gamesPlayed.map((game) => ({
-                key: game,
-                label: `Match ${game}`,
-                short: `M${game}`,
-              }))}
-              groups={categoryGroups(perGame)}
-              cell={matrixCell}
-            />
-          )}
-
-          {perEvening.length > 0 && (
-            <MatrixList
-              heading="Ganze Runde"
-              // Neben der langen Liste «Pro Match» bleibt sie beim Scrollen
-              // stehen, unter der Summenleiste — sonst klafft rechts eine
-              // leere Fläche. Nur auf Bildschirmen, die hoch genug sind,
-              // sonst wäre ihr Ende abgeschnitten.
-              className="[@media(min-width:64rem)_and_(min-height:56rem)]:sticky [@media(min-width:64rem)_and_(min-height:56rem)]:top-24"
-              columns={[{ key: 0, label: "Runde", short: "Runde" }]}
-              groups={categoryGroups(perEvening)}
-              cell={matrixCell}
-            />
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  const steps: Step[] = ["deckbau", ...GAMES.filter((g) => sheet.gamesPlayed.includes(g)), "uebersicht"];
-  // Ein gemerkter Schritt kann weggefallen sein, z.B. nach einem Drop.
-  const current = steps.includes(step) ? step : "deckbau";
-  const stepIndex = steps.indexOf(current);
-  const previous = steps[stepIndex - 1];
-  const next = steps[stepIndex + 1];
-
-  let content: ReactNode;
-  if (current === "deckbau") {
-    content =
-      perEvening.length > 0 ? (
-        // Evergreen zuoberst, damit es niemand übersieht.
-        groups(
-          [...perEvening].sort(
-            (x, y) => Number(y.scope === "SEASON") - Number(x.scope === "SEASON"),
-          ),
-          0,
-        )
-      ) : (
-        <p className="text-base opacity-70">In dieser Runde gibt es keine Deckbau-Achievements.</p>
-      );
-  } else if (current === "uebersicht") {
-    const breakdown = computeBreakdown(
-      sheet.achievements,
-      marks,
-      sheet.gamesPlayed,
-      sheet.lastEvening,
-    );
-    content = (
-      <>
-        {steps
-          .filter((s) => s !== "uebersicht")
-          .map((s) => {
-            const label = s === "deckbau" ? "Ganze Runde" : stepLabel(s);
-            const section = breakdown.sections.find((x) => x.label === label);
-            const changeable = !locked && !(typeof s === "number" && sheet.lockedGames?.includes(s));
-            return (
-              <div key={String(s)} className="flex flex-col gap-1">
-                <h3 className="flex items-center justify-between gap-3 text-base font-medium">
-                  <span>{stepLabel(s)}</span>
-                  <span className="tabular-nums">{section?.total ?? 0}</span>
-                </h3>
-                <ul className="flex flex-col gap-1 text-base opacity-80">
-                  {section?.items.map((item) => (
-                    <li key={item.title} className="flex justify-between gap-3">
-                      <span>
-                        {item.title}
-                        {item.count > 1 && <span className="opacity-60"> ×{item.count}</span>}
-                      </span>
-                      <span className="tabular-nums">{item.points * item.count}</span>
-                    </li>
-                  ))}
-                </ul>
-                {changeable && (
-                  <button
-                    type="button"
-                    onClick={() => goTo(s)}
-                    className="flex min-h-11 items-center self-start text-base underline underline-offset-2 opacity-70"
-                  >
-                    {stepLabel(s)} korrigieren
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        <div key="bestaetigen">{submitSlot}</div>
-      </>
-    );
-  } else {
-    content = (
-      <>
-        {sheet.lockedGames?.includes(current) && !locked && (
-          <p className="rounded border border-white/20 px-3 py-2 text-base">
-            Match 2 ist ausgelost, Match {current} ist damit abgeschlossen.
-          </p>
-        )}
-        {groups(perGame, current)}
-      </>
-    );
-  }
-
+  // Organisator: jedes Achievement nur einmal, daneben je Match eine
+  // Spalte zum Anhaken — wie das Punkteblatt, aber ohne die Liste pro
+  // Match zu wiederholen. Was für die ganze Runde zählt (Deckbau usw.),
+  // steht ab lg rechts daneben mit einer Spalte «Runde», schmaler
+  // darunter.
   return (
-    <div className="flex flex-col gap-4">
-      <div className="sticky top-0 z-10 -mx-4 border-b border-white/10 bg-background px-4 py-3">
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="min-w-0 truncate text-lg font-semibold">{title}</span>
-          {!locked && sheet.seat && (
-            <span className="shrink-0 text-lg font-semibold">Tisch {sheet.seat.table}</span>
-          )}
-        </div>
-        <div className="flex items-baseline justify-between gap-3 text-base">
-          <span className="min-w-0 truncate opacity-70">{subtitle}</span>
-          <span className="shrink-0">
-            Total <span className="font-semibold tabular-nums">{totals.total}</span>
-          </span>
-        </div>
-        {status}
-      </div>
+    <div className="flex flex-col gap-6">
+      {summary}
 
-      <nav
-        aria-label="Schritte"
-        className={`grid gap-1 ${steps.length === 3 ? "grid-cols-3" : "grid-cols-4"}`}
-      >
-        {steps.map((s) => (
-          <button
-            key={String(s)}
-            type="button"
-            onClick={() => goTo(s)}
-            aria-current={s === current ? "step" : undefined}
-            className={`min-h-11 rounded border px-1 py-2 text-center text-base transition-colors ${
-              s === current
-                ? "border-blue-500 bg-blue-500/10 font-medium"
-                : "border-white/20 hover:bg-white/5"
-            }`}
-          >
-            {stepLabel(s)}
-          </button>
-        ))}
-      </nav>
-
-      <section className="flex flex-col gap-3">
-        {content}
-      </section>
-
-      <div className="flex justify-between gap-3">
-        {previous !== undefined ? (
-          <SecondaryButton onClick={() => goTo(previous)}>← {stepLabel(previous)}</SecondaryButton>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        {sheet.gamesPlayed.length === 0 ? (
+          <p className="text-base opacity-70">In dieser Runde noch an keinem Tisch.</p>
         ) : (
-          <span />
+          <MatrixList
+            heading="Pro Match"
+            columns={sheet.gamesPlayed.map((game) => ({
+              key: game,
+              label: `Match ${game}`,
+              short: `M${game}`,
+            }))}
+            groups={categoryGroups(perGame)}
+            cell={matrixCell}
+          />
         )}
-        {next !== undefined && (
-          <PrimaryButton onClick={() => goTo(next)}>{stepLabel(next)} →</PrimaryButton>
+
+        {perEvening.length > 0 && (
+          <MatrixList
+            heading="Ganze Runde"
+            // Neben der langen Liste «Pro Match» bleibt sie beim Scrollen
+            // stehen, unter der Summenleiste — sonst klafft rechts eine
+            // leere Fläche. Nur auf Bildschirmen, die hoch genug sind,
+            // sonst wäre ihr Ende abgeschnitten.
+            className="[@media(min-width:64rem)_and_(min-height:56rem)]:sticky [@media(min-width:64rem)_and_(min-height:56rem)]:top-24"
+            columns={[{ key: 0, label: "Runde", short: "Runde" }]}
+            groups={categoryGroups(perEvening)}
+            cell={matrixCell}
+          />
         )}
       </div>
     </div>

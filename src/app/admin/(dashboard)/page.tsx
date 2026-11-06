@@ -77,6 +77,13 @@ export default async function AdminDashboard() {
     : [0, []];
 
   const match = running?.rounds[0];
+  // Vorbereitet, Match 1 noch nicht ausgelost: wie viele schon gescannt haben.
+  const presentCount =
+    running && !match
+      ? await prisma.playerEntry.count({
+          where: { eveningId: running.id, checkedInAt: { not: null } },
+        })
+      : 0;
   const openTables = match?.tables.filter((t) => t.resultEnteredAt === null).length ?? 0;
   const rotatingOk = activeRotating === 10;
 
@@ -93,6 +100,20 @@ export default async function AdminDashboard() {
               : openTables === 0
                 ? "alle Tische erfasst"
                 : `${openTables} Tische offen`}
+          </Card>
+        ) : running ? (
+          <Card
+            title={`${eveningLabel(running.date)} vorbereitet`}
+            href="/admin/league"
+            action="Zum Liga-Tab"
+          >
+            <span className="font-medium tabular-nums">{presentCount}</span> anwesend ·{" "}
+            <Link
+              href="/admin/ligaverwaltung/punkteblaetter"
+              className="underline-offset-2 hover:underline"
+            >
+              Punkteblätter
+            </Link>
           </Card>
         ) : (
           <Card

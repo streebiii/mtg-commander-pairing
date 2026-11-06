@@ -8,7 +8,7 @@ import AdminNav from "./AdminNav";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen boxed:bg-outside print:bg-transparent">
-      <div className="mx-auto min-h-screen w-full max-w-app bg-background boxed:border-x boxed:border-white/10 print:max-w-none print:border-0">
+      <div className="mx-auto min-h-screen w-full max-w-app bg-background boxed:border-x boxed:border-white/10 print:max-w-none print:border-0 print:bg-white">
         <header className="border-b border-white/10 px-4 py-2 sm:py-4 print:hidden">
           <AdminNav />
         </header>

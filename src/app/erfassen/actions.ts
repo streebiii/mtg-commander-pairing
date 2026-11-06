@@ -1,14 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { applyPlayerMark, getDeviceEntry } from "@/lib/entries";
+import { applyPlayerMark, confirmPlayerStep, getDeviceEntry } from "@/lib/entries";
 
 /**
- * Die Erfassung dieses Geräts, solange der Spieler noch ändern darf: bis
- * der Organisator die Erfassung schliesst — auch nach dem Bestätigen, das
- * nur noch «ich bin fertig» heisst (SPEC.md Abschnitt 12.2).
+ * Die Erfassung dieses Geräts, solange der Spieler noch eintragen darf:
+ * bis der Organisator die Erfassung schliesst. Was er schon bestätigt
+ * hat, sperrt `applyPlayerMark` einzeln (SPEC.md Abschnitt 12.2).
  */
 async function editableEntry() {
   const entry = await getDeviceEntry();
@@ -32,28 +30,16 @@ export async function setMyMark(
   return ok;
 }
 
-/** Match 1 bestätigt: nur ein Hinweis für den Organisator, die Punkte hängen nicht daran. */
-export async function markGame1Done() {
+/** «Korrekt? — Ja» für den Deckbau (0) oder ein Spiel. */
+export async function confirmMyStep(step: number): Promise<boolean> {
+  if (!Number.isInteger(step) || step < 0 || step > 2) return false;
   const entry = await editableEntry();
-  if (entry && !entry.game1DoneAt) {
-    await prisma.playerEntry.update({
-      where: { id: entry.id },
-      data: { game1DoneAt: new Date() },
-    });
+  if (!entry) return false;
+  const ok = await confirmPlayerStep(entry, step);
+  if (ok) {
+    revalidatePath("/erfassen");
+    revalidatePath("/admin/ligaverwaltung");
     revalidatePath("/admin/league");
   }
-  redirect("/erfassen");
-}
-
-/** Alles bestätigt: der Spieler ist fertig. Ändern kann er bis zum Schliessen weiterhin. */
-export async function submitMine() {
-  const entry = await editableEntry();
-  if (entry && !entry.submittedAt) {
-    await prisma.playerEntry.update({
-      where: { id: entry.id },
-      data: { submittedAt: new Date() },
-    });
-    revalidatePath("/admin/ligaverwaltung");
-  }
-  redirect("/erfassen");
+  return ok;
 }

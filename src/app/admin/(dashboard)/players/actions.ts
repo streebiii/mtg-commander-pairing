@@ -132,7 +132,10 @@ export async function deletePlayer(formData: FormData): Promise<void> {
   // nachgetragene Abende ohne Tische (siehe SPEC.md Abschnitt 13).
   const [assignmentCount, entryCount] = await Promise.all([
     prisma.tableAssignment.count({ where: { playerId: id } }),
-    prisma.playerEntry.count({ where: { playerId: id } }),
+    // Ein leeres Punkteblatt eines vorbereiteten Abends ist keine Historie.
+    prisma.playerEntry.count({
+      where: { playerId: id, OR: [{ marks: { some: {} } }, { games: { isEmpty: false } }] },
+    }),
   ]);
 
   if (assignmentCount === 0 && entryCount === 0) {

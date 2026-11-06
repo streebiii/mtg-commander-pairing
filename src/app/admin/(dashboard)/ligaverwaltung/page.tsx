@@ -88,6 +88,12 @@ export default async function CurrentRoundPage() {
                     <span className={`h-2 w-2 rounded-full ${STATUS[r.status].dot}`} />
                     {STATUS[r.status].label}
                   </span>
+                  {/* Was der Spieler mit «Korrekt?» schon gesperrt hat. */}
+                  {r.status !== "bestaetigt" && r.confirmed.length > 0 && (
+                    <span className="block opacity-70">
+                      ✓ {r.confirmed.map((s) => (s === 0 ? "Deckbau" : `Spiel ${s}`)).join(", ")}
+                    </span>
+                  )}
                 </td>
                 <td className="border-b border-white/5 px-3 py-2.5 text-right font-medium tabular-nums">
                   {r.total}

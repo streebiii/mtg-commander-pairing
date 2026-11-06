@@ -1,7 +1,8 @@
 "use client";
 
-import { type ReactNode, useActionState, useEffect, useState } from "react";
-import { PrimaryButton, SecondaryButton } from "@/components/Button";
+import Link from "next/link";
+import { type ReactNode, useActionState, useState, useTransition } from "react";
+import { DangerButton, PrimaryButton, SecondaryButton } from "@/components/Button";
 import MobileActionBar from "@/components/MobileActionBar";
 import SeasonRoundSelect, { initialSeasonRound } from "@/components/SeasonRoundSelect";
 import Sidebar from "@/components/Sidebar";
@@ -11,22 +12,19 @@ import {
   PlayerTileGrid,
   usePlayerSearch,
 } from "@/components/PlayerPicker";
-import { startEvening } from "./actions";
+import { discardPreparation, setAttendance, startEvening } from "./actions";
 
 interface PlayerOption {
   id: string;
   name: string;
   points: number;
+  /** Anwesend gemeldet — per Scan oder von Hand. */
+  present: boolean;
+  /** Hat sein Punkteblatt auf einem Handy angemeldet. */
+  scanned: boolean;
 }
 
-/**
- * Die Auswahl übersteht ein Neuladen, wie im Casual-Tab — nur im Browser,
- * nicht in der Datenbank. Spieler, die es nicht mehr gibt, fallen still
- * heraus.
- */
-const STORAGE_KEY = "liga-selection-v1";
-
-/** Die noch offene Erfassung des letzten Abends, die der Start schliesst. */
+/** Die noch offene Erfassung des letzten Abends, die das Auslosen schliesst. */
 export interface OpenEntryInfo {
   eveningId: string;
   /** z.B. «Runde 4 · 13.10.2026». */
@@ -38,94 +36,71 @@ export interface OpenEntryInfo {
 }
 
 /**
- * Anwesenheits-Auswahl beim Start eines Liga-Abends — dieselbe Liste wie
- * im Casual-Tab (Suche, Enter wählt den einzigen Treffer), plus ein
- * Umschalter für alle: bei fast vollständiger Anwesenheit wählt der
- * Organisator dann nur noch die paar fehlenden ab. Neue Spieler werden
- * hier bewusst nicht angelegt — Liga-Teilnehmende kommen über den
- * Spieler-Tab. Aufgebaut wie der Casual-Tab: links die Auswahl, rechts die
- * Seitenleiste mit «Runde starten», auf dem Handy zusätzlich unten fest.
+ * Anwesenheit am vorbereiteten Liga-Abend (SPEC.md Abschnitt 5 und 12.1).
+ * Wer sein Punkteblatt scannt, erscheint hier von selbst als anwesend (die
+ * Seite lädt dann neu); der Organisator korrigiert per Antippen. Die
+ * Anwesenheit steht in der Datenbank, nicht im Browser — jedes Gerät des
+ * Organisators sieht denselben Stand.
  *
- * Ist die Erfassung des letzten Abends noch offen, fragt «Runde starten»
- * zuerst nach, in welcher Spalte sie zählt — der Start schliesst sie
- * (SPEC.md Abschnitt 12.3). Eine Casual-Zuteilung verwirft der Start
- * ebenfalls; darauf weist ein Satz unter dem Knopf hin.
- *
- * Die Auswahl geht als versteckte `playerIds`-Felder mit — unabhängig
- * davon, ob ein Spieler gerade von der Suche ausgefiltert ist.
+ * «Match 1 auslosen» paart genau die Anwesenden. Ist die Erfassung des
+ * letzten Abends noch offen, fragt es zuerst nach, in welcher Spalte sie
+ * zählt — das Auslosen schliesst sie (SPEC.md Abschnitt 12.3). Eine
+ * Casual-Zuteilung verwirft es ebenfalls; darauf weist ein Satz unter dem
+ * Knopf hin.
  */
 export default function PlayerSelectionList({
+  eveningId,
   players,
   openEntry,
   casualPairing,
   defaultPairByPoints,
   sidebarExtra,
 }: {
+  eveningId: string;
   players: PlayerOption[];
   openEntry: OpenEntryInfo | null;
-  /** Steht gerade eine Casual-Zuteilung, die der Start verwirft? */
+  /** Steht gerade eine Casual-Zuteilung, die das Auslosen verwirft? */
   casualPairing: "live" | "warteraum" | null;
   /** Final-Ablauf vorbelegt: am letzten Termin der Saison. */
   defaultPairByPoints: boolean;
   /** Zusätzliches in der Seitenleiste, z.B. der Hinweis auf eine offene Erfassung. */
   sidebarExtra?: ReactNode;
 }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [hydrated, setHydrated] = useState(false);
+  // Angetippt, aber vom Server noch nicht bestätigt — so schaltet die
+  // Kachel sofort um. Kommt der neue Stand vom Server, gilt wieder er.
+  const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
+  const [loadedPlayers, setLoadedPlayers] = useState(players);
+  if (loadedPlayers !== players) {
+    setLoadedPlayers(players);
+    setOverrides(new Map());
+  }
+  const [, startToggle] = useTransition();
   const [state, formAction, pending] = useActionState(startEvening, null);
   // Rückfrage zur offenen Erfassung: in welcher Spalte sie zählt.
   const [confirming, setConfirming] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+  const [discardPending, startDiscard] = useTransition();
   const [seasonRound, setSeasonRound] = useState(
     initialSeasonRound(openEntry?.suggestedRound ?? null),
   );
   const { search, setSearch, filtered, enterTarget } = usePlayerSearch(players);
 
-  // Erst nach dem Laden lesen, damit Server- und Browser-Darstellung
-  // übereinstimmen; ohne Speicher (privates Fenster) startet sie leer.
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const ids: unknown = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(ids)) {
-        const known = new Set(players.map((p) => p.id));
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- einmalig nach dem Laden
-        setSelected(new Set(ids.filter((id): id is string => typeof id === "string" && known.has(id))));
-      }
-    } catch {
-      // Kein Speicher oder kaputter Eintrag — dann eben leer.
-    }
-    setHydrated(true);
-  }, [players]);
+  const isPresent = (p: PlayerOption) => overrides.get(p.id) ?? p.present;
+  const presentCount = players.filter(isPresent).length;
+  const canStart = presentCount >= 3;
 
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected]));
-    } catch {
-      // Nur eine Bequemlichkeit.
-    }
-  }, [hydrated, selected]);
-
-  const allSelected = players.length > 0 && selected.size === players.length;
-  const canStart = selected.size >= 3;
-
-  function toggleAll() {
-    setSelected(allSelected ? new Set() : new Set(players.map((p) => p.id)));
-  }
-
-  function toggle(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  function toggle(p: PlayerOption) {
+    const next = !isPresent(p);
+    setOverrides((prev) => new Map(prev).set(p.id, next));
+    startToggle(async () => {
+      await setAttendance(eveningId, p.id, next);
     });
   }
 
-  /** Enter: den einzigen Treffer auswählen (nie abwählen) und weitertippen. */
+  /** Enter: den einzigen Treffer als anwesend markieren (nie abwählen). */
   function handleEnter() {
     if (!enterTarget) return;
-    setSelected((prev) => new Set(prev).add(enterTarget.id));
+    if (!isPresent(enterTarget)) toggle(enterTarget);
     setSearch("");
   }
 
@@ -138,13 +113,13 @@ export default function PlayerSelectionList({
           <p className="text-base">
             Die Achievement-Erfassung von {openEntry.label} ist noch offen
             {openEntry.openCount > 0 && ` — ${openEntry.openCount} haben nicht bestätigt`}.
-            Mit dem Start wird sie geschlossen, danach können die Spieler
+            Mit dem Auslosen wird sie geschlossen, danach können die Spieler
             nichts mehr ändern.
           </p>
           <SeasonRoundSelect value={seasonRound} onChange={setSeasonRound} disabled={pending} />
           <div className="flex flex-col gap-2">
             <PrimaryButton type="submit" className="w-full" disabled={!canStart} loading={pending}>
-              {pending ? "Starte…" : "Schliessen und starten"}
+              {pending ? "Lose aus…" : "Schliessen und auslosen"}
             </PrimaryButton>
             <SecondaryButton
               className="w-full"
@@ -157,16 +132,14 @@ export default function PlayerSelectionList({
         </div>
       ) : openEntry ? (
         <PrimaryButton className="w-full" disabled={!canStart} onClick={() => setConfirming(true)}>
-          Runde starten
+          Match 1 auslosen
         </PrimaryButton>
       ) : (
         <PrimaryButton type="submit" className="w-full" disabled={!canStart} loading={pending}>
-          {pending ? "Starte…" : "Runde starten"}
+          {pending ? "Lose aus…" : "Match 1 auslosen"}
         </PrimaryButton>
       )}
-      {selected.size > 0 && !canStart && (
-        <p className="text-base opacity-70">Mindestens 3 Spieler nötig.</p>
-      )}
+      {!canStart && <p className="text-base opacity-70">Mindestens 3 Anwesende nötig.</p>}
       {casualPairing && (
         <p className="text-base opacity-70">
           {casualPairing === "live"
@@ -179,23 +152,14 @@ export default function PlayerSelectionList({
   );
 
   return (
-    <form
-      action={formAction}
-      // Mit dem Start ist die Auswahl verbraucht — beim nächsten Liga-Abend,
-      // Wochen später, soll nicht noch die von heute stehen.
-      onSubmit={() => {
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch {
-          // Nur eine Bequemlichkeit.
-        }
-      }}
-      className="grid gap-8 lg:grid-cols-4"
-    >
+    <form action={formAction} className="grid gap-8 lg:grid-cols-4">
+      <input type="hidden" name="eveningId" value={eveningId} />
       <section className="flex flex-col gap-3 lg:col-span-3">
-        <h2 className="text-lg font-medium">
-          Anwesende Spieler auswählen ({selected.size})
-        </h2>
+        <h2 className="text-lg font-medium">Anwesend ({presentCount})</h2>
+        <p className="text-base opacity-70">
+          Wer sein Punkteblatt scannt, erscheint hier von selbst. Antippen
+          markiert von Hand als anwesend oder nimmt es zurück.
+        </p>
         <label className="flex min-h-11 items-center gap-3 text-base">
           <input
             type="checkbox"
@@ -213,16 +177,22 @@ export default function PlayerSelectionList({
               key={p.id}
               name={p.name}
               detail={`· ${p.points} Pkt.`}
-              selected={selected.has(p.id)}
+              // Das Handy-Zeichen sagt, dass er sein Blatt selbst gescannt
+              // hat — ohne steht er von Hand auf der Liste.
+              badge={
+                p.scanned ? (
+                  <span className="shrink-0" role="img" aria-label="gescannt" title="Blatt gescannt">
+                    📱
+                  </span>
+                ) : undefined
+              }
+              selected={isPresent(p)}
               enterTarget={p.id === enterTarget?.id}
               disabled={pending}
-              onClick={() => toggle(p.id)}
+              onClick={() => toggle(p)}
             />
           ))}
         </PlayerTileGrid>
-        {[...selected].map((id) => (
-          <input key={id} type="hidden" name="playerIds" value={id} />
-        ))}
         {openEntry && (
           <>
             <input type="hidden" name="closeEveningId" value={openEntry.eveningId} />
@@ -232,17 +202,41 @@ export default function PlayerSelectionList({
       </section>
 
       <Sidebar>
-        <h2 className="text-lg font-medium">Runde</h2>
-        {/* Auf dem Handy steht der Start in der Leiste unten. */}
+        <h2 className="text-lg font-medium">Abend</h2>
+        {/* Auf dem Handy steht das Auslosen in der Leiste unten. */}
         <div className="hidden lg:block">{startControls}</div>
-        <SecondaryButton onClick={toggleAll} className="w-full" disabled={pending}>
-          {allSelected ? "Auswahl aufheben" : "Alle auswählen"}
-        </SecondaryButton>
+        <Link
+          href="/admin/ligaverwaltung/punkteblaetter"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded border border-white/20 px-4 py-2 text-base font-medium hover:bg-white/5"
+        >
+          Punkteblätter drucken
+        </Link>
+        {discarding ? (
+          <div className="flex flex-col gap-2 rounded border border-white/20 p-3">
+            <p className="text-base">
+              Vorbereitung verwerfen? Die gedruckten Punkteblätter werden damit ungültig.
+            </p>
+            <DangerButton
+              className="w-full"
+              loading={discardPending}
+              onClick={() => startDiscard(() => discardPreparation(eveningId))}
+            >
+              Verwerfen
+            </DangerButton>
+            <SecondaryButton className="w-full" onClick={() => setDiscarding(false)}>
+              Abbrechen
+            </SecondaryButton>
+          </div>
+        ) : (
+          <SecondaryButton className="w-full" onClick={() => setDiscarding(true)} disabled={pending}>
+            Vorbereitung verwerfen
+          </SecondaryButton>
+        )}
         {sidebarExtra}
       </Sidebar>
 
       <MobileActionBar>
-        <p className="text-base opacity-70">{selected.size} ausgewählt</p>
+        <p className="text-base opacity-70">{presentCount} anwesend</p>
         {startControls}
       </MobileActionBar>
     </form>

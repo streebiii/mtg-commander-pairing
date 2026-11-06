@@ -199,7 +199,9 @@ laufend während des Abends oder gesammelt am Schluss. Der Organisator
 prüft und schliesst die Erfassung.
 
 **Entschieden:**
-- **Zugang über feste Tischkarten:** ein PDF mit QR-Codes für Tisch 1–6,
+- **Zugang über feste Tischkarten** (am 06.11.2026 ersetzt durch das
+  persönliche Punkteblatt mit QR-Code pro Abend, SPEC.md Abschnitt 12.1):
+  ein PDF mit QR-Codes für Tisch 1–6,
   einmal gedruckt und dauerhaft gültig, im Organisator-Bereich erzeugt.
   Der QR führt zum Tisch; dort stehen die Spieler, die in der aktuellen
   Runde an diesem Tisch sitzen. Name antippen, fertig. Funktioniert nur,
@@ -269,7 +271,9 @@ vor der App.
 
 ## Tischkarten bei offener Erfassung und Casual-Abend
 
-**Status:** Offen, klein (Bereinigung vom 10.10.2026).
+**Status:** Erledigt am 06.11.2026 — die Tischkarten sind entfallen, jeder
+Spieler meldet sich über den QR-Code auf seinem persönlichen Punkteblatt an
+(SPEC.md Abschnitt 12.1).
 
 Die Erfassung eines Liga-Abends bleibt nach «Abend beenden» offen, bis der
 Organisator sie schliesst. Findet in dieser Zeit ein Casual-Abend statt,
