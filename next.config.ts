@@ -21,13 +21,25 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Nur im Entwicklungsmodus: der Testserver darf auch über die Adresse im
+  // Heimnetz aufgerufen werden, damit sich die QR-Codes der Punkteblätter
+  // mit dem Handy scannen lassen. Ohne das blockiert Next die Skripte, und
+  // keine Schaltfläche reagiert.
+  allowedDevOrigins: ["192.168.*.*", "10.*.*.*", "172.*.*.*"],
   // Erfassung und Achievement-Katalog sind in die Ligaverwaltung gezogen
   // (SPEC.md Abschnitt 14) — alte Lesezeichen sollen weiter funktionieren.
   async redirects() {
     return [
+      // Die Tischkarten sind durch die persönlichen Punkteblätter ersetzt
+      // (SPEC.md Abschnitt 12.1).
       {
         source: "/admin/erfassung/tischkarten",
-        destination: "/admin/ligaverwaltung/tischkarten",
+        destination: "/admin/ligaverwaltung/punkteblaetter",
+        permanent: false,
+      },
+      {
+        source: "/admin/ligaverwaltung/tischkarten",
+        destination: "/admin/ligaverwaltung/punkteblaetter",
         permanent: false,
       },
       { source: "/admin/erfassung/:path*", destination: "/admin/ligaverwaltung", permanent: false },

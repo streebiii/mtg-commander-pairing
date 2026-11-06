@@ -7,7 +7,7 @@ const TABS = [
   { href: "/admin/ligaverwaltung", label: "Aktuelle Runde", exact: true },
   { href: "/admin/ligaverwaltung/runden", label: "Runden" },
   { href: "/admin/ligaverwaltung/achievements", label: "Achievements" },
-  { href: "/admin/ligaverwaltung/tischkarten", label: "Tischkarten" },
+  { href: "/admin/ligaverwaltung/punkteblaetter", label: "Punkteblätter" },
   { href: "/admin/ligaverwaltung/endstand", label: "Endstand" },
 ];
 

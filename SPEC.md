@@ -241,7 +241,7 @@ frei ist, weicht sie auf einen grösseren aus.
   berechnet wird.
 - **Auf dem Handy** (unter der lg-Breite) steht die Hauptaktion in einer
   festen Leiste am unteren Rand — Casual: «Tische berechnen» bzw. «Live
-  schalten» / «Neu berechnen»; Liga: «Runde starten», danach der jeweils
+  schalten» / «Neu berechnen»; Liga: «Match 1 auslosen», danach der jeweils
   nächste Schritt des Abends mit Stand («Match 1 von 2 · 3 Tische
   offen»). In der Seitenleiste fehlt sie dort, damit sie nicht doppelt
   steht. Nach «Tische berechnen» springt die Ansicht zur Zuteilung.
@@ -376,28 +376,36 @@ Die Zuteilung wird gespeichert, aber ausdrücklich **nicht als Verlauf**:
   des Abends fest (siehe unten). Die Achievements selbst erfassen die
   Spieler (Abschnitt 12).
 - **Ablauf pro Abend:**
-  1. Anwesende Spieler aus den Liga-teilnehmenden Vereinsspielern auswählen
-     (siehe Abschnitt 6 — nicht jeder Vereinsspieler nimmt an der Liga teil).
-     Neben dem Namen steht der Saisonstand («· 12 Pkt.»). Die Auswahl
-     übersteht ein Neuladen (Browser-Speicher, wie in Casual) und wird mit
-     dem Start verworfen.
-  2. **Match 1**: Sortierung nach der eigenen Rangliste der Saison
+  1. **Abend vorbereiten** (z.B. am Vortag; Entscheid des Organisators vom
+     06.11.2026): mit dem Datum des Abends, vorbelegt der nächste Termin der
+     Saison. Das legt den Abend ohne Match an, übernimmt seine Achievements
+     und gibt jedem Liga-Teilnehmenden (Abschnitt 6) ein **Punkteblatt mit
+     eigenem QR-Code** (Abschnitt 12.1). «Vorbereitung verwerfen» löscht den
+     Abend wieder, solange kein Match ausgelost ist.
+  2. **Anwesenheit**: wer im Laden sein Punkteblatt scannt, ist anwesend
+     und erscheint im Liga-Tab von selbst (die Seite lädt neu, 📱 an der
+     Kachel). Der Organisator markiert von Hand als anwesend oder nimmt es
+     zurück, z.B. für wen ohne Handy. Die Anwesenheit steht in der
+     Datenbank (`PlayerEntry.checkedInAt`), nicht im Browser. Neben dem
+     Namen steht der Saisonstand («· 12 Pkt.»).
+  3. **«Match 1 auslosen»** paart genau die Anwesenden (mindestens 3).
+     **Match 1**: Sortierung nach der eigenen Rangliste der Saison
      (Abschnitt 13, Stand vor diesem Abend). Tischverteilung gemäss Algorithmus aus
      Abschnitt 3, Spieler in Punktereihenfolge auf die Tische verteilt
      (übliche Pairing-Logik: nach Rang gruppieren/verteilen, siehe Abschnitt
      5.1 für Detailregel).
-  3. Sobald ein Tisch fertig ist, hält der Organisator fest, **wie er
+  4. Sobald ein Tisch fertig ist, hält der Organisator fest, **wie er
      ausgegangen ist**: Sieger antippen, oder "Unentschieden", wenn das
      Zeitlimit von 120 Minuten erreicht wurde (Liga-Regeln auf mtgbl.ch).
      Nochmals dieselbe Auswahl antippen macht die Erfassung rückgängig.
      Erst wenn für **jeden** Tisch eines von beidem feststeht, lässt sich
      Match 2 starten oder der Abend beenden.
-  4. **Match 2**: dieselbe Rangfolge und Hälften-Teilung wie in Match 1
+  5. **Match 2**: dieselbe Rangfolge und Hälften-Teilung wie in Match 1
      (Abschnitt 5.1), wobei die Sieger aus Match 1 um 4 Ränge nach oben
      rücken. Innerhalb jeder Hälfte spielen die **Gewinner garantiert
      gegeneinander** (Abschnitt 5.2), die übrigen Plätze werden zufällig
      besetzt, mit weicher Rematch-Vermeidung.
-  5. **Genau zwei Matches pro Runde** ("Pro Liga-Abend werden zwei Spiele
+  6. **Genau zwei Matches pro Runde** ("Pro Liga-Abend werden zwei Spiele
      gespielt", mtgbl.ch). Danach wird die Runde beendet.
 
 **Warum der Sieg und nicht die Punktsumme?** Zwei Gründe. Die Punktsumme
@@ -423,9 +431,10 @@ Abend. Nach mtgbl.ch werden sie von Hand übertragen.
 
 **Aufbau des Liga-Tabs — wie Casual.** Beide starten ein Spiel und sind
 deshalb gleich aufgebaut: Überschrift mit Info-Knopf, links der Inhalt
-(vor dem Start die Spielerauswahl, danach die Runden mit der aktuellen
+(vor dem Auslosen die Anwesenheit, danach die Runden mit der aktuellen
 zuoberst und «Live schalten» neben ihrer Überschrift), rechts die
-Seitenleiste mit Einstellungen und Aktionen («Abend starten» bzw. «Neu
+Seitenleiste mit Einstellungen und Aktionen («Match 1 auslosen»,
+«Punkteblätter drucken» bzw. «Neu
 mischen», «Nächste Runde starten», «Abend beenden», Anwesenheit und der
 Stand der Achievement-Erfassung). Gemeinsame Bausteine:
 `src/components/InfoHeading.tsx`, `src/components/Sidebar.tsx`.
@@ -595,10 +604,28 @@ etwas.
   Gespeichert wird der Drop an seiner Zuordnung der zuletzt gespielten
   Runde (`TableAssignment.droppedAt`).
 - **Nachzügler** werden im Abschnitt «Anwesenheit» unter den Tischen aus
-  den Liga-Teilnehmenden gewählt. Ist Match 1 noch im Warteraum, kommt er
+  den Liga-Teilnehmenden gewählt. Wer sein Punkteblatt erst nach dem
+  Auslosen scannt, wird nicht automatisch eingeteilt, sondern dort unter
+  «Gescannt, noch nicht eingeteilt» mit «Einteilen» gemeldet (Entscheid
+  des Organisators vom 06.11.2026); sein Blatt sagt ihm so lange «der
+  Organisator teilt dich ein». Ist Match 1 noch im Warteraum, kommt er
   direkt dorthin (sie wird neu gemischt). Sonst spielt er ab Match 2 mit
   (`LateArrival`); steht Match 2 schon im Warteraum, wird sie mit ihm neu
   gemischt. Für Spiel 1 bekommt er nichts — auch keine Participation.
+- **Zurück in den Warteraum** (Entscheid des Organisators vom
+  06.11.2026): das live geschaltete, neueste Match lässt sich mit «Zurück
+  in den Warteraum» neben seiner Überschrift zurücknehmen, z.B. um noch
+  Spieler hinzuzufügen, und danach wieder live schalten. Das geht nur,
+  solange an keinem Tisch ein Ergebnis steht; sonst ist der Knopf
+  gesperrt, und der Hinweis erscheint beim Darüberfahren. So lange sehen
+  die Spieler ihren Tisch nicht, die öffentliche Seite zeigt das vorherige
+  Match bzw. keines. **Wer in ein solches Match dazukommt, wird eingefügt
+  statt neu gemischt** (`Round.firstPublishedAt`,
+  `src/lib/pairing/insertPlayer.ts`): an den kleinsten Tisch mit Platz;
+  sind alle voll, entsteht ein neuer Tisch, für den so wenige Spieler wie
+  nötig zufällig von den grössten Tischen wechseln. Alle anderen bleiben
+  sitzen. «Neu mischen» würfelt bei Bedarf trotzdem alles neu. Ein Match,
+  das noch nie live war, wird beim Hinzufügen wie bisher neu gemischt.
 - **Rücknahme**: Gedroppte lassen sich zurückholen, Nachzügler entfernen,
   beides im Abschnitt «Anwesenheit» (ein Drop auch über die Tischkachel).
   Wer im Warteraum von Match 1 gedroppt wurde, ist schlicht nicht mehr
@@ -855,8 +882,9 @@ erst auf den nächsten Abend, auch während ein Abend läuft.
 
 ### 11.3 Öffentliche Ansicht
 
-Während ein Liga-Abend läuft, zeigt die öffentliche Lese-Ansicht unter den
-Tischen die geltenden Achievements des Abends, nach Kategorie gruppiert.
+Die öffentliche Lese-Ansicht zeigt nur die Tische, keine Achievements mehr
+— jeder Spieler hat sie auf seinem Punkteblatt (Entscheid des Organisators
+vom 06.11.2026; früher standen sie unter den Tischen).
 
 ## 12. Achievement-Erfassung durch die Spieler
 
@@ -864,28 +892,50 @@ Die Spieler erfassen ihre Achievements am Liga-Abend selbst auf dem Handy.
 Der Papierzettel bleibt als Rückfall: wer kein Handy nutzt, gibt ihn ab,
 und der Organisator erfasst für ihn.
 
-### 12.1 Anmeldung über Tischkarten
+### 12.1 Anmeldung über das persönliche Punkteblatt
 
-- In der Ligaverwaltung unter **Tischkarten** gibt
-  es eine Druckvorlage mit QR-Codes für **Tisch 1–6** (Drucken → «Als PDF
-  sichern» ergibt das PDF). Die Karten werden einmal gedruckt und bleiben
-  gültig: der QR-Code enthält nur `/tisch/<nr>`, nicht den Abend.
-- Die Tischseite zeigt die Spieler, die in der **aktuellen
-  veröffentlichten Runde** an diesem Tisch sitzen. Ein Antippen fragt
-  «Du bist Anna S.?» mit «Ja» und «Zurück», erst «Ja» meldet das Handy für diesen
-  Namen an — ein Fehltipp würde sonst den falschen Namen und das Handy
-  sperren. Der eigene, schon angemeldete Name führt ohne Rückfrage weiter.
-  Es braucht kein Konto und keinen Code.
-- Das Handy bekommt ein zufälliges Token als Cookie (14 Tage gültig), in
-  der Datenbank steht nur dessen Hash. **Ein Name pro Handy und Abend**,
-  und ein angemeldeter Name ist für andere Handys gesperrt. Der
-  Organisator kann ihn freigeben («Handy freigeben»), die Einträge bleiben
-  dabei erhalten. Die Anmeldung ist atomar: tippen zwei Handys
-  gleichzeitig denselben Namen an, gewinnt eines.
-- Die Tischkarten sind dauerhaft und damit nicht geheim. Schutz bieten
-  die Beschränkung auf die Spieler des Tisches, die Namenssperre und die
-  Prüfung durch den Organisator. Eine Tischseite funktioniert nur, solange
-  eine Erfassung offen ist.
+Ersetzt die früheren Tischkarten (QR pro Tisch, Name antippen), die ganz
+entfallen sind (Entscheid des Organisators vom 06.11.2026).
+
+- **Punkteblätter drucken** (Ligaverwaltung, Reiter «Punkteblätter», und
+  im Liga-Tab): für den vorbereiteten bzw. laufenden Abend je
+  Liga-Teilnehmenden ein **A4-Blatt quer** nach dem Muster des
+  Papierblatts der Liga, **in zwei gleich breiten Hälften, damit es sich
+  genau in der Mitte falten lässt** (ohne Faltlinie; Entscheid des
+  Organisators vom 06.11.2026): links Name, Datum, Core und Rotate mit
+  Kästchen R1/R2, rechts Commander, Color-ID und Deckbau, je mit
+  Total-Zeile. Unten rechts der QR-Code mit Adresse und der Anleitung
+  «1. Melde dich an, indem du den QR-Code scannst und deine
+  Deckbau-Achievements eingibst. (Evergreen kann am Finale eingegeben
+  werden.) 2. Auf der Seite siehst du, an welchem Tisch du spielen wirst.
+  3. Nach dem Spiel können die Punkte direkt unter dem QR-Code eingegeben
+  werden. 4. Für Runde 2 wiederholen.» Der QR-Kasten endet auf derselben
+  Höhe wie die linke Spalte. Vorgedruckt sind Name (Vorname und Initial,
+  wie öffentlich), Datum und Farbidentität; den Commander trägt der
+  Spieler von Hand ein. Evergreen steht nur am letzten Abend der Saison
+  darauf. Alle Blätter
+  stehen auf einer Seite — «Drucken» → «Als PDF sichern» ergibt **ein
+  PDF** mit allen (die Seite druckt quer, `@page` in der Seite selbst).
+  «Nur ein Blatt» zeigt ein einzelnes, z.B. für ein verlorenes Blatt.
+  Die leere Spalte «Art» des Papierblatts entfällt.
+- **Der QR-Code gilt nur für diesen Abend**: `/blatt/<code>` mit einem
+  zufälligen Code (`PlayerEntry.sheetCode`, 72 Bit). Er entsteht beim
+  Vorbereiten; wer danach an der Liga teilnimmt, bekommt seinen beim
+  nächsten Aufruf der Druckseite. Ein schon gedrucktes Blatt behält
+  seinen Code.
+- **Scannen**: die Seite nennt Name und Abend und fragt «Ja, ich bin
+  Anna S.». Erst das Tippen meldet das Handy an — ein blosses Öffnen des
+  Links (z.B. durch eine Link-Vorschau) tut nichts. Das Tippen setzt
+  zugleich die **Anwesenheit** (Abschnitt 5) und führt aufs Blatt
+  (`/erfassen`). Wer schon angemeldet ist, landet beim Scannen direkt dort.
+- **Erstes Handy bindet**: das Handy bekommt ein zufälliges Token als
+  Cookie (14 Tage gültig), in der Datenbank steht nur dessen Hash. Ein
+  Blatt pro Handy und Abend; ein angemeldetes Blatt ist für andere Handys
+  gesperrt, der Organisator kann es freigeben («Handy freigeben»), die
+  Einträge bleiben dabei erhalten. Die Anmeldung ist atomar: scannen zwei
+  Handys gleichzeitig, gewinnt eines.
+- Ist die Erfassung des Abends geschlossen, sagt das die Seite; ein
+  unbekannter Code ebenfalls.
 
 ### 12.2 Erfassungsblatt
 
@@ -894,18 +944,41 @@ und der Organisator erfasst für ihn.
   dazu alles, was einmal pro Runde zählt (Deckbau, «mehrmals pro
   Runde»). «1x am Ende der Liga» (Evergreen) erscheint nur in der letzten
   Runde der Saison.
-- **In Schritten** auf dem Handy des Spielers: **Deckbau** (alles für die
-  ganze Runde) → **Match 1** → **Übersicht** (Entscheid des Organisators vom
-  01.11.2026). **Match 2** erscheint erst, wenn es live ist und der Spieler
-  daran sitzt, vorher gibt es dafür keinen Knopf. Die Schritte oben sind
-  jederzeit antippbar, unten führen «← / →» weiter. Der Browser merkt sich den
-  zuletzt offenen Schritt; ohne Speicher beginnt das Blatt bei Deckbau.
-- **Übersicht** statt «Abgeben»: sie zeigt die Punkte je Schritt, mit
-  Korrigieren-Link, solange das Match änderbar ist. Nach Match 1 steht dort
-  «Match 1 bestätigen», nach Match 2 «Match 2 bestätigen». Erst das zweite
-  schliesst das Blatt ab; wer Match 2 nicht spielt, bestätigt mit Match 1 alles.
+- **Ablauf auf dem Handy des Spielers** (Entscheid des Organisators vom
+  06.11.2026, `src/components/PlayerSheet.tsx`):
+  1. **Deckbau zuerst, als Pflicht**: nach dem Scan sieht er oben in
+     blauer Schrift (ohne Kasten) «Du bist angemeldet, trage zuerst deine
+     Deckbau-Achievements ein, danach siehst du hier deine
+     Tischzuteilung.», darunter nur die Deckbau-Achievements und «Weiter». Erst wenn der Deckbau bestätigt
+     ist (auch leer), gibt es etwas anderes einzutragen. Ist Match 1 schon
+     live, steht sein **Tisch trotzdem gross oben** mit «Punkte eintragen
+     geht nach dem Deckbau» — niemand soll den Start aufhalten.
+  2. **Übersicht**: oben «Match 1 · Tisch 3» und darunter, wer sonst noch
+     an diesem Tisch sitzt (Entscheid des Organisators vom 06.11.2026).
+     Darunter je Spiel, das
+     live ist, an dem er sitzt und das er noch nicht bestätigt hat, der
+     Knopf **«Punkte eintragen · Spiel n»** — ab dem Live Schalten, auch
+     während des Spiels. Dazu das Bestätigte mit Punkten. Ohne Tisch steht
+     dort, worauf er wartet (Tische noch nicht ausgelost/live, Nachzügler).
+  3. **Punkte eintragen**: die Achievements des Spiels zum Abhaken,
+     gegliedert wie das Papierblatt in Core und Rotate. Jedes Häkchen
+     speichert sofort.
+  4. **Rückfrage** nach «Weiter»: eine kompakte Liste der abgehakten
+     Achievements mit Punkten und Total, darunter «Spiel 1: Du hast
+     x Punkte gemacht. Korrekt?» (beim Deckbau «Du hast x
+     Deckbau-Punkte. Korrekt?») mit «Ja, bestätigen» und «Zurück, ändern».
+  5. **Mit «Ja» ist der Schritt für den Spieler gesperrt**
+     (`PlayerEntry.confirmedGames`: 0 = Deckbau, 1 und 2 = Spiel); nur der
+     Organisator korrigiert noch. Der Server lehnt jede spätere Änderung
+     ab, ebenso Spiel-Einträge vor dem bestätigten Deckbau.
+  6. Nach Spiel 1 steht «Sobald Match 2 live ist, steht hier dein neuer
+     Tisch», danach dasselbe für Spiel 2. Sind alle gespielten Spiele und
+     der Deckbau bestätigt und kommt kein Match mehr, gilt das Blatt als
+     bestätigt (`submittedAt`) — «Fertig. Du hast heute x Punkte
+     gemacht.». Spiel 1 setzt zudem `game1DoneAt` für den Final-Ablauf.
 - **Evergreen** («1x am Ende der Liga») steht am letzten Abend der Saison
-  zuoberst im Schritt Deckbau und ist grün hinterlegt, damit es auffällt.
+  zuoberst im Schritt Deckbau, gestaltet wie alle anderen (seit
+  06.11.2026 nicht mehr grün).
 - **Verbindung weg**: schlägt das Speichern fehl, nimmt das Blatt die Änderung
   zurück und sagt es oben an; die Seite bleibt offen. Für alles andere gibt es
   eine Fehlerseite mit «Neu laden» (`src/app/error.tsx`).
@@ -925,18 +998,16 @@ und der Organisator erfasst für ihn.
   haben ein Anzahl-Feld (− / +, höchstens 20), alle anderen ein Häkchen.
 - **Participation** setzt die App für jedes gespielte Spiel automatisch,
   es ist nicht änderbar.
-- **«Winner winner» und das Tisch-Ergebnis sind dasselbe** — wer zuerst
-  einträgt, gilt (Entscheid des Organisators vom 15.10.2026):
-  - Setzt der Organisator im Liga-Tab den Sieger (🏆), bekommt der Spieler
-    «Winner winner» automatisch, auch wenn er sich noch nicht angemeldet
-    hat. Ein anderer Sieger oder «Unentschieden» nimmt es den übrigen am
-    Tisch wieder weg.
+- **«Winner winner» trägt der Sieger selbst ein** (Entscheid des
+  Organisators vom 06.11.2026, ersetzt den vom 15.10.2026):
+  - Der Pokal (🏆) im Liga-Tab setzt nur den Tischsieger für die Paarung,
+    **nicht** das Häkchen auf dem Blatt.
   - Hakt ein Spieler es ab, solange sein Tisch noch kein Ergebnis hat,
     wird er dessen Sieger; der offene Liga-Tab zeigt das ohne Neuladen.
-    Aushaken macht den Tisch wieder offen.
-  - Steht schon ein Ergebnis, ist das Häkchen gesperrt und nennt es
-    («Sieger: Anna S.», «Unentschieden»). Ist das Match nicht mehr das
-    neueste oder die Runde beendet, folgt es nur noch dem Ergebnis.
+    Aushaken macht den Tisch wieder offen, wenn er dort als Sieger steht.
+  - Steht schon ein Ergebnis, kann er trotzdem abhaken — am Tisch ändert
+    das dann nichts, der Organisator gleicht ab. Das Häkchen ist nie
+    gesperrt (ausser nach «Korrekt? — Ja»).
   - Kennung `systemKey = "winner"` (Migration
     `20261015090000_winner_system_key`), Logik in `src/lib/winner.ts`. Die
     Korrektur durch den Organisator in der Ligaverwaltung bleibt frei.
@@ -944,27 +1015,28 @@ und der Organisator erfasst für ihn.
   etwas ändert (z.B. der Sieger), wie die Pairing-Seite.
 - Oben stehen, auch beim Scrollen, der Name, rechts daneben **der Tisch** im
   neuesten Live-Match und darunter das **Total**. Schaltet der Organisator ein
-  neues Match live, wechselt der Tisch ohne Neuladen. Teilsummen Core /
-  Deckbau / Rotate gibt es nur noch auf dem Blatt des Organisators. Jede
-  Änderung speichert sofort.
+  neues Match live oder teilt einen Nachzügler ein, wechselt das Blatt ohne
+  Neuladen. Teilsummen Core / Deckbau / Rotate gibt es nur auf dem Blatt
+  des Organisators.
 - Grundlage sind die eingefrorenen Achievements des Abends (Abschnitt
   11.2). Der Server prüft jede Änderung: Das Achievement muss zum Abend
   gehören, das Spiel muss gespielt sein, und die Anzahl muss erlaubt sein.
-- **Die Spieler ändern ihr Blatt selbst, bis die Erfassung geschlossen
-  wird** — auch nach dem Bestätigen, das nur noch «ich bin fertig» meldet und
-  beim Organisator als «Bestätigt» erscheint. Danach
-  korrigiert nur noch der Organisator (Abschnitt 12.3).
+- **Was der Spieler bestätigt hat, ändert nur noch der Organisator**
+  (Abschnitt 12.3); alles andere kann er bis zum Schliessen der Erfassung
+  eintragen.
 
 ### 12.3 Organisator
 
 - Der Liga-Tab zeigt, solange eine Erfassung offen ist, den Hinweis
   «Achievement-Erfassung offen» mit Anzahl der Bestätigungen. Er bleibt auch
   nach «Runde beenden» stehen. Solange noch kein Match live ist, steht
-  statt «0 von 0» «Sobald Match 1 live ist, melden sich die Spieler über
-  die Tischkarten an.» Der offene Liga-Tab lädt neu, sobald sich am Abend
-  etwas ändert (Sieger von einem Spieler, Bestätigungen), sonst nie.
+  statt «0 von 0» «Sobald Match 1 live ist, tragen die Spieler über den
+  QR-Code auf ihrem Punkteblatt ein.» Der offene Liga-Tab lädt neu, sobald
+  sich am Abend etwas ändert (Sieger von einem Spieler, Bestätigungen, Scans der
+  Punkteblätter), sonst nie.
 - In der Ligaverwaltung unter **Aktuelle Runde** stehen alle Anwesenden
-  mit Status (nicht angemeldet / erfasst gerade / bestätigt) und Total,
+  mit Status (nicht angemeldet / erfasst gerade / bestätigt), darunter,
+  was der Spieler schon gesperrt hat («✓ Deckbau, Spiel 1»), und Total,
   sortiert in dieser Reihenfolge — wer noch etwas braucht, steht oben —,
   innerhalb alphabetisch. «Erfassung schliessen» steht über der Tabelle.
   Pro Spieler gibt es «Korrigieren» (dasselbe Blatt, für Korrekturen und
@@ -980,13 +1052,14 @@ und der Organisator erfasst für ihn.
   (R1–R6), in der er zählt — aus dem Datum vorbelegt und änderbar —, oder
   «Testrunde — zählt nicht». Jede Spalte gehört höchstens einem Abend der
   Saison; ist sie schon vergeben, lehnt die App ab und nennt den Abend.
-  Es gibt immer nur eine offene Erfassung: ist beim Start einer neuen
-  Runde die letzte noch offen, fragt «Runde starten» zuerst dieselbe
-  Spalte ab, und «Schliessen und starten» schliesst sie darin. Geschlossen
+  Es gibt immer nur eine offene Erfassung: ist beim Auslosen von Match 1
+  einer neuen Runde die letzte noch offen, fragt «Match 1 auslosen» zuerst
+  dieselbe Spalte ab, und «Schliessen und auslosen» schliesst sie darin.
+  Ein nur vorbereiteter Abend zählt dabei nicht als offene Erfassung. Geschlossen
   wird vor der Paarung, damit ihre Punkte schon in der Rangfolge von
   Match 1 zählen. Früher schloss der Start sie stillschweigend ohne
   Spalte — der Abend zählte dann als Testrunde.
-- Steht beim Start eine Casual-Zuteilung, sagt ein Satz unter dem Knopf,
+- Steht beim Auslosen eine Casual-Zuteilung, sagt ein Satz unter dem Knopf,
   dass sie verworfen wird (Abschnitt 4.3).
 - Welcher Liga-Abend (1–6) ein Abend ist, leitet die App aus den
   Terminen auf mtgbl.ch ab (`src/lib/season.ts`). Bei einer
@@ -1041,8 +1114,9 @@ vom 17.10.2026).
   gestrichen. Ein verpasster Abend zählt als
   0 und ist damit das schlechteste; bei mehreren gleich schlechten trifft
   es den letzten. In der Tabelle ist es amber hinterlegt und fein durchgestrichen,
-  darunter erklärt eine Zeile das Zeichen. Auch der Endstand (Abschnitt 13.5)
-  rechnet damit.
+  darunter erklärt eine Zeile das Zeichen. In den Details des Abends steht
+  nur «Streichresultat» (ohne «— zählt nicht», seit 06.11.2026). Auch der
+  Endstand (Abschnitt 13.5) rechnet damit.
 - **Δ**: Veränderung gegenüber dem Stand vor dem letzten Abend (höchste
   Spalte mit Punkten), nach denselben Regeln gerechnet. Gezeigt werden
   **nur Aufstiege** (▲ grün); Abstiege und gleicher Rang bleiben leer
@@ -1145,7 +1219,8 @@ Achievement-Katalog):
   R1–R4 gelten dann wieder die früher importierten Werte, falls vorhanden,
   Abschnitt 7).
 - **Achievements** — der Katalog (Abschnitt 11).
-- **Tischkarten** — die Druckvorlage (Abschnitt 12.1).
+- **Punkteblätter** — die Druckvorlage der persönlichen Blätter mit
+  QR-Code (Abschnitt 12.1).
 - **Endstand** — Top 3, Rangliste und Ehrungen für die Rangverkündigung
   (Abschnitte 13.5 und 15).
 

@@ -312,7 +312,7 @@ function DetailView({ detail, date }: { detail: Detail; date: string | undefined
             {date && ` · ${date}`}
           </div>
           {cell.struck && (
-            <div className="mt-1 text-base text-amber-400">Streichresultat — zählt nicht</div>
+            <div className="mt-1 text-base text-amber-400">Streichresultat</div>
           )}
         </div>
         <div className="shrink-0 text-right">

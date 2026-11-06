@@ -11,12 +11,18 @@ import {
   rankValues,
 } from "@/lib/pairing/leagueRanking";
 import { shuffle } from "@/lib/pairing/shuffle";
+import { insertIntoTables } from "@/lib/pairing/insertPlayer";
 import { loadEveningHistory } from "@/lib/pairing/leagueHistory";
 import { clearCasualPairing } from "@/lib/casualPairing";
 import { adoptAchievementsForEvening } from "@/lib/achievements";
 import { loadPairingStandings } from "@/lib/rankingData";
-import { findOpenEvening, loadMatchPoints, seasonRoundError } from "@/lib/entries";
-import { syncWinnerMarks } from "@/lib/winner";
+import {
+  ensureSheets,
+  findOpenEvening,
+  loadMatchPoints,
+  newSheetCode,
+  seasonRoundError,
+} from "@/lib/entries";
 import { parseSeasonRound } from "@/components/SeasonRoundSelect";
 
 /**
@@ -177,10 +183,137 @@ async function rebuildDraftRound(
   ]);
 }
 
+/**
+ * Setzt einen Spieler in eine Runde im Warteraum. War sie schon einmal live
+ * (und wurde zurückgenommen), sitzen die Spieler schon: er wird eingefügt
+ * und alle anderen bleiben möglichst sitzen (SPEC.md Abschnitt 5.3). Sonst
+ * — oder wenn das Einfügen nicht aufgeht — wird neu gemischt wie bisher.
+ */
+async function addToDraftRound(
+  round: {
+    id: string;
+    eveningId: string;
+    number: number;
+    firstPublishedAt: Date | null;
+    tables: { tableNumber: number; assignments: { playerId: string }[] }[];
+  },
+  playerId: string,
+) {
+  const current = [...round.tables]
+    .sort((a, b) => a.tableNumber - b.tableNumber)
+    .map((t) => t.assignments.map((a) => a.playerId));
+  const inserted = round.firstPublishedAt ? insertIntoTables(current, playerId) : null;
+  if (!inserted) {
+    // Runde 1 bekommt ihren Pool mitgegeben, ab Runde 2 steht der
+    // Nachzügler schon in LateArrival.
+    await rebuildDraftRound(
+      round,
+      round.number === 1 ? [...current.flat(), playerId] : undefined,
+    );
+    return;
+  }
+  await prisma.$transaction([
+    prisma.table.deleteMany({ where: { roundId: round.id } }),
+    ...inserted.map((tablePlayers, i) =>
+      prisma.table.create({
+        data: {
+          roundId: round.id,
+          tableNumber: i + 1,
+          size: tablePlayers.length,
+          assignments: { create: tablePlayers.map((id) => ({ playerId: id })) },
+        },
+      }),
+    ),
+  ]);
+}
+
 export type StartEveningState = { error: string } | null;
 
+/** Kalendertag "YYYY-MM-DD" als Zeitpunkt mittags in Zürich. */
+function parseDay(raw: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  const date = new Date(`${raw}T12:00:00+01:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function zurichDay(date: Date): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Zurich" }).format(date);
+}
+
 /**
- * Startet einen neuen Liga-Abend (Modus B) mit Runde 1.
+ * «Abend vorbereiten» (SPEC.md Abschnitt 5 und 12.1): legt den Liga-Abend
+ * ohne Runde an, übernimmt die geltenden Achievements und gibt jedem
+ * Liga-Teilnehmenden ein Punkteblatt mit eigenem QR-Code. Wer es scannt,
+ * ist anwesend; «Match 1 auslosen» paart danach genau diese Spieler.
+ */
+export async function prepareEvening(
+  _prev: StartEveningState,
+  formData: FormData,
+): Promise<StartEveningState> {
+  await requireAdmin();
+  const date = parseDay(String(formData.get("date") ?? ""));
+  if (!date) return { error: "Bitte ein gültiges Datum wählen." };
+
+  const active = await prisma.evening.findFirst({ where: { finishedAt: null } });
+  if (active) return { error: "Es ist bereits ein Abend vorbereitet — lade die Seite neu." };
+
+  const evening = await prisma.$transaction(async (tx) => {
+    const created = await tx.evening.create({
+      data: { date, pairByPoints: formData.get("pairByPoints") === "on" },
+    });
+    await adoptAchievementsForEvening(tx, created.id);
+    return created;
+  });
+  await ensureSheets(evening.id);
+
+  revalidatePath("/admin/league");
+  revalidatePath("/admin/ligaverwaltung", "layout");
+  revalidatePath("/admin");
+  return null;
+}
+
+/**
+ * Anwesenheit vor Match 1 von Hand setzen — z.B. für wen ohne Handy oder
+ * wer gescannt hat und doch wieder gegangen ist. Nach dem Auslosen gilt
+ * stattdessen Drop und Nachzügler (Abschnitt 5.3).
+ */
+export async function setAttendance(eveningId: string, playerId: string, present: boolean) {
+  await requireAdmin();
+  const evening = await prisma.evening.findUnique({
+    where: { id: eveningId },
+    select: { finishedAt: true, _count: { select: { rounds: true } } },
+  });
+  if (!evening || evening.finishedAt || evening._count.rounds > 0) return;
+  const player = await prisma.player.findFirst({
+    where: { id: playerId, leagueActive: true, archivedAt: null },
+    select: { id: true },
+  });
+  if (!player) return;
+
+  await prisma.playerEntry.upsert({
+    where: { eveningId_playerId: { eveningId, playerId } },
+    create: {
+      eveningId,
+      playerId,
+      sheetCode: newSheetCode(),
+      checkedInAt: present ? new Date() : null,
+    },
+    update: { checkedInAt: present ? new Date() : null },
+  });
+  revalidatePath("/admin/league");
+}
+
+/** Verwirft einen vorbereiteten Abend, solange noch kein Match ausgelost ist. */
+export async function discardPreparation(eveningId: string) {
+  await requireAdmin();
+  await prisma.evening.deleteMany({ where: { id: eveningId, rounds: { none: {} } } });
+  revalidatePath("/admin/league");
+  revalidatePath("/admin/ligaverwaltung", "layout");
+  revalidatePath("/admin");
+}
+
+/**
+ * «Match 1 auslosen»: paart die Anwesenden des vorbereiteten Abends.
  *
  * Ist die Erfassung des letzten Abends noch offen, wird sie dabei
  * geschlossen — mit der Spalte, die der Organisator in der Rückfrage
@@ -193,23 +326,25 @@ export async function startEvening(
   formData: FormData,
 ): Promise<StartEveningState> {
   await requireAdmin();
-  const playerIds = formData.getAll("playerIds").map(String);
-  if (playerIds.length < 3) return { error: "Mindestens 3 Spieler nötig." };
-
-  const active = await prisma.evening.findFirst({
-    where: { finishedAt: null },
+  const eveningId = String(formData.get("eveningId") ?? "");
+  const prepared = await prisma.evening.findFirst({
+    where: { id: eveningId, finishedAt: null, rounds: { none: {} } },
   });
-  if (active) return { error: "Es läuft bereits eine Runde — lade die Seite neu." };
+  if (!prepared) return { error: "Der Abend hat sich geändert — lade die Seite neu." };
 
-  // leagueActive: true zur Sicherheit auch hier geprüft (nicht nur in der
-  // UI-Auswahlliste) — nur Liga-teilnehmende Spieler dürfen in einen
-  // Liga-Abend aufgenommen werden (siehe SPEC.md Abschnitt 6).
-  const eligible = await prisma.player.count({
-    where: { id: { in: playerIds }, leagueActive: true, archivedAt: null },
+  // Anwesend ist, wer gescannt hat oder von Hand markiert wurde — und
+  // (zur Sicherheit auch hier geprüft) an der Liga teilnimmt (SPEC.md
+  // Abschnitt 6).
+  const present = await prisma.playerEntry.findMany({
+    where: {
+      eveningId,
+      checkedInAt: { not: null },
+      player: { leagueActive: true, archivedAt: null },
+    },
+    select: { playerId: true },
   });
-  if (eligible !== playerIds.length) {
-    return { error: "Die Spielerliste hat sich geändert — lade die Seite neu." };
-  }
+  const playerIds = present.map((e) => e.playerId);
+  if (playerIds.length < 3) return { error: "Mindestens 3 Anwesende nötig." };
 
   // Eine offene Erfassung schliesst nur, wer ihre Spalte bestätigt hat —
   // und zwar genau für diesen Abend, nicht für einen, der inzwischen
@@ -240,25 +375,26 @@ export async function startEvening(
     ? pairFirstByPlace(standings)
     : assignLeagueRound(rankValues(standings));
 
-  // Abend + Runde 1 atomar anlegen (siehe createRoundInDb) — sonst bliebe
-  // bei einem Fehler zwischen den beiden Schritten ein Abend ohne jede
-  // Runde zurück, der die Liga-Seite dauerhaft zum Absturz bringt. Die
-  // geltenden Achievements gehören mit in dieselbe Transaktion, damit es
-  // keinen Abend ohne seine Achievements gibt.
+  // Runde 1 und die Uhrzeit des Starts gemeinsam — ist der Abend für
+  // heute vorbereitet, gilt ab jetzt die echte Startzeit.
+  const now = new Date();
   await prisma.$transaction(async (tx) => {
     // Es gibt immer nur eine offene Erfassung, sonst wäre die alte in der
     // Übersicht nicht mehr erreichbar (SPEC.md Abschnitt 12). Die offene
     // ist oben schon geschlossen; das hier fängt nur noch Altlasten ohne
     // Runden, die findOpenEvening nicht findet.
     await tx.evening.updateMany({
-      where: { entryClosedAt: null },
-      data: { entryClosedAt: new Date() },
+      where: { entryClosedAt: null, id: { not: eveningId } },
+      data: { entryClosedAt: now },
     });
-    const evening = await tx.evening.create({
-      data: { pairByPoints },
+    await tx.evening.update({
+      where: { id: eveningId },
+      data: {
+        pairByPoints,
+        ...(zurichDay(prepared.date) === zurichDay(now) ? { date: now } : {}),
+      },
     });
-    await createRoundInDb(tx, evening.id, 1, tables);
-    await adoptAchievementsForEvening(tx, evening.id);
+    await createRoundInDb(tx, eveningId, 1, tables);
   });
 
   // Öffentlich wird immer nur eines gezeigt — eine offene Casual-Zuteilung
@@ -343,8 +479,6 @@ export async function setTableResult(formData: FormData) {
       where: { id: tableId },
       data: { resultEnteredAt: istWiderruf ? null : new Date() },
     });
-    // Der Pokal zieht «Winner winner» auf den Blättern mit (lib/winner.ts).
-    await syncWinnerMarks(tx, tableId);
   });
 
   revalidatePath("/admin/league");
@@ -516,12 +650,41 @@ export async function publishRound(formData: FormData) {
   if (round.evening.rounds[0]?.id !== round.id) return;
   if (round.publishedAt) return; // schon live
 
+  const now = new Date();
   await prisma.round.update({
     where: { id: roundId },
-    data: { publishedAt: new Date() },
+    data: { publishedAt: now, firstPublishedAt: round.firstPublishedAt ?? now },
   });
 
   revalidatePath("/admin/league");
+  revalidatePath("/");
+}
+
+/**
+ * Nimmt ein live geschaltetes Match zurück in den Warteraum, z.B. um noch
+ * Spieler hinzuzufügen (SPEC.md Abschnitt 5.3). Nur das neueste Match eines
+ * laufenden Abends, und nur solange an keinem Tisch ein Ergebnis steht —
+ * sonst gingen Sieger verloren. Die öffentliche Seite zeigt so lange
+ * wieder das vorherige Match (bzw. keines), die Spieler sehen ihren Tisch
+ * nicht mehr. Wer dazukommt, wird eingefügt statt neu gemischt.
+ */
+export async function unpublishRound(roundId: string) {
+  await requireAdmin();
+  const round = await prisma.round.findUnique({
+    where: { id: roundId },
+    include: {
+      tables: { select: { resultEnteredAt: true } },
+      evening: { include: { rounds: { orderBy: { number: "desc" }, take: 1 } } },
+    },
+  });
+  if (!round || !round.publishedAt) return;
+  if (round.evening.finishedAt) return;
+  if (round.evening.rounds[0]?.id !== round.id) return;
+  if (round.tables.some((t) => t.resultEnteredAt !== null)) return;
+
+  await prisma.round.update({ where: { id: roundId }, data: { publishedAt: null } });
+  revalidatePath("/admin/league");
+  revalidatePath("/erfassen");
   revalidatePath("/");
 }
 
@@ -552,7 +715,9 @@ async function loadAttendanceContext(eveningId: string) {
       rounds: {
         orderBy: { number: "desc" },
         take: 1,
-        include: { tables: { include: { assignments: true } } },
+        include: {
+          tables: { orderBy: { tableNumber: "asc" }, include: { assignments: true } },
+        },
       },
     },
   });
@@ -621,8 +786,9 @@ export async function undoDrop(eveningId: string, playerId: string) {
 
 /**
  * Nachzügler: ist Runde 1 noch im Warteraum, wird er direkt dort
- * eingeteilt (die Runde wird neu gemischt). Sonst spielt er ab Runde 2
- * mit; steht sie schon im Warteraum, wird sie mit ihm neu gemischt.
+ * eingeteilt. Sonst spielt er ab Runde 2 mit; steht sie schon im
+ * Warteraum, kommt er dort hinein. War die Runde schon einmal live, wird
+ * er eingefügt, sonst neu gemischt (siehe addToDraftRound).
  */
 export async function addLateArrival(eveningId: string, playerId: string) {
   await requireAdmin();
@@ -647,13 +813,10 @@ export async function addLateArrival(eveningId: string, playerId: string) {
   if (seated > 0 || late > 0) return;
 
   if (lastRound.number === 1 && !lastRound.publishedAt) {
-    const attendees = lastRound.tables.flatMap((t) =>
-      t.assignments.map((a) => a.playerId),
-    );
-    await rebuildDraftRound(lastRound, [...attendees, playerId]);
+    await addToDraftRound(lastRound, playerId);
   } else {
     await prisma.lateArrival.create({ data: { eveningId, playerId } });
-    if (!lastRound.publishedAt) await rebuildDraftRound(lastRound);
+    if (!lastRound.publishedAt) await addToDraftRound(lastRound, playerId);
   }
 
   revalidatePath("/admin/league");

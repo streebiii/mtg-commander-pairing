@@ -1,7 +1,7 @@
 import LigaTabs from "./LigaTabs";
 
 // Ligaverwaltung (SPEC.md Abschnitt 14): die aktuelle Runde, alle Runden,
-// der Achievement-Katalog, die Tischkarten und der Endstand — alles, was die Liga
+// der Achievement-Katalog, die Punkteblätter und der Endstand — alles, was die Liga
 // ausserhalb des Spielabends selbst braucht.
 export default function LigaverwaltungLayout({ children }: { children: React.ReactNode }) {
   return (

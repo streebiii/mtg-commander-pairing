@@ -2,16 +2,6 @@ import { fingerprint } from "@/lib/fingerprint";
 import { prisma } from "@/lib/prisma";
 import { getCasualPairing } from "@/lib/casualPairing";
 import { loadPublicNames } from "@/lib/publicRoster";
-import type { CATEGORIES, SCOPE_LABELS } from "@/lib/achievements";
-
-export interface PublicAchievement {
-  id: string;
-  title: string;
-  description: string;
-  points: number;
-  scope: keyof typeof SCOPE_LABELS;
-  category: (typeof CATEGORIES)[number];
-}
 
 export interface PublicTable {
   key: string;
@@ -23,7 +13,6 @@ export interface PublicPairings {
   /** Liga: die Nummer des gezeigten Matches. Casual: null. */
   matchNumber: number | null;
   tables: PublicTable[];
-  achievements: PublicAchievement[];
 }
 
 /**
@@ -42,7 +31,6 @@ export async function loadPublicPairings(): Promise<PublicPairings> {
         tableNumber: t.tableNumber,
         players: t.players.map((p) => ({ key: p.id, name: names.get(p.id) ?? p.name })),
       })),
-      achievements: [],
     };
   }
 
@@ -50,17 +38,6 @@ export async function loadPublicPairings(): Promise<PublicPairings> {
     where: { finishedAt: null },
     orderBy: { createdAt: "desc" },
     include: {
-      achievements: {
-        orderBy: { sortOrder: "asc" },
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          points: true,
-          scope: true,
-          category: true,
-        },
-      },
       rounds: {
         // Nur veröffentlichte Matches — eine gerade im Warteraum geprüfte
         // Zuteilung ist bewusst noch nicht öffentlich sichtbar. Solange das
@@ -98,9 +75,6 @@ export async function loadPublicPairings(): Promise<PublicPairings> {
           name: names.get(a.playerId) ?? a.player.firstName,
         })),
       })) ?? [],
-    // Die geltenden Achievements des laufenden Liga-Abends, damit die
-    // Spieler sie am Tisch nachschlagen können (SPEC.md Abschnitt 11).
-    achievements: evening?.achievements ?? [],
   };
 }
 

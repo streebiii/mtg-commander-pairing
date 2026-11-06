@@ -1,77 +1,18 @@
-import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { WINNER_KEY } from "@/lib/entrySheet";
 
-// «Winner winner» und das Tisch-Ergebnis sind dasselbe (SPEC.md Abschnitt
-// 12.2): wer zuerst einträgt, gilt. Setzt der Organisator den Sieger (🏆),
-// bekommt der Sieger das Achievement automatisch; hakt ein Spieler es ab,
-// solange sein Tisch noch kein Ergebnis hat, wird er dessen Sieger.
-// Danach entscheidet allein der Organisator — ein neuer Sieger zieht die
-// Häkchen mit.
-
-type Db = Prisma.TransactionClient | typeof prisma;
+// «Winner winner» trägt der Sieger selbst ein (SPEC.md Abschnitt 12.2,
+// Entscheid des Organisators vom 06.11.2026). Der Pokal des Organisators
+// setzt es nicht mehr — er bestimmt nur den Tischsieger für die Paarung.
+// Umgekehrt gilt weiterhin: hakt ein Spieler es ab, solange sein Tisch
+// noch offen ist, wird er dessen Sieger; das spart dem Organisator den
+// Pokal.
 
 /**
- * Gleicht die «Winner winner»-Häkchen eines Tisches an sein Ergebnis an:
- * der Sieger hat es, alle anderen am Tisch nicht. Für den Sieger wird die
- * Erfassung angelegt, falls er sich noch nicht angemeldet hat — sie wartet
- * dann auf ihn.
+ * Der Tisch eines Spielers in einem Match, sofern dort das Ergebnis noch
+ * änderbar ist: das Match ist live, es ist das neueste des Abends und der
+ * Abend läuft — wie beim Sieger-Eintrag des Organisators.
  */
-export async function syncWinnerMarks(db: Db, tableId: string) {
-  const table = await db.table.findUniqueOrThrow({
-    where: { id: tableId },
-    include: {
-      round: { select: { number: true, eveningId: true } },
-      assignments: { select: { playerId: true, isWinner: true } },
-    },
-  });
-  const achievement = await db.eveningAchievement.findFirst({
-    where: { eveningId: table.round.eveningId, systemKey: WINNER_KEY },
-    select: { id: true },
-  });
-  // Abende ohne «Winner winner» (z.B. vor dessen Kennung angelegt).
-  if (!achievement) return;
-
-  const game = table.round.number;
-  const eveningId = table.round.eveningId;
-  const winner = table.assignments.find((a) => a.isWinner)?.playerId ?? null;
-  const others = table.assignments.map((a) => a.playerId).filter((id) => id !== winner);
-
-  await db.achievementMark.deleteMany({
-    where: {
-      eveningAchievementId: achievement.id,
-      game,
-      entry: { eveningId, playerId: { in: others } },
-    },
-  });
-  if (!winner) return;
-
-  const entry = await db.playerEntry.upsert({
-    where: { eveningId_playerId: { eveningId, playerId: winner } },
-    create: { eveningId, playerId: winner },
-    update: {},
-    select: { id: true },
-  });
-  await db.achievementMark.upsert({
-    where: {
-      entryId_eveningAchievementId_game: {
-        entryId: entry.id,
-        eveningAchievementId: achievement.id,
-        game,
-      },
-    },
-    create: { entryId: entry.id, eveningAchievementId: achievement.id, game, count: 1 },
-    update: { count: 1 },
-  });
-}
-
-/**
- * Der Tisch eines Spielers in einem Match, sofern der Spieler dort das
- * Ergebnis noch selbst eintragen darf: das Match ist live, es ist das
- * neueste des Abends und der Abend läuft — wie beim Sieger-Eintrag des
- * Organisators.
- */
-async function playerTable(eveningId: string, playerId: string, game: number) {
+async function openPlayerTable(eveningId: string, playerId: string, game: number) {
   const assignment = await prisma.tableAssignment.findFirst({
     where: {
       playerId,
@@ -80,7 +21,6 @@ async function playerTable(eveningId: string, playerId: string, game: number) {
     include: {
       table: {
         include: {
-          assignments: { select: { id: true, playerId: true, isWinner: true } },
           round: {
             include: {
               evening: {
@@ -98,78 +38,51 @@ async function playerTable(eveningId: string, playerId: string, game: number) {
   const { table } = assignment;
   const open =
     !table.round.evening.finishedAt && table.round.evening.rounds[0]?.id === table.roundId;
-  return { assignment, table, open };
+  return open ? assignment : null;
 }
 
 /**
- * Ein Spieler hakt «Winner winner» ab oder wieder aus. Abhaken geht nur,
- * solange sein Tisch kein Ergebnis hat — dann wird er dessen Sieger.
- * Aushaken geht nur für den eingetragenen Sieger und macht den Tisch
- * wieder offen. Gibt false zurück, wenn es nicht (mehr) geht.
+ * Folgt dem Häkchen «Winner winner» eines Spielers am Tisch: abgehakt
+ * wird er Tischsieger, falls der Tisch noch kein Ergebnis hat; ausgehakt
+ * wird der Tisch wieder offen, falls er dort als Sieger steht. Steht schon
+ * ein anderes Ergebnis, ändert das Häkchen nichts am Tisch — der
+ * Organisator gleicht ab.
  */
-export async function setWinnerByPlayer(
+export async function winnerMarkToTable(
   entry: { eveningId: string; playerId: string },
   game: number,
   won: boolean,
-): Promise<boolean> {
-  const found = await playerTable(entry.eveningId, entry.playerId, game);
-  if (!found?.open) return false;
-  const { assignment, table } = found;
+): Promise<void> {
+  const assignment = await openPlayerTable(entry.eveningId, entry.playerId, game);
+  if (!assignment) return;
 
   if (won) {
-    if (table.resultEnteredAt && !assignment.isWinner) return false;
-    if (assignment.isWinner) return true;
     // Bedingt auf «noch kein Ergebnis»: haken zwei Spieler am selben Tisch
-    // gleichzeitig ab, gewinnt genau einer.
-    return prisma.$transaction(async (tx) => {
+    // gleichzeitig ab, wird genau einer Tischsieger.
+    await prisma.$transaction(async (tx) => {
       const { count } = await tx.table.updateMany({
-        where: { id: table.id, resultEnteredAt: null },
+        where: { id: assignment.tableId, resultEnteredAt: null },
         data: { resultEnteredAt: new Date() },
       });
-      if (count !== 1) return false;
-      await tx.tableAssignment.update({
-        where: { id: assignment.id },
-        data: { isWinner: true },
-      });
-      await syncWinnerMarks(tx, table.id);
-      return true;
+      if (count === 1) {
+        await tx.tableAssignment.update({
+          where: { id: assignment.id },
+          data: { isWinner: true },
+        });
+      }
     });
+    return;
   }
 
-  if (!assignment.isWinner) return true;
-  await prisma.$transaction(async (tx) => {
-    await tx.tableAssignment.updateMany({ where: { tableId: table.id }, data: { isWinner: false } });
-    await tx.table.update({ where: { id: table.id }, data: { resultEnteredAt: null } });
-    await syncWinnerMarks(tx, table.id);
-  });
-  return true;
-}
-
-/**
- * Warum «Winner winner» auf dem Blatt eines Spielers gesperrt ist, je
- * Match — null, wenn er es selbst setzen darf. `names` liefert die
- * öffentlichen Namen.
- */
-export async function winnerNotes(
-  eveningId: string,
-  playerId: string,
-  games: number[],
-  names: Map<string, string>,
-): Promise<Record<number, string | null>> {
-  const notes: Record<number, string | null> = {};
-  for (const game of games) {
-    const found = await playerTable(eveningId, playerId, game);
-    if (!found) {
-      notes[game] = null;
-      continue;
-    }
-    const { assignment, table, open } = found;
-    const winner = table.assignments.find((a) => a.isWinner);
-    if (table.resultEnteredAt && !winner) notes[game] = "Unentschieden";
-    else if (winner && winner.id !== assignment.id) {
-      notes[game] = `Sieger: ${names.get(winner.playerId) ?? "jemand anderes"}`;
-    } else if (!open) notes[game] = "vom Tisch-Ergebnis übernommen";
-    else notes[game] = null;
-  }
-  return notes;
+  if (!assignment.isWinner) return;
+  await prisma.$transaction([
+    prisma.tableAssignment.updateMany({
+      where: { tableId: assignment.tableId },
+      data: { isWinner: false },
+    }),
+    prisma.table.update({
+      where: { id: assignment.tableId },
+      data: { resultEnteredAt: null },
+    }),
+  ]);
 }

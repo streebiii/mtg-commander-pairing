@@ -75,7 +75,7 @@ textarea {
 }
 
 /*
- * Druck (z.B. Tischkarten): weisses Papier, schwarze Schrift — die dunkle
+ * Druck (z.B. Punkteblätter): weisses Papier, schwarze Schrift — die dunkle
  * Bildschirm-Farbgebung würde sonst hellgraue Schrift drucken.
  */
 @media print {

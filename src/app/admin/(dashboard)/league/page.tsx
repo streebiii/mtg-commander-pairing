@@ -4,7 +4,7 @@ import TableCard from "@/components/TableCard";
 import { MAX_ROUNDS } from "@/lib/pairing/leagueAssignment";
 import { orderByMatchPoints, rankValues } from "@/lib/pairing/leagueRanking";
 import { loadPairingStandings } from "@/lib/rankingData";
-import { eveningLabel, eveningNumber, isLastEvening } from "@/lib/season";
+import { eveningLabel, eveningNumber, isLastEvening, nextSeasonEvening } from "@/lib/season";
 import { findOpenEvening, loadMatchPoints } from "@/lib/entries";
 import { getCasualPairing } from "@/lib/casualPairing";
 import AutoRefresh from "@/components/AutoRefresh";
@@ -16,9 +16,11 @@ import LeagueInfo from "./LeagueInfo";
 import FinishEveningButton from "./FinishEveningButton";
 import NextRoundButton from "./NextRoundButton";
 import PlayerSelectionList, { type OpenEntryInfo } from "./PlayerSelectionList";
+import PrepareEveningForm from "./PrepareEveningForm";
 import PublishRoundButton from "./PublishRoundButton";
 import RegenerateButton from "./RegenerateButton";
 import RoundBoard from "./RoundBoard";
+import UnpublishRoundButton from "./UnpublishRoundButton";
 import { leagueVersion } from "./version";
 
 export const dynamic = "force-dynamic";
@@ -63,40 +65,65 @@ export default async function LeaguePage() {
       select: { id: true, firstName: true, lastName: true },
     }),
   ]);
-  let evening = eveningResult;
-
-  // Ein "laufender" Abend ohne jede Runde ist ein verwaister Datensatz —
-  // z.B. wenn früher das Anlegen von Abend und Runde 1 nicht atomar war
-  // und der zweite Schritt fehlschlug (siehe startEvening in actions.ts).
-  // Ohne diese Absicherung stürzt die Seite weiter unten beim Zugriff
-  // auf `lastRound.tables` ab, dauerhaft — es gäbe dann ja auch keinen
-  // Knopf mehr, um ihn manuell zu verwerfen. Selbstheilend aufräumen und
-  // so tun, als gäbe es keinen laufenden Abend.
-  if (evening && evening.rounds.length === 0) {
-    await prisma.evening.delete({ where: { id: evening.id } });
-    evening = null;
-  }
+  const evening = eveningResult;
 
   const activePlayers = allPlayers;
 
   // Rangfolge für die Paarung (SPEC.md Abschnitt 5.1) — für die Punkte in
-  // der Auswahl vor dem Start bzw. die Rang-Vorschau im Warteraum.
-  const attendeeIdsOfEvening = evening
-    ? [
-        ...new Set(
-          evening.rounds.flatMap((r) =>
-            r.tables.flatMap((t) => t.assignments.map((a) => a.playerId)),
+  // der Anwesenheit vor dem Auslosen bzw. die Rang-Vorschau im Warteraum.
+  const attendeeIdsOfEvening =
+    evening && evening.rounds.length > 0
+      ? [
+          ...new Set(
+            evening.rounds.flatMap((r) =>
+              r.tables.flatMap((t) => t.assignments.map((a) => a.playerId)),
+            ),
           ),
-        ),
-      ]
-    : activePlayers.map((p) => p.id);
+        ]
+      : activePlayers.map((p) => p.id);
   const preview = await loadPairingStandings(attendeeIdsOfEvening);
   const standingById = new Map(preview.map((p) => [p.id, p]));
 
   if (!evening) {
-    // Was der Start nebenbei schliesst bzw. verwirft — beides soll der
-    // Organisator vorher sehen (SPEC.md Abschnitte 4.3 und 12.3).
-    const [openEvening, casual] = await Promise.all([findOpenEvening(), getCasualPairing()]);
+    // Noch kein Abend: vorbereiten, damit die Punkteblätter gedruckt
+    // werden können. Vorbelegt ist der nächste Termin der Saison.
+    const next = nextSeasonEvening(new Date());
+    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Zurich" }).format(
+      new Date(),
+    );
+    // Die Seitenleiste nur, wenn es dort etwas gibt — sonst stand ein leerer Kasten da.
+    const openEvening = await findOpenEvening();
+    return (
+      <div className="flex flex-col gap-4">
+        <LeagueInfo />
+        {activePlayers.length === 0 ? (
+          <p className="text-base opacity-70">
+            Noch keine Spieler als Liga-teilnehmend markiert — nimm im
+            Spieler-Tab welche auf.
+          </p>
+        ) : (
+          <PrepareEveningForm
+            defaultDate={next?.date ?? today}
+            sidebarExtra={openEvening ? <EntryBanner /> : undefined}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (evening.rounds.length === 0) {
+    // Vorbereitet, Match 1 noch nicht ausgelost: die Anwesenheit füllt sich
+    // mit den Scans der Punkteblätter. Was das Auslosen nebenbei schliesst
+    // bzw. verwirft, soll der Organisator vorher sehen (SPEC.md
+    // Abschnitte 4.3 und 12.3).
+    const [openEvening, casual, sheets] = await Promise.all([
+      findOpenEvening(),
+      getCasualPairing(),
+      prisma.playerEntry.findMany({
+        where: { eveningId: evening.id },
+        select: { playerId: true, checkedInAt: true, deviceTokenHash: true },
+      }),
+    ]);
     let openEntry: OpenEntryInfo | null = null;
     if (openEvening) {
       const [attendees, submitted] = await Promise.all([
@@ -116,28 +143,27 @@ export default async function LeaguePage() {
         openCount: Math.max(0, attendees.length - submitted),
       };
     }
+    const sheetByPlayer = new Map(sheets.map((s) => [s.playerId, s]));
+    const day = evening.date.toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" });
 
     return (
       <div className="flex flex-col gap-4">
-        <LeagueInfo />
-        {activePlayers.length === 0 ? (
-          <p className="text-base opacity-70">
-            Noch keine Spieler als Liga-teilnehmend markiert — nimm im
-            Spieler-Tab welche auf.
-          </p>
-        ) : (
-          <PlayerSelectionList
-            players={activePlayers.map((p) => ({
-              id: p.id,
-              name: formatPlayerName(p),
-              points: standingById.get(p.id)?.points ?? 0,
-            }))}
-            openEntry={openEntry}
-            casualPairing={casual ? (casual.published ? "live" : "warteraum") : null}
-            defaultPairByPoints={isLastEvening(new Date())}
-            sidebarExtra={<EntryBanner />}
-          />
-        )}
+        <AutoRefresh src="/admin/league/stand" version={version} />
+        <LeagueInfo subtitle={`${eveningLabel(evening.date)} · ${day} · vorbereitet`} />
+        <PlayerSelectionList
+          eveningId={evening.id}
+          players={activePlayers.map((p) => ({
+            id: p.id,
+            name: formatPlayerName(p),
+            points: standingById.get(p.id)?.points ?? 0,
+            present: Boolean(sheetByPlayer.get(p.id)?.checkedInAt),
+            scanned: Boolean(sheetByPlayer.get(p.id)?.deviceTokenHash),
+          }))}
+          openEntry={openEntry}
+          casualPairing={casual ? (casual.published ? "live" : "warteraum") : null}
+          defaultPairByPoints={evening.pairByPoints || isLastEvening(evening.date)}
+          sidebarExtra={<EntryBanner />}
+        />
       </div>
     );
   }
@@ -188,6 +214,18 @@ export default async function LeaguePage() {
     .filter((p) => !inEvening.has(p.id))
     .map((p) => ({ id: p.id, name: formatPlayerName(p) }))
     .sort((a, b) => a.name.localeCompare(b.name, "de-CH"));
+  // Wer nach dem Auslosen sein Blatt scannt, wird nur gemeldet — einteilen
+  // entscheidet der Organisator (SPEC.md Abschnitt 5.3).
+  const scannedLate = await prisma.playerEntry.findMany({
+    where: {
+      eveningId: evening.id,
+      checkedInAt: { not: null },
+      playerId: { in: lateArrivalCandidates.map((p) => p.id) },
+    },
+    select: { playerId: true },
+  });
+  const scannedLateIds = new Set(scannedLate.map((e) => e.playerId));
+  const waitingLate = lateArrivalCandidates.filter((p) => scannedLateIds.has(p.id));
 
   const startedAt = evening.date.toLocaleTimeString("de-CH", {
     timeZone: "Europe/Zurich",
@@ -303,9 +341,17 @@ export default async function LeaguePage() {
 
             return (
               <section key={round.id} className="flex flex-col gap-3">
-                <h2 className="text-lg font-medium">
-                  Match {round.number} — {isLastRound ? "live" : "Ergebnis"}
-                </h2>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h2 className="text-lg font-medium">
+                    Match {round.number} — {isLastRound ? "live" : "Ergebnis"}
+                  </h2>
+                  {isLastRound && (
+                    <UnpublishRoundButton
+                      roundId={round.id}
+                      blocked={round.tables.some((t) => t.resultEnteredAt !== null)}
+                    />
+                  )}
+                </div>
                 {isLastRound ? (
                   <RoundBoard
                     tables={round.tables}
@@ -391,6 +437,7 @@ export default async function LeaguePage() {
                 name: formatPlayerName(l.player),
               }))}
               candidates={lateArrivalCandidates}
+              waiting={waitingLate}
             />
           )}
 

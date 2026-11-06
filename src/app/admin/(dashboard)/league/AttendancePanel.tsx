@@ -14,7 +14,9 @@ const ACTION =
 
 /**
  * Anwesenheit während des Abends (siehe SPEC.md Abschnitt 5.3): Nachzügler
- * hinzufügen, Drops und Nachzügler zurücknehmen. Gedroppt wird an der
+ * hinzufügen — auch wer sein Punkteblatt erst nach dem Auslosen gescannt
+ * hat, steht hier und wartet aufs Einteilen —, Drops und Nachzügler
+ * zurücknehmen. Gedroppt wird an der
  * Tischkachel (Spieler antippen → «Drop»). Sichtbar, bis Runde 2 live ist.
  */
 export default function AttendancePanel({
@@ -22,11 +24,14 @@ export default function AttendancePanel({
   dropped,
   lateArrivals,
   candidates,
+  waiting,
 }: {
   eveningId: string;
   dropped: PlayerOption[];
   lateArrivals: PlayerOption[];
   candidates: PlayerOption[];
+  /** Haben ihr Blatt nach dem Auslosen gescannt und warten aufs Einteilen. */
+  waiting: PlayerOption[];
 }) {
   const [selected, setSelected] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -46,13 +51,39 @@ export default function AttendancePanel({
 
   // Nichts zurückzunehmen und niemand mehr da, der dazukommen könnte —
   // dann keine leere Überschrift. Gedroppt wird ohnehin an der Tischkachel.
-  if (dropped.length === 0 && lateArrivals.length === 0 && candidates.length === 0) {
+  if (
+    dropped.length === 0 &&
+    lateArrivals.length === 0 &&
+    candidates.length === 0 &&
+    waiting.length === 0
+  ) {
     return null;
   }
 
   return (
     <section className="flex flex-col gap-3">
       <h3 className="text-base font-medium">Anwesenheit</h3>
+
+      {waiting.length > 0 && (
+        <div className="flex flex-col gap-2 rounded border border-amber-500/60 bg-amber-500/10 p-3">
+          <p className="text-base">Gescannt, noch nicht eingeteilt:</p>
+          <ul className="flex flex-col gap-1 text-base">
+            {waiting.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-3">
+                <span className="font-medium">{p.name}</span>
+                <button
+                  type="button"
+                  className={ACTION}
+                  disabled={isPending}
+                  onClick={() => run(() => addLateArrival(eveningId, p.id))}
+                >
+                  Einteilen
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {(dropped.length > 0 || lateArrivals.length > 0) && (
         <ul className="flex flex-col gap-1 text-base">

@@ -47,7 +47,7 @@ interface NamedRosterPlayer {
 }
 
 /**
- * Namen für die öffentlichen Seiten (Rangliste, Pairings, Tischkarten,
+ * Namen für die öffentlichen Seiten (Rangliste, Pairings, Punkteblatt,
  * Erfassung): Vorname und Initial wie auf mtgbl.ch — «Tanja L.» statt des
  * vollen Nachnamens, der nur im Organisator-Bereich steht.
  *
