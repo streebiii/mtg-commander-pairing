@@ -119,6 +119,8 @@ async function pairRound(
       loadMatchPoints(eveningId, roundNumber - 1),
       loadEveningHistory(eveningId, roundNumber),
     ]);
+    // Die Reihenfolge (Schnitt plus Punkte aus Match 1) bestimmt die Tische
+    // und zugleich, welche Paare aus Match 1 wieder zusammen dürfen.
     return assignByPlace(orderByMatchPoints(shuffle(players), matchPunkte), previousPairings);
   }
   if (roundNumber === 1) return assignLeagueRound(rankValues(players));

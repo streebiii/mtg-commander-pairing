@@ -417,10 +417,67 @@ describe("assignByPlace (Final-Ablauf, SPEC.md Abschnitt 5.4)", () => {
     Math.max(...tables.map((t) => countRematches(t, vorher)));
 
   it("erlaubt ein Rematch pro Tisch, das zweite rückt an den nächsten Tisch", () => {
-    const vorher = new Set([pairKey("1", "2"), pairKey("1", "3")]);
-    const tables = assignByPlace(["1", "2", "3", "4", "5", "6", "7", "8"], vorher);
+    // In Match 1 sassen 1, 3 und 5 zusammen (mit 12 als Viertem).
+    const vorher = new Set(tablePairKeys(["1", "3", "5", "12"]));
+    const ids = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+    const tables = assignByPlace(ids, vorher);
     expect(tables[0]).toEqual(["1", "2", "4", "5"]);
     expect(tables[1]).toEqual(["3", "6", "7", "8"]);
+  });
+
+  /** Rang innerhalb des Match-1-Tisches, nach der Reihenfolge für Match 2. */
+  const rangImTisch = (id: string, ids: string[], match1: string[][]) => {
+    const tisch = match1.find((t) => t.includes(id))!;
+    return ids.filter((x) => tisch.includes(x)).indexOf(id);
+  };
+
+  it("setzt von einem Tisch aus Match 1 nur Rang 1 & 3 bzw. 2 & 4 wieder zusammen", () => {
+    const ids = Array.from({ length: 16 }, (_, i) => String(i + 1));
+    const match1 = assignByPlace(ids);
+    const vorher = new Set(match1.flatMap(tablePairKeys));
+    // Schlimmster Fall: Match 2 in derselben Reihenfolge wie Match 1.
+    const match2 = assignByPlace(ids, vorher);
+    expect(match2[0]).toEqual(expect.arrayContaining(["1", "3"]));
+    expect(match2[0]).not.toContain("2");
+    expect(match2.find((t) => t.includes("2"))).toContain("4");
+  });
+
+  it("richtet die Paare nach der Rangliste nach Match 1, nicht nach der vor dem Abend", () => {
+    // Vor dem Abend 1–12; nach Match 1 liegt 2 vor 1 an Tisch 1.
+    const saison = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+    const vorher = new Set(assignByPlace(saison).flatMap(tablePairKeys));
+    const nachMatch1 = ["2", "1", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+    const match2 = assignByPlace(nachMatch1, vorher);
+    // Jetzt sind 2 & 3 bzw. 1 & 4 die erlaubten Paare, 1 & 3 nicht mehr.
+    for (const tisch of match2) {
+      expect(tisch.includes("1") && tisch.includes("3")).toBe(false);
+      expect(tisch.includes("2") && tisch.includes("1")).toBe(false);
+    }
+    expect(match2[0]).toEqual(expect.arrayContaining(["2", "3"]));
+  });
+
+  it("bildet nie ein anderes Paar als 1 & 3 oder 2 & 4", () => {
+    for (const n of [12, 13, 16, 17, 20, 22, 24, 28]) {
+      const ids = Array.from({ length: n }, (_, i) => String(i));
+      const match1 = assignByPlace(ids);
+      const vorher = new Set(match1.flatMap(tablePairKeys));
+      // Match 2 mit leicht verschobener Reihenfolge, wie nach Punkten aus Match 1.
+      const order = [...ids].sort((a, b) => (Number(a) % 5) - (Number(b) % 5) || Number(a) - Number(b));
+      for (const reihenfolge of [ids, order]) {
+        const match2 = assignByPlace(reihenfolge, vorher);
+        for (const tisch of match2) {
+          for (const key of tablePairKeys(tisch)) {
+            if (!vorher.has(key)) continue;
+            const [a, b] = key.split("|");
+            const abstand = Math.abs(
+              rangImTisch(a, reihenfolge, match1) - rangImTisch(b, reihenfolge, match1),
+            );
+            expect(abstand, `N=${n}, ${key}`).toBe(2);
+          }
+        }
+        expect(maxRematches(match2, vorher), `N=${n}`).toBeLessThanOrEqual(1);
+      }
+    }
   });
 
   it("hält auch im schlimmsten Fall jeden Tisch bei einem Rematch", () => {
