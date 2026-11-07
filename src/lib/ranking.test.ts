@@ -192,4 +192,22 @@ describe("buildRanking", () => {
     expect(byId(ranking).cara).toMatchObject({ total: 9, evergreen: 7 });
     expect(byId(ranking).cara.rounds[1].points).toBe(2);
   });
+
+  it("zählt Evergreen auch für Abwesende, ohne Abend in der Spalte", () => {
+    const ranking = buildRanking(
+      players,
+      scores({ anna: [10, 10, 10, 10, 10], ben: [9, 9, 9, 9, 9] }),
+      [
+        {
+          round: 6,
+          date: new Date("2026-11-06T19:00:00+01:00"),
+          results: new Map([["ben", breakdown(9)]]),
+          absentSeason: new Map([["anna", 7]]),
+        },
+      ],
+    );
+    const { anna } = byId(ranking);
+    expect(anna.rounds[5]).toMatchObject({ points: null, source: null, struck: true });
+    expect(anna).toMatchObject({ evergreen: 7, total: 50 + 7 });
+  });
 });

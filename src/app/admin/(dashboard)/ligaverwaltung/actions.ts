@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/adminGuard";
-import { applyMark, seasonRoundError } from "@/lib/entries";
+import { applyMark, gamesPlayed, seasonRoundError } from "@/lib/entries";
+import { isLastEvening } from "@/lib/season";
 
 // Organisator-Aktionen der Achievement-Erfassung (siehe SPEC.md Abschnitt
 // 12). Jede Action prüft die Anmeldung selbst (siehe requireAdmin) —
@@ -38,6 +39,35 @@ export async function setMarkAsOrganizer(
     update: {},
   });
   const ok = await applyMark(entry, eveningAchievementId, game, count);
+  if (ok) revalidateEntryViews();
+  return ok;
+}
+
+/**
+ * Gibt einem Liga-Teilnehmenden, der am letzten Abend der Saison nicht
+ * gespielt hat, Evergreen — oder nimmt es wieder weg (SPEC.md Abschnitt
+ * 13.1). Wer gespielt hat, bekommt es über «Korrigieren».
+ */
+export async function setAbsentEvergreen(
+  eveningId: string,
+  playerId: string,
+  on: boolean,
+): Promise<boolean> {
+  await requireAdmin();
+  const evening = await prisma.evening.findUnique({
+    where: { id: eveningId },
+    include: { achievements: { where: { scope: "SEASON" }, orderBy: { sortOrder: "asc" } } },
+  });
+  const evergreen = evening?.achievements[0];
+  if (!evening || !evergreen || !isLastEvening(evening.date)) return false;
+  if ((await gamesPlayed(eveningId, playerId)).length > 0) return false;
+
+  const entry = await prisma.playerEntry.upsert({
+    where: { eveningId_playerId: { eveningId, playerId } },
+    create: { eveningId, playerId },
+    update: {},
+  });
+  const ok = await applyMark(entry, evergreen.id, 0, on ? 1 : 0);
   if (ok) revalidateEntryViews();
   return ok;
 }
