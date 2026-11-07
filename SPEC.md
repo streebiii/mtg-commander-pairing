@@ -847,6 +847,11 @@ Katalog in der Ligaverwaltung, Reiter **«Achievements»** (Abschnitt 14).
   Evergreen ist Deckbau, zählt aber einmal am Ende der Liga.
 - Variable Punktwerte der Website («+2/+1») werden mit dem höheren Wert
   geführt und bei der Erfassung korrigiert.
+- Ausnahme **Monarch** («It’s Good to Be the King/Queen», 2 für den
+  ersten, danach 1): 1 Punkt pro Mal, der Zähler ist also die Punktzahl
+  (Entscheid des Organisators vom 07.11.2026). Mit 2 pro Mal ergab «1»
+  schon 2 Punkte. Geändert ist nur der Katalog; die bisherigen Abende
+  behalten ihre Kopie, die Rangliste bleibt unverändert.
 - Die Kategorie ist nach dem Anlegen nicht mehr änderbar.
 - Der Katalog besteht aus drei Tabellen (fix, Deckbau, rotierend), die
   über Reiter mit Anzahl umgeschaltet werden. Darüber Suche und Filter
