@@ -11,7 +11,8 @@ import {
 import { loadEveningOverview } from "@/lib/entries";
 import { prisma } from "@/lib/prisma";
 import { formatPlayerName } from "@/lib/players";
-import { eveningLabel } from "@/lib/season";
+import { eveningLabel, isLastEvening } from "@/lib/season";
+import AbsentEvergreen from "./AbsentEvergreen";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,37 @@ export default async function RoundDetailPage({
   if (!evening) notFound();
 
   const { rows } = await loadEveningOverview(evening.id);
+
+  // Am letzten Abend der Saison: Evergreen auch für wer nicht gespielt hat.
+  const evergreen = isLastEvening(evening.date)
+    ? evening.achievements
+        .filter((a) => a.scope === "SEASON")
+        .sort((a, b) => a.sortOrder - b.sortOrder)[0]
+    : undefined;
+  const playing = new Set(rows.map((r) => r.playerId));
+  const absent = evergreen
+    ? (
+        await prisma.player.findMany({
+          where: { leagueActive: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            entries: {
+              where: { eveningId: evening.id },
+              select: { marks: { where: { eveningAchievementId: evergreen.id }, select: { id: true } } },
+            },
+          },
+          orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+        })
+      )
+        .filter((p) => !playing.has(p.id))
+        .map((p) => ({
+          id: p.id,
+          name: formatPlayerName(p),
+          hasEvergreen: p.entries.some((e) => e.marks.length > 0),
+        }))
+    : [];
   const title = evening.seasonRound ? `Runde ${evening.seasonRound}` : eveningLabel(evening.date);
   const status = !evening.finishedAt
     ? "läuft"
@@ -112,6 +144,10 @@ export default async function RoundDetailPage({
           </table>
         </div>
       </section>
+
+      {evergreen && absent.length > 0 && (
+        <AbsentEvergreen eveningId={evening.id} points={evergreen.points} players={absent} />
+      )}
 
       {evening.rounds.length === 0 ? (
         <p className="text-base opacity-70">

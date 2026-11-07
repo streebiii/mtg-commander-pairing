@@ -27,6 +27,12 @@ export interface SeasonEvening {
      */
     hasMarks: boolean;
   }[];
+  /**
+   * Erfassungen von Liga-Teilnehmenden, die an diesem Abend nicht gespielt
+   * haben. Daraus zählt nur Evergreen («1x am Ende der Liga»), das der
+   * Organisator auch Abwesenden geben kann (SPEC.md Abschnitt 13.1).
+   */
+  absent: { playerId: string; marks: Map<string, number> }[];
 }
 
 /**
@@ -107,6 +113,9 @@ export async function loadSeasonEvenings({ publicOnly = false } = {}): Promise<S
           hasMarks: (entry?.marks.length ?? 0) > 0,
         };
       }),
+      absent: entries
+        .filter((e) => e.eveningId === evening.id && !games.has(e.playerId) && e.marks.length > 0)
+        .map((e) => ({ playerId: e.playerId, marks: marksToMap(e.marks) })),
     };
   });
 }
@@ -144,7 +153,14 @@ export async function loadRanking({ publicOnly = false } = {}) {
         computeBreakdown(evening.achievements, p.marks, p.games, evening.lastEvening),
       );
     }
-    return { round: evening.round, date: evening.date, results };
+    // Abwesende bekommen nur Evergreen, ohne Abend in der Spalte.
+    const seasonAchievements = evening.achievements.filter((a) => a.scope === "SEASON");
+    const absentSeason = new Map<string, number>();
+    for (const p of evening.absent) {
+      const points = computeBreakdown(seasonAchievements, p.marks, [], evening.lastEvening).total;
+      if (points > 0) absentSeason.set(p.playerId, points);
+    }
+    return { round: evening.round, date: evening.date, results, absentSeason };
   });
 
   return buildRanking(

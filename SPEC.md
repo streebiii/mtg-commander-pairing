@@ -1140,6 +1140,12 @@ vom 17.10.2026).
   besserer. Die Details zu R6 zeigen es nicht; die Spalte erscheint erst,
   wenn jemand Evergreen hat. Auch die Paarung (Abschnitt 5.1) rechnet mit
   den Abendpunkten ohne Evergreen.
+- **Evergreen ohne Teilnahme** (Entscheid des Organisators vom 07.11.2026):
+  Wer am letzten Abend nicht gespielt hat, kann Evergreen trotzdem
+  bekommen. In der Runde des Finals (Ligaverwaltung › Runden) listet
+  «Evergreen ohne Teilnahme» alle Liga-Teilnehmenden ohne Tisch, je mit
+  einem Häkchen. Es zählt in EG, R6 bleibt «–» und damit ein verpasster
+  Abend. Andere Häkchen solcher Spieler zählen nicht.
 - **Δ**: Veränderung gegenüber dem Stand vor dem letzten Abend (höchste
   Spalte mit Punkten), nach denselben Regeln gerechnet. Gezeigt werden
   **nur Aufstiege** (▲ grün); Abstiege und gleicher Rang bleiben leer

@@ -18,6 +18,11 @@ export interface AppEvening {
   round: number;
   date: Date;
   results: Map<string, Breakdown>;
+  /**
+   * Evergreen von Liga-Teilnehmenden, die an diesem Abend nicht gespielt
+   * haben: zählt in EG, die Spalte des Abends bleibt leer.
+   */
+  absentSeason?: Map<string, number>;
 }
 
 export interface RoundCell {
@@ -134,7 +139,10 @@ export function buildRanking(
         const app = appByRound.get(round);
         if (app) {
           const full = app.results.get(p.id);
-          if (!full) return { points: null, source: null, struck: false };
+          if (!full) {
+            seasonPoints.get(p.id)![round - 1] = app.absentSeason?.get(p.id) ?? 0;
+            return { points: null, source: null, struck: false };
+          }
           const { evening, season } = splitSeasonPoints(full);
           seasonPoints.get(p.id)![round - 1] = season;
           return { points: evening.total, source: "app", struck: false, breakdown: evening };
